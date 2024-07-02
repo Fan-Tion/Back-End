@@ -5,6 +5,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/members")
-public class memberController {
+public class MemberController {
 
 }

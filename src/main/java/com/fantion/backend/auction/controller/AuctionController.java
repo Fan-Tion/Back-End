@@ -5,6 +5,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/auction")
-public class auctionController {
+public class AuctionController {
 
 }
