@@ -1,6 +1,5 @@
 package com.fantion.backend.auction.service.impl;
 
-import com.fantion.backend.auction.dto.AuctionDto;
 import com.fantion.backend.auction.dto.AuctionDto.Request;
 import com.fantion.backend.auction.dto.AuctionDto.Response;
 import com.fantion.backend.auction.entity.Auction;
