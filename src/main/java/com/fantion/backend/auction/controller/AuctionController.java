@@ -1,7 +1,8 @@
 package com.fantion.backend.auction.controller;
 
 import com.fantion.backend.auction.dto.AuctionDto;
-import com.fantion.backend.auction.entity.Auction;
+import com.fantion.backend.auction.service.AuctionService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -13,13 +14,15 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/auction")
-public class auctionController {
+public class AuctionController {
+  private final AuctionService auctionService;
 
   @PostMapping
   public ResponseEntity<?> createAuction(
       @RequestBody AuctionDto.Request request) {
-    return null;
+    return ResponseEntity.ok(auctionService.createAuction(request));
   }
 
   @PutMapping("/{auctionId}")

@@ -1,4 +1,4 @@
-package com.fantion.backend.auction.entity;
+package com.fantion.backend.member.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

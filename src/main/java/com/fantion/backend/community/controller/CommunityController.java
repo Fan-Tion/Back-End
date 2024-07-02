@@ -1,10 +1,10 @@
-package com.fantion.backend.member.controller;
+package com.fantion.backend.community.controller;
 
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/members")
-public class memberController {
+@RequestMapping("/community")
+public class CommunityController {
 
 }

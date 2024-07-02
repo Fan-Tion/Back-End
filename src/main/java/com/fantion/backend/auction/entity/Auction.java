@@ -1,5 +1,6 @@
 package com.fantion.backend.auction.entity;
 
+import com.fantion.backend.member.entity.Member;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -49,7 +50,7 @@ public class Auction {
   private String currentBidder;
 
   @Column(name = "buy_now_price")
-  private String buyNowPrice;
+  private Long buyNowPrice;
 
   @Column(name = "favorite_cnt")
   private Long favoriteCnt;
