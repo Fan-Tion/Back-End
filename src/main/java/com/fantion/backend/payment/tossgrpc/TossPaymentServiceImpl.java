@@ -5,7 +5,7 @@ import com.fantion.backend.payment.service.HoldingService;
 import com.fantion.backend.payment.service.TransactionService;
 import com.fantion.backend.payment.dto.HoldingDTO;
 import com.fantion.backend.payment.dto.TransactionDTO;
-import com.fantion.backend.payment.dto.WithdrawalReqDTO;
+import com.fantion.backend.payment.dto.WithdrawalRequestDTO;
 import com.fantion.backend.payment.exception.*;
 import io.tossgrpc.stub.StreamObserver;
 import lombok.RequiredArgsConstructor;
@@ -24,32 +24,32 @@ public class TossPaymentServiceImpl extends TossPaymentServiceGrpc.PaymentServic
 
     @Override
     @Transactional
-    public void doPayment(PaymentServiceOuterClass.TransactionRequest request, StreamObserver<PaymentServiceOuterClass.TransactionResponse> responseObserver) {
+    public void doPayment(TossPaymentServiceOuterClass.TransactionRequest request, StreamObserver<TossPaymentServiceOuterClass.TransactionResponse> responseObserver) {
         try {
-            TransactionDTO transactionDTO = transactionService.withdraw(WithdrawalReqDTO.builder().accountId(request.getTransaction().getAccountId())
+            TransactionDTO transactionDTO = transactionService.withdraw(WithdrawalRequestDTO.builder().accountId(request.getTransaction().getAccountId())
                             .amount(request.getTransaction().getAmount())
                             .label(request.getTransaction().getLabel()).build(),
                     holdingService.getHoldingSummaryInfo(request.getTransaction().getAccountId()));
 
-            responseObserver.onNext(PaymentServiceOuterClass.TransactionResponse.newBuilder()
-                    .setResult(PaymentServiceOuterClass.Response.newBuilder()
-                            .setResult(PaymentServiceOuterClass.Response.Result.OK).build())
+            responseObserver.onNext(TossPaymentServiceOuterClass.TransactionResponse.newBuilder()
+                    .setResult(TossPaymentServiceOuterClass.Response.newBuilder()
+                            .setResult(TossPaymentServiceOuterClass.Response.Result.OK).build())
                     .setTransaction(TossPaymentServiceOuterClass.Transaction.newBuilder()
                             .setId(transactionDTO.getId())
                             .setAccountId(transactionDTO.getAccountId())
-                            .setType(PaymentServiceOuterClass.Transaction.Type.WITHDRAWAL)
+                            .setType(TossPaymentServiceOuterClass.Transaction.Type.WITHDRAWAL)
                             .setAmount(transactionDTO.getAmount())
                             .setBalance(transactionDTO.getBalance())
                             .setLabel(transactionDTO.getLabel())
                             .setRecordedDate(transactionDTO.getRecordedDate().getTime()).build()).build());
         } catch (AccountNotFoundException e) {
-            responseObserver.onNext(PaymentServiceOuterClass.TransactionResponse.newBuilder()
-                    .setResult(PaymentServiceOuterClass.Response.newBuilder()
-                            .setResult(PaymentServiceOuterClass.Response.Result.NOT_FOUND).build()).build());
+            responseObserver.onNext(TossPaymentServiceOuterClass.TransactionResponse.newBuilder()
+                    .setResult(TossPaymentServiceOuterClass.Response.newBuilder()
+                            .setResult(TossPaymentServiceOuterClass.Response.Result.NOT_FOUND).build()).build());
         } catch (AccountIllegalStateException | AccountBalanceShortageException e) {
-            responseObserver.onNext(PaymentServiceOuterClass.TransactionResponse.newBuilder()
-                    .setResult(PaymentServiceOuterClass.Response.newBuilder()
-                            .setResult(PaymentServiceOuterClass.Response.Result.CONFLICT).build()).build());
+            responseObserver.onNext(TossPaymentServiceOuterClass.TransactionResponse.newBuilder()
+                    .setResult(TossPaymentServiceOuterClass.Response.newBuilder()
+                            .setResult(TossPaymentServiceOuterClass.Response.Result.CONFLICT).build()).build());
         }
 
         responseObserver.onCompleted();
@@ -57,7 +57,7 @@ public class TossPaymentServiceImpl extends TossPaymentServiceGrpc.PaymentServic
 
     @Override
     @Transactional
-    public void doHolding(PaymentServiceOuterClass.HoldingRequest request, StreamObserver<PaymentServiceOuterClass.HoldingResponse> responseObserver) {
+    public void doHolding(TossPaymentServiceOuterClass.HoldingRequest request, StreamObserver<TossPaymentServiceOuterClass.HoldingResponse> responseObserver) {
         try {
             if (accountService.getAccountInfoList(request.getUserId()).stream().noneMatch(accountDTO -> accountDTO.getUserId() == request.getUserId())) {
                 throw new InvalidRequestException();
@@ -67,10 +67,10 @@ public class TossPaymentServiceImpl extends TossPaymentServiceGrpc.PaymentServic
                     .amount(request.getHolding().getAmount())
                     .expiredDate(new Date(request.getHolding().getExpiredDate())).build());
 
-            responseObserver.onNext(PaymentServiceOuterClass.HoldingResponse.newBuilder()
-                    .setResult(PaymentServiceOuterClass.Response.newBuilder()
-                            .setResult(PaymentServiceOuterClass.Response.Result.OK).build())
-                    .setHolding(PaymentServiceOuterClass.Holding.newBuilder()
+            responseObserver.onNext(TossPaymentServiceOuterClass.HoldingResponse.newBuilder()
+                    .setResult(TossPaymentServiceOuterClass.Response.newBuilder()
+                            .setResult(TossPaymentServiceOuterClass.Response.Result.OK).build())
+                    .setHolding(TossPaymentServiceOuterClass.Holding.newBuilder()
                             .setId(holdingDTO.getId())
                             .setAccountId(holdingDTO.getAccountId())
                             .setAmount(holdingDTO.getAmount())
@@ -78,15 +78,15 @@ public class TossPaymentServiceImpl extends TossPaymentServiceGrpc.PaymentServic
                             .setExpiredDate(holdingDTO.getExpiredDate().getTime())
                             .setRecordedDate(holdingDTO.getRecordedDate().getTime())
                             .setLastModifiedDate(holdingDTO.getLastModifiedDate().getTime())
-                            .setStatus(PaymentServiceOuterClass.Holding.Status.valueOf(holdingDTO.getStatusType().name()))).build());
+                            .setStatus(TossPaymentServiceOuterClass.Holding.Status.valueOf(holdingDTO.getStatusType().name()))).build());
         } catch (AccountNotFoundException e) {
-            responseObserver.onNext(PaymentServiceOuterClass.HoldingResponse.newBuilder()
-                    .setResult(PaymentServiceOuterClass.Response.newBuilder()
-                            .setResult(PaymentServiceOuterClass.Response.Result.NOT_FOUND).build()).build());
+            responseObserver.onNext(TossPaymentServiceOuterClass.HoldingResponse.newBuilder()
+                    .setResult(TossPaymentServiceOuterClass.Response.newBuilder()
+                            .setResult(TossPaymentServiceOuterClass.Response.Result.NOT_FOUND).build()).build());
         } catch (AccountBalanceShortageException e) {
-            responseObserver.onNext(PaymentServiceOuterClass.HoldingResponse.newBuilder()
-                    .setResult(PaymentServiceOuterClass.Response.newBuilder()
-                            .setResult(PaymentServiceOuterClass.Response.Result.CONFLICT).build()).build());
+            responseObserver.onNext(TossPaymentServiceOuterClass.HoldingResponse.newBuilder()
+                    .setResult(TossPaymentServiceOuterClass.Response.newBuilder()
+                            .setResult(TossPaymentServiceOuterClass.Response.Result.CONFLICT).build()).build());
         }
 
         responseObserver.onCompleted();
@@ -94,14 +94,14 @@ public class TossPaymentServiceImpl extends TossPaymentServiceGrpc.PaymentServic
 
     @Override
     @Transactional
-    public void extendHolding(PaymentServiceOuterClass.HoldingRequest request, StreamObserver<PaymentServiceOuterClass.HoldingResponse> responseObserver) {
+    public void extendHolding(TossPaymentServiceOuterClass.HoldingRequest request, StreamObserver<TossPaymentServiceOuterClass.HoldingResponse> responseObserver) {
         try {
             HoldingDTO holdingDTO = holdingService.extendHolding(request.getHolding().getId(), new Date(request.getHolding().getExpiredDate()));
 
-            responseObserver.onNext(PaymentServiceOuterClass.HoldingResponse.newBuilder()
-                    .setResult(PaymentServiceOuterClass.Response.newBuilder()
-                            .setResult(PaymentServiceOuterClass.Response.Result.OK).build())
-                    .setHolding(PaymentServiceOuterClass.Holding.newBuilder()
+            responseObserver.onNext(TossPaymentServiceOuterClass.HoldingResponse.newBuilder()
+                    .setResult(TossPaymentServiceOuterClass.Response.newBuilder()
+                            .setResult(TossPaymentServiceOuterClass.Response.Result.OK).build())
+                    .setHolding(TossPaymentServiceOuterClass.Holding.newBuilder()
                             .setId(holdingDTO.getId())
                             .setAccountId(holdingDTO.getAccountId())
                             .setAmount(holdingDTO.getAmount())
@@ -109,15 +109,15 @@ public class TossPaymentServiceImpl extends TossPaymentServiceGrpc.PaymentServic
                             .setExpiredDate(holdingDTO.getExpiredDate().getTime())
                             .setRecordedDate(holdingDTO.getRecordedDate().getTime())
                             .setLastModifiedDate(holdingDTO.getLastModifiedDate().getTime())
-                            .setStatus(PaymentServiceOuterClass.Holding.Status.valueOf(holdingDTO.getStatusType().name()))).build());
+                            .setStatus(TossPaymentServiceOuterClass.Holding.Status.valueOf(holdingDTO.getStatusType().name()))).build());
         } catch (HoldingNotFoundException e) {
-            responseObserver.onNext(PaymentServiceOuterClass.HoldingResponse.newBuilder()
-                    .setResult(PaymentServiceOuterClass.Response.newBuilder()
-                            .setResult(PaymentServiceOuterClass.Response.Result.NOT_FOUND).build()).build());
+            responseObserver.onNext(TossPaymentServiceOuterClass.HoldingResponse.newBuilder()
+                    .setResult(TossPaymentServiceOuterClass.Response.newBuilder()
+                            .setResult(TossPaymentServiceOuterClass.Response.Result.NOT_FOUND).build()).build());
         } catch (InvalidRequestException e) {
-            responseObserver.onNext(PaymentServiceOuterClass.HoldingResponse.newBuilder()
-                    .setResult(PaymentServiceOuterClass.Response.newBuilder()
-                            .setResult(PaymentServiceOuterClass.Response.Result.CONFLICT).build()).build());
+            responseObserver.onNext(TossPaymentServiceOuterClass.HoldingResponse.newBuilder()
+                    .setResult(TossPaymentServiceOuterClass.Response.newBuilder()
+                            .setResult(TossPaymentServiceOuterClass.Response.Result.CONFLICT).build()).build());
         }
 
         responseObserver.onCompleted();
@@ -125,18 +125,18 @@ public class TossPaymentServiceImpl extends TossPaymentServiceGrpc.PaymentServic
 
     @Override
     @Transactional
-    public void clearHolding(PaymentServiceOuterClass.HoldingRequest request, StreamObserver<PaymentServiceOuterClass.Response> responseObserver) {
+    public void clearHolding(TossPaymentServiceOuterClass.HoldingRequest request, StreamObserver<TossPaymentServiceOuterClass.Response> responseObserver) {
         try {
             holdingService.changeHoldingStatusClosed(request.getHolding().getId());
 
-            responseObserver.onNext(PaymentServiceOuterClass.Response.newBuilder()
-                    .setResult(PaymentServiceOuterClass.Response.Result.OK).build());
+            responseObserver.onNext(TossPaymentServiceOuterClass.Response.newBuilder()
+                    .setResult(TossPaymentServiceOuterClass.Response.Result.OK).build());
         } catch (HoldingNotFoundException e) {
-            responseObserver.onNext(PaymentServiceOuterClass.Response.newBuilder()
-                    .setResult(PaymentServiceOuterClass.Response.Result.NOT_FOUND).build());
+            responseObserver.onNext(TossPaymentServiceOuterClass.Response.newBuilder()
+                    .setResult(TossPaymentServiceOuterClass.Response.Result.NOT_FOUND).build());
         } catch (HoldingIllegalStateException e) {
-            responseObserver.onNext(PaymentServiceOuterClass.Response.newBuilder()
-                    .setResult(PaymentServiceOuterClass.Response.Result.CONFLICT).build());
+            responseObserver.onNext(TossPaymentServiceOuterClass.Response.newBuilder()
+                    .setResult(TossPaymentServiceOuterClass.Response.Result.CONFLICT).build());
         }
 
         responseObserver.onCompleted();

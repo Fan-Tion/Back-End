@@ -13,7 +13,7 @@ import java.util.Date;
 @AllArgsConstructor
 @Getter
 @Builder
-public class WithdrawalReqDTO {
+public class WithdrawalRequestDTO {
 
     private Long accountId;
     private Long amount;

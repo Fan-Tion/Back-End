@@ -6,7 +6,7 @@ import java.util.List;
 
 public interface TransactionService {
 
-    TransactionDTO deposit(DepositReqDTO depositReqDTO);
-    TransactionDTO withdraw(WithdrawalReqDTO withdrawalReqDTO, HoldingSummaryDTO holdingSummaryDTO);
+    TransactionDTO deposit(DepositRequestDTO depositReqDTO);
+    TransactionDTO withdraw(WithdrawalRequestDTO withdrawalReqDTO, HoldingSummaryDTO holdingSummaryDTO);
     List<TransactionDTO> getTransactionList(long accountId);
 }

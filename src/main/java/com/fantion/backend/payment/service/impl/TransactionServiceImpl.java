@@ -11,7 +11,7 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotNull;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -25,7 +25,7 @@ public class TransactionServiceImpl implements TransactionService {
     @Override
     @Transactional
     @CacheEvict(value = "account", key = "#depositReqDTO.accountId", condition = "#result != null")
-    public TransactionDTO deposit(@NotNull DepositReqDTO depositReqDTO) {
+    public TransactionDTO deposit(@NotNull DepositRequestDTO depositReqDTO) {
         Account account = getAccount(depositReqDTO.getAccountId());
         Transaction transaction = transactionRepository.save(depositReqDTO.toTransactionDTO(account).toEntity(account));
         accountRepository.save(account.applyTransaction(transaction));
@@ -36,7 +36,7 @@ public class TransactionServiceImpl implements TransactionService {
     @Override
     @Transactional
     @CacheEvict(value = "account", key = "#withdrawalReqDTO.accountId", condition = "#result != null")
-    public TransactionDTO withdraw(@NotNull WithdrawalReqDTO withdrawalReqDTO, @NotNull HoldingSummaryDTO holdingSummaryDTO) {
+    public TransactionDTO withdraw(@NotNull WithdrawalRequestDTO withdrawalReqDTO, @NotNull HoldingSummaryDTO holdingSummaryDTO) {
         Account account = getAccount(withdrawalReqDTO.getAccountId());
         Transaction transaction = transactionRepository.save(withdrawalReqDTO.toTransactionDTO(account, holdingSummaryDTO).toEntity(account));
         accountRepository.save(account.applyTransaction(transaction));

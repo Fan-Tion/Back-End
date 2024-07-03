@@ -15,7 +15,7 @@ import java.util.List;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping(value = "/accounts")
-public class AccountController {
+public class PaymentController {
 
     private final AccountService accountService;
     private final HoldingService holdingService;
@@ -55,7 +55,7 @@ public class AccountController {
 
     @PostMapping(value = "/deposits")
     @ApiOperation(value = "입금", notes = "사용자의 계좌에 입금합니다.")
-    public ResponseEntity<TransactionDTO> deposit(@RequestHeader(value = "User-Idx") String userIdx, @RequestBody DepositReqDTO depositReqDTO) {
+    public ResponseEntity<TransactionDTO> deposit(@RequestHeader(value = "User-Idx") String userIdx, @RequestBody DepositRequestDTO depositReqDTO) {
         if (accountService.getAccountInfoList(Long.parseLong(userIdx)).stream().noneMatch(accountDTO -> Long.parseLong(userIdx) == accountDTO.getUserId())) {
             throw new InvalidRequestException();
         }
@@ -65,7 +65,7 @@ public class AccountController {
 
     @PostMapping(value = "/withdrawals")
     @ApiOperation(value = "출금", notes = "사용자의 계좌에서 출금합니다.")
-    public ResponseEntity<TransactionDTO> withdrawal(@RequestHeader(value = "User-Idx") String userIdx, @RequestBody WithdrawalReqDTO withdrawalReqDTO) {
+    public ResponseEntity<TransactionDTO> withdrawal(@RequestHeader(value = "User-Idx") String userIdx, @RequestBody WithdrawalRequestDTO withdrawalReqDTO) {
         if (accountService.getAccountInfoList(Long.parseLong(userIdx)).stream().noneMatch(accountDTO -> Long.parseLong(userIdx) == accountDTO.getUserId())) {
             throw new InvalidRequestException();
         }
