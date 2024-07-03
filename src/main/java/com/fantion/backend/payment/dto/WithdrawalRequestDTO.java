@@ -1,6 +1,5 @@
 package com.fantion.backend.payment.dto;
 
-
 import com.fantion.backend.payment.domain.Account;
 import com.fantion.backend.payment.domain.Transaction;
 import com.fantion.backend.payment.exception.AccountBalanceShortageException;

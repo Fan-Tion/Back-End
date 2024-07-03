@@ -46,8 +46,8 @@ public class SwaggerConfig {
     private ApiInfo getApiInfo() {
         return new ApiInfoBuilder()
                 .title("API")
-                .description("[DDaJa] REST API")
-                .contact(new Contact("[DDaja Swagger]", "https://github.com/swgil007/DDaJa", "BNG"))
+                .description("[fantion] REST API")
+                .contact(new Contact("[fantion Swagger]", "", "BNG"))
                 .version("1.0")
                 .build();
     }
