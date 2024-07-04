@@ -32,13 +32,4 @@ public class RedisConfiguration {
     redisTemplate.setConnectionFactory(redisConnectionFactory());
     return redisTemplate;
   }
-
-  @Bean
-  public RedisTemplate<String, PaymentInfo> paymentInfoRedisTemplate(RedisConnectionFactory redisConnectionFactory) {
-    RedisTemplate<String, PaymentInfo> redisTemplate = new RedisTemplate<>();
-    redisTemplate.setKeySerializer(new StringRedisSerializer());
-    redisTemplate.setValueSerializer(new GenericJackson2JsonRedisSerializer());
-    redisTemplate.setConnectionFactory(redisConnectionFactory);
-    return redisTemplate;
-  }
 }
