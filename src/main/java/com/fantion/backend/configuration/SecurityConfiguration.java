@@ -17,7 +17,7 @@ public class SecurityConfiguration {
   public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
     return http.csrf(AbstractHttpConfigurer::disable)
-        .authorizeHttpRequests(requests -> requests.requestMatchers("/payment/save", "payment/success/**").permitAll())
+        .authorizeHttpRequests(requests -> requests.requestMatchers("/payment/**").permitAll())
         .build();
   }
 }
