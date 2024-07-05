@@ -1,12 +1,7 @@
 package com.fantion.backend.auction.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
+
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -25,17 +20,18 @@ public class Bid {
   @Id
   @Column(name = "bid_id")
   @GeneratedValue(strategy = GenerationType.IDENTITY)
-  private Long bidId;
+  private Long bidId;                 // 입찰 식별자
 
   @ManyToOne
-  private Auction auction;
+  @JoinColumn(name = "auction_id")
+  private Auction auctionId;          // 경매 식별자
 
   @Column(name = "bid_price")
-  private Long bidPrice;
+  private Long bidPrice;              // 입찰가
 
   @Column(name = "bidder")
-  private String bidder;
+  private String bidder;              // 입찰자
 
   @Column(name = "create_date")
-  private LocalDateTime createDate;
+  private LocalDateTime createDate;   // 입찰한 시간
 }
