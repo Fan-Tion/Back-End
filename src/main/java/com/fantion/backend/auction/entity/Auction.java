@@ -61,6 +61,6 @@ public class Auction {
   @Column(name = "end_date")
   private LocalDateTime endDate;
 
-  @Column(name = "status")
-  private boolean status;
+/*  @Column(name = "status")
+  private boolean status;*/
 }
