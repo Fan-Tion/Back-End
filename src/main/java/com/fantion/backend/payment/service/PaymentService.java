@@ -2,7 +2,6 @@ package com.fantion.backend.payment.service;
 
 import com.fantion.backend.payment.dto.PaymentDto;
 import com.fantion.backend.payment.dto.ResponseDto;
-import org.json.simple.JSONObject;
 import org.springframework.stereotype.Service;
 
 @Service

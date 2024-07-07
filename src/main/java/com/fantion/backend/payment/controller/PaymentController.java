@@ -4,7 +4,6 @@ import com.fantion.backend.payment.dto.PaymentDto;
 import com.fantion.backend.payment.dto.ResponseDto;
 import com.fantion.backend.payment.service.PaymentService;
 import lombok.RequiredArgsConstructor;
-import org.json.simple.JSONObject;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -33,5 +32,4 @@ public class PaymentController {
     ResponseDto.Success result = paymentService.successPayment(orderId, paymentKey, amount);
     return ResponseEntity.ok(result);
   }
-
 }
