@@ -6,6 +6,6 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public enum ORDER_NAME_TYPE {
-	STYLE_FEEDBACK("스타일 피드백"), CRDI_OR_PRODUCT_RECMD("코디 또는 구매 추천");
+	STYLE_FEEDBACK(""), CRDI_OR_PRODUCT_RECMD("");
 	private final String name;
 }

@@ -15,14 +15,14 @@ import org.springframework.web.client.RestTemplate;
 import com.fantion.backend.payment.payment_cancel.base.advice.ExMessage;
 import com.fantion.backend.payment.payment_cancel.base.exception.BussinessException;
 import com.fantion.backend.member.entity.Member;
-import com.fantion.backend.member.repository.MemberRepository;
+import com.fantion.backend.member.repository.Member.Repository;
 import com.fantion.backend.payment.payment_cancel.dto.*;
 import com.fantion.backend.payment.payment_cancel.entity.CancelPayment;
 import com.fantion.backend.payment.payment_cancel.entity.Payment;
 import com.fantion.backend.payment.payment_cancel.repository.CancelPaymentRepository;
 import com.fantion.backend.payment.payment_cancel.repository.PaymentRepository;
-//import com.fantion.backend.payment.payment_cancel.reservation.entity.Reservation; //보류
-//import com.fantion.backend.payment.payment_cancel.reservation.repository.ReservationRepo; //보류
+import com.fantion.backend.payment.payment_cancel.reservation.entity.Reservation; //보류
+import com.fantion.backend.payment.payment_cancel.reservation.repository.ReservationRepo; //보류
 
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
