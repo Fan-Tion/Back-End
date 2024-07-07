@@ -4,7 +4,6 @@ import com.fantion.backend.payment.dto.PaymentDto;
 import com.fantion.backend.payment.dto.ResponseDto;
 import com.fantion.backend.payment.service.PaymentService;
 import lombok.RequiredArgsConstructor;
-import org.json.simple.JSONObject;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -34,4 +33,10 @@ public class PaymentController {
     return ResponseEntity.ok(result);
   }
 
+  @GetMapping("/fail")
+  public ResponseEntity<ResponseDto.fail> failPayment(@RequestParam String code, @RequestParam String message,
+      @RequestParam String orderId) {
+    ResponseDto.fail result = paymentService.failPayment(code, message, orderId);
+    return ResponseEntity.ok(result);
+  }
 }

@@ -1,7 +1,6 @@
 package com.fantion.backend.payment.dto;
 
 import com.fantion.backend.type.PaymentType;
-import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -25,13 +24,14 @@ public class ResponseDto {
     private String approvedAt;
   }
 
-//  @Setter
-//  @Getter
-//  @AllArgsConstructor
-//  @NoArgsConstructor
-//  @Builder
-//  public static class fail {
-//
-//  }
-
+  @Setter
+  @Getter
+  @AllArgsConstructor
+  @NoArgsConstructor
+  @Builder
+  public static class fail {
+    private String errorCode;
+    private String message;
+    private String orderId;
+  }
 }
