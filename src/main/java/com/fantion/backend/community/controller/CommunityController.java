@@ -5,6 +5,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/community")
-public class communityController {
+public class CommunityController {
 
 }
