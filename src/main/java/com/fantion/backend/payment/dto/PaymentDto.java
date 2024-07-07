@@ -44,9 +44,9 @@ public class PaymentDto {
     private LocalDateTime paymentData; // 결제가 이루어진 시간
   }
 
-  public static Response of(Payment payment, String successUrl, String failUrl) {
+  public static PaymentDto.Response of(Payment payment, String successUrl, String failUrl) {
 
-    return Response.builder()
+    return PaymentDto.Response.builder()
         .paymentType(payment.getPaymentType())
         .amount(payment.getAmount())
         .orderName(payment.getOrderName())
