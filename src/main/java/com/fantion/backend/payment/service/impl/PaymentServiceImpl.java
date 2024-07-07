@@ -14,6 +14,7 @@ import com.fantion.backend.payment.dto.PaymentDto;
 import com.fantion.backend.payment.dto.PaymentDto.Request;
 import com.fantion.backend.payment.dto.PaymentDto.Response;
 import com.fantion.backend.payment.dto.ResponseDto.Success;
+import com.fantion.backend.payment.dto.ResponseDto.fail;
 import com.fantion.backend.payment.entity.Payment;
 import com.fantion.backend.payment.repository.PaymentRepository;
 import com.fantion.backend.payment.service.PaymentService;
@@ -121,5 +122,15 @@ public class PaymentServiceImpl implements PaymentService {
         throw new ParsingException();
       }
     }
+  }
+
+  @Override
+  public fail failPayment(String code, String message, String orderId) {
+
+    return fail.builder()
+        .errorCode(code)
+        .message(message)
+        .orderId(orderId)
+        .build();
   }
 }

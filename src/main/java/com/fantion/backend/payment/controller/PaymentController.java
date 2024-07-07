@@ -32,4 +32,11 @@ public class PaymentController {
     ResponseDto.Success result = paymentService.successPayment(orderId, paymentKey, amount);
     return ResponseEntity.ok(result);
   }
+
+  @GetMapping("/fail")
+  public ResponseEntity<ResponseDto.fail> failPayment(@RequestParam String code, @RequestParam String message,
+      @RequestParam String orderId) {
+    ResponseDto.fail result = paymentService.failPayment(code, message, orderId);
+    return ResponseEntity.ok(result);
+  }
 }
