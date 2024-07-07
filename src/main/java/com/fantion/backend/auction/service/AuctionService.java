@@ -2,6 +2,7 @@ package com.fantion.backend.auction.service;
 
 import com.fantion.backend.auction.dto.AuctionDto;
 import com.fantion.backend.auction.dto.AuctionDto.Request;
+import com.fantion.backend.auction.dto.BidDto;
 import java.io.IOException;
 import java.util.List;
 import org.springframework.stereotype.Service;
@@ -19,4 +20,8 @@ public interface AuctionService {
       Long auctionId) throws IOException;
 
   boolean deleteAuction(Long auctionId) throws IOException;
+
+  // 입찰
+  BidDto.Response createBid(BidDto.Request request);
+
 }
