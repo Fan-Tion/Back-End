@@ -133,4 +133,30 @@ public class PaymentServiceImpl implements PaymentService {
         .orderId(orderId)
         .build();
   }
+
+  @Override
+  @Transactional
+  public CalcelDto.Response allCancelPayment(String orderId, Request request) {
+
+    // 회원이 가지고 있는 예치금이 취소 금액보다 작은지 확인
+
+    // DB에서 paymentKey 가져오기
+    Payment payment = paymentRepository.findByOrderId(orderId)
+        .orElseThrow(() -> new NotFoundPaymentException());
+    String paymentKey = payment.getPaymentKey();
+
+    // 취소 API 호출
+    String header = paymentComponent.createAuthorizationHeader();
+    String key = paymentComponent.createIdempotencyKey();
+
+    // 회원이 가지고 있는 예치금에서 취소한 금액 차감
+
+    // Payment에 취소여부하고 이유 수정
+    payment.toBuilder()
+        .cancelYn(true)
+        .cancelReason(request.getCancelReason);
+    paymentRepository.save(payment);
+
+     return paymentClient.cancelPayment(header, key, CancelDto.Reqeust);
+  }
 }

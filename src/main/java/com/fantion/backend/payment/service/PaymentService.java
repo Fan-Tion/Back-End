@@ -13,4 +13,6 @@ public interface PaymentService {
   Success successPayment(String orderId, String paymentKey, Long amount);
 
   fail failPayment(String code, String message, String orderId);
+
+  CalcelDto allCancelPayment(String orderId, Request request);
 }

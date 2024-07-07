@@ -21,5 +21,10 @@ public class PaymentComponent {
     byte[] encodedAuth = encoder.encode(auth.getBytes(StandardCharsets.UTF_8));
     return AUTH_HEADER_PREFIX + new String(encodedAuth);
   }
+
+  // 헤더에 넣을 멱등키 만드는 메소드
+  public String createIdempotencyKey() {
+    return null;
+  }
 }
 

@@ -27,16 +27,25 @@ public class PaymentController {
   }
 
   @GetMapping("/success")
-  public ResponseEntity<ResponseDto.Success> successPayment(@RequestParam String orderId, @RequestParam String paymentKey,
+  public ResponseEntity<ResponseDto.Success> successPayment(@RequestParam String orderId,
+      @RequestParam String paymentKey,
       @RequestParam Long amount) {
     ResponseDto.Success result = paymentService.successPayment(orderId, paymentKey, amount);
     return ResponseEntity.ok(result);
   }
 
   @GetMapping("/fail")
-  public ResponseEntity<ResponseDto.fail> failPayment(@RequestParam String code, @RequestParam String message,
+  public ResponseEntity<ResponseDto.fail> failPayment(@RequestParam String code,
+      @RequestParam String message,
       @RequestParam String orderId) {
     ResponseDto.fail result = paymentService.failPayment(code, message, orderId);
+    return ResponseEntity.ok(result);
+  }
+
+  @PostMapping("/all-cancle")
+  public ResponseEntity<CalcelDto.Response> allCanclePayment(@RequestParam String orderId,
+      @RequestBody CancelDto.Request request) {
+    CalcelDto.Response result = paymentService.allCancelPayment(orderId, request);
     return ResponseEntity.ok(result);
   }
 }
