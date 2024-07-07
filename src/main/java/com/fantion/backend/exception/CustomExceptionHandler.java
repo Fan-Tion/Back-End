@@ -19,16 +19,4 @@ public class CustomExceptionHandler {
 
     return new ResponseEntity<>(errorResponse, e.getHttpStatus());
   }
-
-  @ExceptionHandler(TossApiException.class)
-  protected ResponseEntity<ErrorResponse> handleTossApiException(TossApiException e) {
-
-    ErrorResponse errorResponse = ErrorResponse.builder()
-        .status(e.getHttpStatus())
-        .errorCode(e.getErrorCode())
-        .message(e.getMessage())
-        .build();
-
-    return new ResponseEntity<>(errorResponse, e.getHttpStatus());
-  }
 }
