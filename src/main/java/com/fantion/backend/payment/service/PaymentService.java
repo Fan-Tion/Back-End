@@ -1,5 +1,7 @@
 package com.fantion.backend.payment.service;
 
+import com.fantion.backend.payment.dto.CancelDto;
+import com.fantion.backend.payment.dto.CancelSeperateDto;
 import com.fantion.backend.payment.dto.PaymentDto;
 import com.fantion.backend.payment.dto.ResponseDto.Success;
 import com.fantion.backend.payment.dto.ResponseDto.fail;
@@ -14,5 +16,6 @@ public interface PaymentService {
 
   fail failPayment(String code, String message, String orderId);
 
-  CalcelDto allCancelPayment(String orderId, Request request);
+  CancelDto allCancelPayment(String orderId, Request request);
+  CancelDto seperateCancelPayment(String orderId, Request request);
 }

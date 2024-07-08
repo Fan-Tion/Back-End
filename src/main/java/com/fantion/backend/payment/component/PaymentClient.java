@@ -1,6 +1,9 @@
 package com.fantion.backend.payment.component;
 
+import com.fantion.backend.payment.dto.CancelSeperateDto;
+import com.fantion.backend.payment.dto.CancelDto;
 import com.fantion.backend.payment.dto.ConfirmDto;
+import com.fantion.backend.payment.dto.PaymentDto;
 import com.fantion.backend.payment.dto.ResponseDto.Success;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.http.MediaType;
@@ -18,9 +21,16 @@ public interface PaymentClient {
       @RequestBody ConfirmDto confirmDto);
 
   // DB에서 paymentKey를 가져와서 어떻게 넣어야할지 고민해보기
-  @PostMapping(value = "/{paymentKey}/cancel")
-  ResponseEntity<CancelDto.Resoponse> cancelPayment(
+  @PostMapping(value = "/{paymentKey}/allCancel")
+  ResponseEntity<CancelDto.Response> cancelPayment(
       @RequestHeader("Authorization") String authorizationHeader,
       @RequestHeader("IdempotencyKey") String IdempotencyKey,
       @RequestBody CancelDto.Request.getCancelReason cancelReason);
+
+  @PostMapping(value = "/{paymentKey}/seperateCancel")
+  ResponseEntity<CancelDto.Response> allCancelPayment(
+          @RequestHeader("Authorization") String authorizationHeader,
+          @RequestHeader("IdempotencyKey") String IdempotencyKey,
+          @RequestBody CancelDto.Request.getSeperateCancelReason cancelReason);
+
 }

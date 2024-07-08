@@ -59,5 +59,4 @@ public class PaymentDto {
         .paymentData(LocalDateTime.now())
         .build();
   }
-
 }

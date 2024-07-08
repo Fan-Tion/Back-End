@@ -30,6 +30,7 @@ public class ResponseDto {
   @NoArgsConstructor
   @Builder
   public static class fail {
+
     private String errorCode;
     private String message;
     private String orderId;

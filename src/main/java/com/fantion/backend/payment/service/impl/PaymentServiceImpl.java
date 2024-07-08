@@ -1,5 +1,7 @@
 package com.fantion.backend.payment.service.impl;
 
+import com.fantion.backend.payment.dto.CancelDto;
+import com.fantion.backend.payment.dto.CancelSeperateDto;
 import com.fantion.backend.exception.impl.NotFoundMemberException;
 import com.fantion.backend.exception.impl.NotFoundPaymentException;
 import com.fantion.backend.exception.impl.ParsingException;
@@ -26,10 +28,12 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class PaymentServiceImpl implements PaymentService {
@@ -37,7 +41,7 @@ public class PaymentServiceImpl implements PaymentService {
   private final PaymentRepository paymentRepository;
   private final MemberRepository memberRepository;
   private final PaymentComponent paymentComponent;
-  private final PaymentClient paymentClient;
+  private final PaymentClient  paymentClient;
 
   @Value("${payment.success-url}")
   private String successUrl;
@@ -125,6 +129,7 @@ public class PaymentServiceImpl implements PaymentService {
   }
 
   @Override
+  @Transactional
   public fail failPayment(String code, String message, String orderId) {
 
     return fail.builder()
@@ -136,7 +141,7 @@ public class PaymentServiceImpl implements PaymentService {
 
   @Override
   @Transactional
-  public CalcelDto.Response allCancelPayment(String orderId, Request request) {
+  public CancelDto.Response allCancelPayment(String orderId, Request request) {
 
     // 회원이 가지고 있는 예치금이 취소 금액보다 작은지 확인
 

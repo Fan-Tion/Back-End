@@ -1,5 +1,6 @@
 package com.fantion.backend.payment.controller;
 
+import com.fantion.backend.payment.dto.CancelDto;
 import com.fantion.backend.payment.dto.PaymentDto;
 import com.fantion.backend.payment.dto.ResponseDto;
 import com.fantion.backend.payment.service.PaymentService;
@@ -42,10 +43,10 @@ public class PaymentController {
     return ResponseEntity.ok(result);
   }
 
-  @PostMapping("/all-cancle")
-  public ResponseEntity<CalcelDto.Response> allCanclePayment(@RequestParam String orderId,
+  @PostMapping("/all-cancel")
+  public ResponseEntity<CancelDto.Response> allCanclePayment(@RequestParam String orderId,
       @RequestBody CancelDto.Request request) {
-    CalcelDto.Response result = paymentService.allCancelPayment(orderId, request);
+    CancelDto.Response result = paymentService.allCancelPayment(orderId, request);
     return ResponseEntity.ok(result);
   }
 }
