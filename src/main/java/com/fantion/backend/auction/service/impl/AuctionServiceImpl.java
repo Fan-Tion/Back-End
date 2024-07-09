@@ -1,41 +1,18 @@
 package com.fantion.backend.auction.service.impl;
 
 import com.fantion.backend.auction.dto.AuctionDto;
-import static org.springframework.util.FileSystemUtils.deleteRecursively;
 import com.fantion.backend.auction.dto.AuctionDto.Request;
 import com.fantion.backend.auction.dto.AuctionDto.Response;
 import com.fantion.backend.auction.dto.SearchDto;
 import com.fantion.backend.auction.entity.Auction;
 import com.fantion.backend.auction.repository.AuctionRepository;
 import com.fantion.backend.auction.service.AuctionService;
-import com.fantion.backend.member.entity.Member;
-import com.fantion.backend.exception.impl.AuctionHttpMessageNotReadableException;
-import com.fantion.backend.exception.impl.AuctionNotFoundException;
-import com.fantion.backend.exception.impl.ImageException;
-import com.fantion.backend.exception.impl.ImageIOException;
-import com.fantion.backend.exception.impl.ImageInternalServerException;
-import com.fantion.backend.exception.impl.ImageInvalidPathException;
-import com.fantion.backend.exception.impl.ImageMalformedURLException;
-import com.fantion.backend.exception.impl.ImageSecurityException;
-import com.fantion.backend.exception.impl.NotFoundMemberException;
+import com.fantion.backend.exception.impl.*;
 import com.fantion.backend.member.repository.MemberRepository;
 import com.fantion.backend.type.SearchType;
 import jakarta.validation.Valid;
-import java.io.File;
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.nio.file.DirectoryStream;
-import java.nio.file.Files;
-import java.nio.file.InvalidPathException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.redis.listener.ChannelTopic;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.data.domain.Page;
@@ -45,11 +22,19 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.jca.endpoint.GenericMessageEndpointFactory.InternalResourceException;
 import org.springframework.stereotype.Service;
-import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.Map;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.io.File;
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.nio.file.*;
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import static org.springframework.util.FileSystemUtils.deleteRecursively;
 
 @Slf4j
 @Service
@@ -58,7 +43,6 @@ public class AuctionServiceImpl implements AuctionService {
 
   private final AuctionRepository auctionRepository;
   private final MemberRepository memberRepository;
-  private final BidRepository bidRepository;
   private Path imgPath = Paths.get("images/auction/" + getUserId() + "/");
   private String serverUrl = "https://localhost:8080/auction/";
 
