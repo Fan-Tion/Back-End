@@ -11,6 +11,7 @@ import com.fantion.backend.auction.entity.Bid;
 import com.fantion.backend.auction.repository.AuctionRepository;
 import com.fantion.backend.auction.repository.BidRepository;
 import com.fantion.backend.auction.service.AuctionService;
+import com.fantion.backend.exception.impl.AuctionHttpMessageNotReadableException;
 import com.fantion.backend.exception.impl.AuctionNotFoundException;
 import com.fantion.backend.exception.impl.ImageException;
 import com.fantion.backend.exception.impl.ImageIOException;
@@ -20,6 +21,8 @@ import com.fantion.backend.exception.impl.ImageMalformedURLException;
 import com.fantion.backend.exception.impl.ImageSecurityException;
 import com.fantion.backend.exception.impl.NotFoundMemberException;
 import com.fantion.backend.member.repository.MemberRepository;
+import com.fantion.backend.type.SearchType;
+import jakarta.validation.Valid;
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -63,7 +66,7 @@ public class AuctionServiceImpl implements AuctionService {
    */
   @Override
   @Transactional
-  public Response createAuction(Request request, List<MultipartFile> auctionImage) {
+  public Response createAuction(@Valid Request request, List<MultipartFile> auctionImage) {
     saveImages(auctionImage);
 
     Auction auction = toAuction(request);
@@ -80,7 +83,7 @@ public class AuctionServiceImpl implements AuctionService {
   @Override
   @Transactional
   public Response updateAuction(
-      Request request,
+      @Valid Request request,
       List<MultipartFile> auctionImage,
       Long auctionId) {
     Auction auction = updateValue(request, auctionId);
@@ -107,7 +110,7 @@ public class AuctionServiceImpl implements AuctionService {
 
   /**
    * 경매 리스트
-   * */
+   */
   @Override
   public Page<Response> getList(int page) {
     Pageable pageable = getPageable(page);
@@ -116,14 +119,18 @@ public class AuctionServiceImpl implements AuctionService {
 
   /**
    * 경매 검색
-   * */
+   */
   @Override
-  public Page<Response> getSearchList(SearchDto searchDto) {
+  public Page<Response> getSearchList(@Valid SearchDto searchDto) {
     Pageable pageable = getPageable(searchDto.getPage());
     Page<Auction> auctionPage = null;
 
-    if (searchDto.getCategory().equals("title")) {
-      auctionPage = auctionRepository.findByTitleContaining(searchDto.getKeyword(), pageable);
+    try {
+      if (searchDto.getCategory() == SearchType.TITLE) {
+        auctionPage = auctionRepository.findByTitleContaining(searchDto.getKeyword(), pageable);
+      }
+    } catch (Exception e) {
+      throw new AuctionHttpMessageNotReadableException();
     }
 
     return covertToResponseList(auctionPage);
@@ -225,7 +232,7 @@ public class AuctionServiceImpl implements AuctionService {
 
   /**
    * Page<Auction> -> Page<Response>
-   * */
+   */
   private Page<Response> covertToResponseList(Page<Auction> auctionList) {
     List<Response> responseList = auctionList.stream().map(this::toResponse)
         .collect(Collectors.toList());
@@ -312,14 +319,14 @@ public class AuctionServiceImpl implements AuctionService {
           deleteRecursively(entry);
         }
       } catch (IOException e) {
-      throw new ImageIOException();
-    }
+        throw new ImageIOException();
+      }
     }
   }
 
   /**
    * 페이지 갯수 및 페이지 번호 설정
-   * */
+   */
   private static PageRequest getPageable(int page) {
     return PageRequest.of(page, 10);
   }

@@ -18,6 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -25,12 +26,14 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 @Slf4j
 @RestController
+@Validated
 @RequestMapping("/auction")
 @RequiredArgsConstructor
 public class AuctionController {
@@ -82,7 +85,7 @@ public class AuctionController {
    * */
   @GetMapping("/list")
   public ResponseEntity<?> getAllAuctions(
-      @RequestPart("page") int page
+      @Valid @RequestParam(value = "page", defaultValue = "0") int page
   ) {
     return ResponseEntity.ok(auctionService.getList(page));
   }
@@ -92,7 +95,7 @@ public class AuctionController {
    * */
   @GetMapping("/search")
   public ResponseEntity<?> searchAuctions(
-      @RequestPart("searchDto") SearchDto searchDto) {
+      @Valid @RequestBody SearchDto searchDto) {
     return ResponseEntity.ok(auctionService.getSearchList(searchDto));
   }
 
