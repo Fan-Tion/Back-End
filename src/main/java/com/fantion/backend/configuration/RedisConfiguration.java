@@ -36,6 +36,7 @@ public class RedisConfiguration {
     return redisTemplate;
   }
 
+
   /**
    * redis pub/sub 메시지를 처리하는 listener 설정
    */
@@ -58,3 +59,4 @@ public class RedisConfiguration {
   }
 
 }
+
