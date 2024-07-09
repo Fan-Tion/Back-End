@@ -2,6 +2,8 @@ package com.fantion.backend.member.dto;
 
 import com.fantion.backend.member.entity.Member;
 import com.fantion.backend.type.MemberStatus;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -18,9 +20,15 @@ public class SignupDto {
   @AllArgsConstructor
   @Builder(toBuilder = true)
   public static class Request {
+
+    @Email(message = "이메일 형식이 올바르지 않습니다.")
+    @NotBlank(message = "이메일은 공백일 수 없습니다.")
     private String email;
+    @NotBlank(message = "비밀번호는 공백일 수 없습니다.")
     private String password;
+    @NotBlank(message = "닉네임은 공백일 수 없습니다.")
     private String nickname;
+    @NotBlank(message = "주소는 공백일 수 없습니다.")
     private String address;
   }
 
@@ -35,11 +43,10 @@ public class SignupDto {
   }
 
   public static Member signupInput(Request request, String imageUrl) {
-    String encPassword = BCrypt.hashpw(request.getPassword(), BCrypt.gensalt());
 
     return Member.builder()
         .email(request.getEmail())
-        .password(encPassword)
+        .password(request.getPassword())
         .nickname(request.getNickname())
         .auth(false)
         .kakao(false)

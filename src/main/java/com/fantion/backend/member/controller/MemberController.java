@@ -3,6 +3,7 @@ package com.fantion.backend.member.controller;
 import com.fantion.backend.member.dto.SignupDto;
 import com.fantion.backend.member.dto.SignupDto.Response;
 import com.fantion.backend.member.service.MemberService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -20,7 +21,7 @@ public class MemberController {
 
   @PostMapping("/signup")
   public ResponseEntity<SignupDto.Response> signup(
-      @RequestPart(value = "request") SignupDto.Request request,
+      @Valid @RequestPart(value = "request") SignupDto.Request request,
       @RequestPart(value = "file") MultipartFile file) {
     Response result = memberService.signup(request, file);
     return ResponseEntity.ok(result);
