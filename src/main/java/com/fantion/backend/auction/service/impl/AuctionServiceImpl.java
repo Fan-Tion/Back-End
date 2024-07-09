@@ -1,16 +1,14 @@
 package com.fantion.backend.auction.service.impl;
 
+import com.fantion.backend.auction.dto.AuctionDto;
 import static org.springframework.util.FileSystemUtils.deleteRecursively;
-
 import com.fantion.backend.auction.dto.AuctionDto.Request;
 import com.fantion.backend.auction.dto.AuctionDto.Response;
-import com.fantion.backend.auction.dto.BidDto;
 import com.fantion.backend.auction.dto.SearchDto;
 import com.fantion.backend.auction.entity.Auction;
-import com.fantion.backend.auction.entity.Bid;
 import com.fantion.backend.auction.repository.AuctionRepository;
-import com.fantion.backend.auction.repository.BidRepository;
 import com.fantion.backend.auction.service.AuctionService;
+import com.fantion.backend.member.entity.Member;
 import com.fantion.backend.exception.impl.AuctionHttpMessageNotReadableException;
 import com.fantion.backend.exception.impl.AuctionNotFoundException;
 import com.fantion.backend.exception.impl.ImageException;
@@ -37,6 +35,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.listener.ChannelTopic;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.data.domain.Page;
@@ -46,6 +45,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.jca.endpoint.GenericMessageEndpointFactory.InternalResourceException;
 import org.springframework.stereotype.Service;
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -57,7 +59,6 @@ public class AuctionServiceImpl implements AuctionService {
   private final AuctionRepository auctionRepository;
   private final MemberRepository memberRepository;
   private final BidRepository bidRepository;
-
   private Path imgPath = Paths.get("images/auction/" + getUserId() + "/");
   private String serverUrl = "https://localhost:8080/auction/";
 
@@ -76,10 +77,20 @@ public class AuctionServiceImpl implements AuctionService {
     return toResponse(auction);
   }
 
+  // 경매 상세보기
+  @Override
+  public AuctionDto.Response findAuction(Long auctionId) {
+    // 상세보기할 경매 조회
+    Auction auction = auctionRepository.findById(auctionId)
+            .orElseThrow(()-> new RuntimeException());
+
+    return toResponse(auction);
+  }
 
   /**
    * 경매 수정
    */
+
   @Override
   @Transactional
   public Response updateAuction(
@@ -157,23 +168,6 @@ public class AuctionServiceImpl implements AuctionService {
     auction.setStatus(true);
 
     return auction;
-  }
-
-  // 입찰
-  @Override
-  public BidDto.Response createBid(BidDto.Request request) {
-    // 입찰하려는 경매 조회
-    Auction auction = auctionRepository.getReferenceById(request.getAuctionId());
-
-    // 입찰 생성
-    Bid bid = Bid.builder()
-        .auctionId(auction)
-        .bidPrice(request.getBidPrice())
-        .bidder("tester")
-        .createDate(LocalDateTime.now())
-        .build();
-
-    return BidDto.Response(bidRepository.save(bid));
   }
 
   @Override
