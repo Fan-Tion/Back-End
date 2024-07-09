@@ -6,15 +6,16 @@ import org.springframework.context.annotation.Configuration;
 
 
 @Configuration
-//@EnableWebSecurity
+@EnableWebSecurity
 @RequiredArgsConstructor
 public class SecurityConfiguration {
 
-//  @Bean
-//  public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-//
-//    return http.csrf(AbstractHttpConfigurer::disable)
-//        .authorizeHttpRequests(requests -> requests.requestMatchers("/payments/**").permitAll())
-//        .build();
-//  }
+  @Bean
+  public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+
+    return http.csrf(AbstractHttpConfigurer::disable)
+        .authorizeHttpRequests(
+            requests -> requests.requestMatchers("/payments/**", "/members/**").permitAll())
+        .build();
+  }
 }

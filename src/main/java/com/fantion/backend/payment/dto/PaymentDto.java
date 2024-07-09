@@ -2,6 +2,7 @@ package com.fantion.backend.payment.dto;
 
 import com.fantion.backend.payment.entity.Payment;
 import com.fantion.backend.type.PaymentType;
+import jakarta.validation.constraints.NotBlank;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -17,13 +18,16 @@ public class PaymentDto {
   @AllArgsConstructor
   @Builder(toBuilder = true)
   public static class Request {
+    @NotBlank(message = "결제유형은 필수값 입니다.")
     private PaymentType paymentType;   // 결제 유형 (예: CARD)
+    @NotBlank(message = "결제금액은 필수값 입니다.")
     private Long amount;           // 결제 금액
+    @NotBlank(message = "결제상품 이름은 필수값 입니다.")
     private String orderName;     // 주문 이름 (상품명)
+    @NotBlank(message = "고객 이메일은 필수값 입니다.")
     private String customerEmail; // 고객 이메일
+    @NotBlank(message = "고객 이름은 필수값 입니다.")
     private String customerName;  // 고객 이름
-    private String successUrl;    // 결제 성공 시 이동할 URL
-    private String failUrl;       // 결제 실패 시 이동할 URL
   }
 
   @Setter
@@ -40,13 +44,14 @@ public class PaymentDto {
     private String customerName; // 고객 이름
     private String successUrl; // 성공 시 리다이렉트 될 URL
     private String failUrl; // 실패 시 리다이렉트 될 URL
-    private boolean cancelYn; // 취소 YN
+    private Boolean successYn; // 결제 성공 YN
+    private Boolean cancelYn; // 결제 취소 YN
     private LocalDateTime paymentData; // 결제가 이루어진 시간
   }
 
   public static PaymentDto.Response of(Payment payment, String successUrl, String failUrl) {
 
-    return PaymentDto.Response.builder()
+    return Response.builder()
         .paymentType(payment.getPaymentType())
         .amount(payment.getAmount())
         .orderName(payment.getOrderName())
@@ -55,6 +60,7 @@ public class PaymentDto {
         .customerName(payment.getMemberId().getNickname())
         .successUrl(successUrl)
         .failUrl(failUrl)
+        .successYn(false)
         .cancelYn(false)
         .paymentData(LocalDateTime.now())
         .build();
