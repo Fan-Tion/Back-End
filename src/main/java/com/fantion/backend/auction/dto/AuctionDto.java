@@ -25,8 +25,6 @@ public class AuctionDto {
     private String title;
     @NotNull(message = "경매 방식은 꼭 입력해야 합니다.")
     private boolean auctionType;
-//    @NotEmpty(message = "이미지는 꼭 입력해야 합니다.")
-//    private List<MultipartFile> auctionImage;
     @NotBlank(message = "설명은 꼭 입력해야 합니다.")
     private String description;
     @NotNull(message = "시작 입찰가는 꼭 입력해야 합니다.")
