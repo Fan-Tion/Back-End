@@ -1,0 +1,96 @@
+package com.fantion.backend.member.service.impl;
+
+import com.fantion.backend.exception.impl.DuplicateEmailException;
+import com.fantion.backend.exception.impl.ImageSaveException;
+import com.fantion.backend.exception.impl.InvalidEmailException;
+import com.fantion.backend.exception.impl.UnsupportedImageTypeException;
+import com.fantion.backend.member.dto.SignupDto;
+import com.fantion.backend.member.dto.SignupDto.Request;
+import com.fantion.backend.member.dto.SignupDto.Response;
+import com.fantion.backend.member.entity.Member;
+import com.fantion.backend.member.repository.MemberRepository;
+import com.fantion.backend.member.service.MemberService;
+import com.fantion.backend.type.MemberStatus;
+import java.io.File;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import lombok.RequiredArgsConstructor;
+import org.apache.commons.validator.routines.EmailValidator;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
+
+@Service
+@RequiredArgsConstructor
+public class MemberServiceImpl implements MemberService {
+
+  private final MemberRepository memberRepository;
+
+  @Override
+  public Response signup(Request request, MultipartFile file) {
+
+    // 이메일 체크
+    if (!isValidEmail(request.getEmail())) {
+      throw new InvalidEmailException();
+    }
+
+    // 중복가입 체크
+    Optional<Member> byEmail = memberRepository.findByEmail(request.getEmail());
+    if (byEmail.isPresent()) {
+      Member member = byEmail.get();
+
+      // 탈퇴상태가 아니면 중복가입 exception
+      if (!member.getStatus().equals(MemberStatus.WITHDRAWN))
+      throw new DuplicateEmailException();
+    }
+
+    Member member = new Member();
+    // 멤버정보 DB에 저장
+    // 이미지 파일이 없을 때
+    if (file.isEmpty() || file == null) {
+      member = SignupDto.signupInput(request, null);
+      memberRepository.save(member);
+    } else { // 이미지 파일이 있을 때
+      // 이미지 파일을 저장하고 경로를 가져오기
+      String uuid = UUID.randomUUID().toString();
+      String projectPath = System.getProperty("user.home") + "\\Desktop\\images\\";
+      String fileName = uuid + "_" + file.getOriginalFilename();
+
+      // 파일 이름에서 확장자 추출
+      String fileExtension = StringUtils.getFilenameExtension(fileName);
+
+      // 지원하는 이미지 파일 확장자 목록
+      List<String> allowedExtensions = Arrays.asList("jpg", "jpeg", "png", "gif");
+
+      // 확장자가 이미지 파일인지 확인
+      if (fileExtension != null && allowedExtensions.contains(fileExtension.toLowerCase())) {
+        File saveFile = new File(projectPath, fileName);
+        try {
+          file.transferTo(saveFile);
+        } catch (Exception e) {
+          throw new ImageSaveException();
+        }
+      } else {
+        // 이미지 파일이 아닌 경우에 대한 처리
+        throw new UnsupportedImageTypeException();
+      }
+
+      member = SignupDto.signupInput(request, projectPath);
+      memberRepository.save(member);
+    }
+
+    SignupDto.Response  response = SignupDto.Response.builder()
+        .email(member.getEmail())
+        .success(true)
+        .build();
+
+    return response;
+  }
+
+  private boolean isValidEmail(String email) {
+    return EmailValidator.getInstance().isValid(email);
+  }
+}
