@@ -126,7 +126,7 @@ public class AuctionServiceImpl implements AuctionService {
     Page<Auction> auctionPage = null;
 
     try {
-      if (searchDto.getCategory() == SearchType.TITLE) {
+      if (searchDto.getSearchOption() == SearchType.TITLE) {
         auctionPage = auctionRepository.findByTitleContaining(searchDto.getKeyword(), pageable);
       }
     } catch (Exception e) {
@@ -146,6 +146,7 @@ public class AuctionServiceImpl implements AuctionService {
     auction.setMember(memberRepository.findById(1L).orElseThrow(NotFoundMemberException::new));
     auction.setTitle(request.getTitle());
     auction.setAuctionType(request.isAuctionType());
+    auction.setCategory(request.getCategory());
     auction.setAuctionImage(setImageUrl());
     auction.setDescription(request.getDescription());
     auction.setCurrentBidPrice(request.getCurrentBidPrice());
@@ -195,6 +196,7 @@ public class AuctionServiceImpl implements AuctionService {
     return Auction.builder()
         .member(memberRepository.findById(1L).orElseThrow(NotFoundMemberException::new))
         .title(request.getTitle())
+        .category(request.getCategory())
         .auctionType(request.isAuctionType())
         .auctionImage(setImageUrl())
         .description(request.getDescription())
@@ -216,6 +218,7 @@ public class AuctionServiceImpl implements AuctionService {
         .title(auction.getTitle())
         .auctionUserNickname(memberRepository.findById(1L).orElseThrow(
             NotFoundMemberException::new).getNickname())
+        .category(auction.getCategory())
         .auctionType(auction.isAuctionType())
         .auctionImage(
             Arrays.stream(auction.getAuctionImage().split(",")).toList())
