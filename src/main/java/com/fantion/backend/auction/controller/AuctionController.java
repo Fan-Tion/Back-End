@@ -1,35 +1,25 @@
 package com.fantion.backend.auction.controller;
 
 import com.fantion.backend.auction.dto.AuctionDto;
-import com.fantion.backend.auction.dto.BidDto;
 import com.fantion.backend.auction.dto.SearchDto;
 import com.fantion.backend.auction.service.AuctionService;
 import com.fantion.backend.member.entity.Member;
 import com.fantion.backend.member.repository.MemberRepository;
 import com.fantion.backend.type.MemberStatus;
 import jakarta.validation.Valid;
-import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.time.LocalDateTime;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RequestPart;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.LocalDateTime;
+import java.util.List;
 
 @Slf4j
 @RestController
@@ -113,11 +103,13 @@ public class AuctionController {
     return ResponseEntity.ok()
         .headers(headers)
         .body(auctionService.getImage(imagePath, headers));
-  }
 
-  @PutMapping("/bid")
-  private BidDto.Response createBid(@RequestBody BidDto.Request request) {
-    log.info("[Controller] createBid");
-    return auctionService.createBid(request);
   }
+  
+  @GetMapping("/view/{auctionId}")
+  private AuctionDto.Response findAuction(@PathVariable(name = "auctionId") Long auctionId){
+      return auctionService.findAuction(auctionId);
+  }
+  
+
 }

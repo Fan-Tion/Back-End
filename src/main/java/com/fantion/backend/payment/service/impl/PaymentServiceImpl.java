@@ -5,8 +5,12 @@ import com.fantion.backend.exception.impl.NotFoundPaymentException;
 import com.fantion.backend.exception.impl.ParsingException;
 import com.fantion.backend.exception.impl.TossApiException;
 import com.fantion.backend.exception.impl.ValidPaymentInfoException;
+import com.fantion.backend.member.entity.BalanceHistory;
 import com.fantion.backend.member.entity.Member;
+import com.fantion.backend.member.entity.Money;
+import com.fantion.backend.member.repository.BalanceHistoryRepository;
 import com.fantion.backend.member.repository.MemberRepository;
+import com.fantion.backend.member.repository.MoneyRepository;
 import com.fantion.backend.payment.component.PaymentClient;
 import com.fantion.backend.payment.component.PaymentComponent;
 import com.fantion.backend.payment.dto.ConfirmDto;
@@ -18,12 +22,14 @@ import com.fantion.backend.payment.dto.ResponseDto.fail;
 import com.fantion.backend.payment.entity.Payment;
 import com.fantion.backend.payment.repository.PaymentRepository;
 import com.fantion.backend.payment.service.PaymentService;
+import com.fantion.backend.type.BalanceType;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import feign.FeignException;
 import jakarta.transaction.Transactional;
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -36,6 +42,8 @@ public class PaymentServiceImpl implements PaymentService {
 
   private final PaymentRepository paymentRepository;
   private final MemberRepository memberRepository;
+  private final MoneyRepository moneyRepository;
+  private final BalanceHistoryRepository balanceHistoryRepository;
   private final PaymentComponent paymentComponent;
   private final PaymentClient paymentClient;
 
@@ -77,6 +85,7 @@ public class PaymentServiceImpl implements PaymentService {
   }
 
   @Override
+  @Transactional
   public Success successPayment(String orderId, String paymentKey, Long amount) {
 
     // DB에 저장되어있는 값과 Param으로 들어온 값이 같은지 검증
@@ -87,11 +96,11 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     // paymentKey와 성공여부를 true로 저장
-    payment.toBuilder()
+    Payment updatePayment = payment.toBuilder()
         .paymentKey(paymentKey)
         .successYn(true)
         .build();
-    paymentRepository.save(payment);
+    paymentRepository.save(updatePayment);
 
     // 토스 결제 승인 API를 호출
     ConfirmDto confirmDto = ConfirmDto.builder()
@@ -103,6 +112,34 @@ public class PaymentServiceImpl implements PaymentService {
     String header = paymentComponent.createAuthorizationHeader();
 
     try {
+      // 해당 회원의 예치금 충전
+      String email = payment.getMemberId().getEmail();
+      Member member = memberRepository.findByEmail(email)
+          .orElseThrow(() -> new NotFoundMemberException());
+
+      Optional<Money> byMemberId = moneyRepository.findByMemberId(member.getMemberId());
+      if (byMemberId.isEmpty()) { // 첫 예치금 충전 회원
+        Money money = Money.builder()
+            .member(member)
+            .balance(amount)
+            .build();
+        moneyRepository.save(money);
+      } else {
+        Money money = byMemberId.get();
+        Money updateMoney = money.toBuilder()
+            .balance(money.getBalance() + amount)
+            .build();
+        moneyRepository.save(updateMoney);
+      }
+
+      // 예치금 내역에도 저장
+      BalanceHistory balanceHistory = BalanceHistory.builder()
+          .memberId(member)
+          .balance(amount)
+          .type(BalanceType.CHARGING)
+          .build();
+      balanceHistoryRepository.save(balanceHistory);
+
       return paymentClient.confirmPayment(header, confirmDto).getBody();
     } catch (FeignException fe) {
       // HTTP 상태 코드 가져오기

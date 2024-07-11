@@ -31,8 +31,8 @@ public interface AuctionService {
 
   Page<Response> getSearchList(SearchDto searchDto);
 
-  // 입찰
-  BidDto.Response createBid(BidDto.Request request);
+  // 경매 상세보기
+  AuctionDto.Response findAuction(Long auctionId);
 
   Resource getImage(Path imagePath, HttpHeaders headers);
 }

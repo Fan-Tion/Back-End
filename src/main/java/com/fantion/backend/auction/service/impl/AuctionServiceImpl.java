@@ -1,40 +1,16 @@
 package com.fantion.backend.auction.service.impl;
 
-import static org.springframework.util.FileSystemUtils.deleteRecursively;
-
+import com.fantion.backend.auction.dto.AuctionDto;
 import com.fantion.backend.auction.dto.AuctionDto.Request;
 import com.fantion.backend.auction.dto.AuctionDto.Response;
-import com.fantion.backend.auction.dto.BidDto;
 import com.fantion.backend.auction.dto.SearchDto;
 import com.fantion.backend.auction.entity.Auction;
-import com.fantion.backend.auction.entity.Bid;
 import com.fantion.backend.auction.repository.AuctionRepository;
-import com.fantion.backend.auction.repository.BidRepository;
 import com.fantion.backend.auction.service.AuctionService;
-import com.fantion.backend.exception.impl.AuctionHttpMessageNotReadableException;
-import com.fantion.backend.exception.impl.AuctionNotFoundException;
-import com.fantion.backend.exception.impl.ImageException;
-import com.fantion.backend.exception.impl.ImageIOException;
-import com.fantion.backend.exception.impl.ImageInternalServerException;
-import com.fantion.backend.exception.impl.ImageInvalidPathException;
-import com.fantion.backend.exception.impl.ImageMalformedURLException;
-import com.fantion.backend.exception.impl.ImageSecurityException;
-import com.fantion.backend.exception.impl.NotFoundMemberException;
+import com.fantion.backend.exception.impl.*;
 import com.fantion.backend.member.repository.MemberRepository;
 import com.fantion.backend.type.SearchType;
 import jakarta.validation.Valid;
-import java.io.File;
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.nio.file.DirectoryStream;
-import java.nio.file.Files;
-import java.nio.file.InvalidPathException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
@@ -49,6 +25,17 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.nio.file.*;
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import static org.springframework.util.FileSystemUtils.deleteRecursively;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -56,8 +43,6 @@ public class AuctionServiceImpl implements AuctionService {
 
   private final AuctionRepository auctionRepository;
   private final MemberRepository memberRepository;
-  private final BidRepository bidRepository;
-
   private Path imgPath = Paths.get("images/auction/" + getUserId() + "/");
   private String serverUrl = "https://localhost:8080/auction/";
 
@@ -76,10 +61,20 @@ public class AuctionServiceImpl implements AuctionService {
     return toResponse(auction);
   }
 
+  // 경매 상세보기
+  @Override
+  public AuctionDto.Response findAuction(Long auctionId) {
+    // 상세보기할 경매 조회
+    Auction auction = auctionRepository.findById(auctionId)
+            .orElseThrow(()-> new RuntimeException());
+
+    return toResponse(auction);
+  }
 
   /**
    * 경매 수정
    */
+
   @Override
   @Transactional
   public Response updateAuction(
@@ -158,23 +153,6 @@ public class AuctionServiceImpl implements AuctionService {
     auction.setStatus(true);
 
     return auction;
-  }
-
-  // 입찰
-  @Override
-  public BidDto.Response createBid(BidDto.Request request) {
-    // 입찰하려는 경매 조회
-    Auction auction = auctionRepository.getReferenceById(request.getAuctionId());
-
-    // 입찰 생성
-    Bid bid = Bid.builder()
-        .auctionId(auction)
-        .bidPrice(request.getBidPrice())
-        .bidder("tester")
-        .createDate(LocalDateTime.now())
-        .build();
-
-    return BidDto.Response(bidRepository.save(bid));
   }
 
   @Override

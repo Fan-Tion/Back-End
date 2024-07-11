@@ -3,6 +3,7 @@ package com.fantion.backend.payment.controller;
 import com.fantion.backend.payment.dto.PaymentDto;
 import com.fantion.backend.payment.dto.ResponseDto;
 import com.fantion.backend.payment.service.PaymentService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,20 +22,22 @@ public class PaymentController {
 
   @PostMapping("/request")
   public ResponseEntity<PaymentDto.Response> requestPayment(
-      @RequestBody PaymentDto.Request request) {
+      @Valid @RequestBody PaymentDto.Request request) {
     PaymentDto.Response result = paymentService.requestPayment(request);
     return ResponseEntity.ok(result);
   }
 
   @GetMapping("/success")
-  public ResponseEntity<ResponseDto.Success> successPayment(@RequestParam String orderId, @RequestParam String paymentKey,
+  public ResponseEntity<ResponseDto.Success> successPayment(@RequestParam String orderId,
+      @RequestParam String paymentKey,
       @RequestParam Long amount) {
     ResponseDto.Success result = paymentService.successPayment(orderId, paymentKey, amount);
     return ResponseEntity.ok(result);
   }
 
   @GetMapping("/fail")
-  public ResponseEntity<ResponseDto.fail> failPayment(@RequestParam String code, @RequestParam String message,
+  public ResponseEntity<ResponseDto.fail> failPayment(@RequestParam String code,
+      @RequestParam String message,
       @RequestParam String orderId) {
     ResponseDto.fail result = paymentService.failPayment(code, message, orderId);
     return ResponseEntity.ok(result);
