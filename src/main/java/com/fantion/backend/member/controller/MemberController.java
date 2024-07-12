@@ -1,16 +1,21 @@
 package com.fantion.backend.member.controller;
 
+import com.fantion.backend.member.dto.CheckDto;
 import com.fantion.backend.member.dto.SigninDto;
 import com.fantion.backend.member.dto.SignupDto;
 import com.fantion.backend.member.dto.SignupDto.Response;
 import com.fantion.backend.member.dto.TokenDto;
 import com.fantion.backend.member.service.MemberService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
@@ -33,6 +38,20 @@ public class MemberController {
   @PostMapping("/signin")
   public ResponseEntity<TokenDto> Signin(@Valid @RequestBody SigninDto signinDto) {
     TokenDto result = memberService.signin(signinDto);
+    return ResponseEntity.ok(result);
+  }
+
+  @GetMapping("/check-email")
+  public ResponseEntity<CheckDto> checkEmail(
+      @RequestParam(value = "email") @Email(message = "이메일 형식이 올바르지 않습니다.") @NotBlank(message = "이메일은 공백일 수 없습니다.") String email) {
+    CheckDto result = memberService.checkEmail(email);
+    return ResponseEntity.ok(result);
+  }
+
+  @GetMapping("/check-nickname")
+  public ResponseEntity<CheckDto> checkNickname(
+      @RequestParam(value = "nickname") @NotBlank(message = "닉네임은 공백일 수 없습니다.") String nickname) {
+    CheckDto result = memberService.checkNickname(nickname);
     return ResponseEntity.ok(result);
   }
 }

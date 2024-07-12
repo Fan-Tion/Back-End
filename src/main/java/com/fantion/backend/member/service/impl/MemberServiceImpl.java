@@ -1,12 +1,15 @@
 package com.fantion.backend.member.service.impl;
 
 import com.fantion.backend.exception.impl.DuplicateEmailException;
+import com.fantion.backend.exception.impl.DuplicateNicknameException;
 import com.fantion.backend.exception.impl.ImageSaveException;
 import com.fantion.backend.exception.impl.InvalidEmailException;
+import com.fantion.backend.exception.impl.InvalidNicknameException;
 import com.fantion.backend.exception.impl.InvalidPasswordException;
 import com.fantion.backend.exception.impl.NotFoundMemberException;
 import com.fantion.backend.exception.impl.SuspendedMemberException;
 import com.fantion.backend.exception.impl.UnsupportedImageTypeException;
+import com.fantion.backend.member.dto.CheckDto;
 import com.fantion.backend.member.dto.SigninDto;
 import com.fantion.backend.member.dto.SignupDto;
 import com.fantion.backend.member.dto.SignupDto.Request;
@@ -23,6 +26,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -33,6 +37,10 @@ import org.springframework.web.multipart.MultipartFile;
 @Service
 @RequiredArgsConstructor
 public class MemberServiceImpl implements MemberService {
+
+  private static final Long REFRESH_TOKEN_EXPIRES_IN = 86400000L;
+  private static final Long NICKNAME_EXPIRES_IN = 300000L;
+  private static final Pattern NICKNAME_PATTERN = Pattern.compile("^[a-zA-Z0-9가-힣]{1,12}$");
 
   private final MemberRepository memberRepository;
   private final JwtTokenProvider jwtTokenProvider;
@@ -55,6 +63,12 @@ public class MemberServiceImpl implements MemberService {
       if (!member.getStatus().equals(MemberStatus.WITHDRAWN)) {
         throw new DuplicateEmailException();
       }
+    }
+
+    // 닉네임 중복 체크
+    Optional<Member> byNickname = memberRepository.findByNickname(request.getNickname());
+    if (byNickname.isPresent()) {
+      throw new DuplicateNicknameException();
     }
 
     Member member = new Member();
@@ -124,11 +138,51 @@ public class MemberServiceImpl implements MemberService {
 
     // Redis에 RefreshToken 저장
     String refreshToken = tokens.getRefreshToken();
-    Long refreshTokenExpiresIn = 86400000L;
     redisTemplate.opsForValue()
-        .set("RefreshToken: " + member.getEmail(), refreshToken, refreshTokenExpiresIn, TimeUnit.MILLISECONDS);
+        .set("RefreshToken: " + member.getEmail(), refreshToken, REFRESH_TOKEN_EXPIRES_IN,
+            TimeUnit.MILLISECONDS);
 
     return tokens;
+  }
+
+  @Override
+  public CheckDto checkEmail(String email) {
+
+    // 이메일 체크
+    if (!isValidEmail(email)) {
+      throw new InvalidEmailException();
+    }
+
+    Optional<Member> byEmail = memberRepository.findByEmail(email);
+    if (byEmail.isPresent()) {
+      throw new DuplicateEmailException();
+    }
+
+    return CheckDto.builder().success(true).build();
+  }
+
+  @Override
+  public CheckDto checkNickname(String nickname) {
+
+    // 닉네임 생성 규칙에 맞는지 확인
+    if (!NICKNAME_PATTERN.matcher(nickname).matches()) {
+      throw new InvalidNicknameException();
+    }
+
+    String redisKey = "Nickname: " + nickname;
+    String email = (String) redisTemplate.opsForValue().get(redisKey);
+    Optional<Member> byNickname = memberRepository.findByNickname(nickname);
+
+    // Redis나 DB에 저장되있는 닉네임일 경우 Exception
+    if (email != null || byNickname.isPresent()) {
+      throw new DuplicateNicknameException();
+    }
+
+    // Redis에 임시저장
+    redisTemplate.opsForValue()
+        .set("Nickname: " + nickname, nickname, NICKNAME_EXPIRES_IN, TimeUnit.MILLISECONDS);
+
+    return CheckDto.builder().success(true).build();
   }
 
   private boolean isValidEmail(String email) {
