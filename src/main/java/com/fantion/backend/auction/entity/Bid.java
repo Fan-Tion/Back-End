@@ -1,5 +1,7 @@
 package com.fantion.backend.auction.entity;
 
+import com.fantion.backend.member.entity.Member;
+import com.fantion.backend.type.BidStatus;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
@@ -29,9 +31,14 @@ public class Bid {
   @Column(name = "bid_price")
   private Long bidPrice;              // 입찰가
 
-  @Column(name = "bidder")
-  private String bidder;              // 입찰자
+  @ManyToOne
+  @JoinColumn(name = "member_id")
+  private Member bidder;              // 입찰자
 
   @Column(name = "create_date")
   private LocalDateTime createDate;   // 입찰한 시간
+
+  @Column(name = "status")
+  @Enumerated(EnumType.STRING)
+  private BidStatus status;           // 입찰 상태
 }

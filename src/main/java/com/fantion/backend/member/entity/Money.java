@@ -28,4 +28,14 @@ public class Money {
   private Member member;
 
   private Long balance;
+
+  // 낙찰
+  public void successBid(Long bidPrice){
+    if (bidPrice > balance) {
+      throw new RuntimeException();
+    }
+    balance -= bidPrice;
+  }
+
+
 }

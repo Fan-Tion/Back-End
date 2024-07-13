@@ -1,6 +1,8 @@
 package com.fantion.backend.auction.service;
 
 import com.fantion.backend.auction.dto.BidDto;
+import com.fantion.backend.auction.entity.Auction;
+import com.fantion.backend.member.entity.Member;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 public interface BidService {
@@ -9,10 +11,15 @@ public interface BidService {
     BidDto.Response createBid(BidDto.Request request);
 
     // 입찰내역 구독
-    SseEmitter subscribeBid();
+    SseEmitter subscribeBid(Long auctionId);
 
     // 입찰내역 발행
     void publishBid(BidDto.Response bid);
 
+    // 입찰 마감 (낙찰 및 유찰)
+    void finishBid();
+
+    // 예치금 확인
+    void balanceCheck(Long bidPrice, Long memberId, Auction auction);
 
 }

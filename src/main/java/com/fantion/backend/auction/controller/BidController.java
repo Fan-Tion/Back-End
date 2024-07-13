@@ -16,14 +16,15 @@ public class BidController {
 
     private final BidService bidService;
 
-    @GetMapping(produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    private SseEmitter subscribeBid(){
-        return bidService.subscribeBid();
+    @GetMapping(value = "/{auctionId}",produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    private SseEmitter subscribeBid(@PathVariable(name = "auctionId") Long auctionId){
+        return bidService.subscribeBid(auctionId);
     }
 
-    @PutMapping
+    @PostMapping
     private BidDto.Response createBid(@RequestBody BidDto.Request request){
         log.info("[Controller] createBid");
         return  bidService.createBid(request);
     }
+
 }
