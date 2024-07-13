@@ -63,4 +63,11 @@ public class Auction {
 
   @Column(name = "status")
   private boolean status;
+
+
+  public void topBid(Long bidPrice,String bidder) {
+    this.currentBidPrice = bidPrice;
+    this.currentBidder = bidder;
+  }
+
 }

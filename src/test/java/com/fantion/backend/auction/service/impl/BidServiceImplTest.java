@@ -4,7 +4,6 @@ import com.fantion.backend.auction.entity.Auction;
 import com.fantion.backend.auction.entity.Bid;
 import com.fantion.backend.auction.repository.AuctionRepository;
 import com.fantion.backend.auction.repository.BidRepository;
-import com.fantion.backend.auction.service.BidService;
 import com.fantion.backend.member.entity.BalanceHistory;
 import com.fantion.backend.member.entity.Member;
 import com.fantion.backend.member.entity.Money;
@@ -18,13 +17,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
@@ -66,46 +64,20 @@ class BidServiceImplTest {
         Auction album = Auction.builder()
                 .auctionId(1L)
                 .title("album")
+                .currentBidPrice(5000L)
+                .currentBidder(ysg.getNickname())
                 .build();
 
         Auction photoCard = Auction.builder()
                 .auctionId(2L)
                 .title("photoCard")
+                .currentBidPrice(6000L)
+                .currentBidder(ysg.getNickname())
                 .build();
 
-        Auction figure = Auction.builder()
-                .auctionId(3L)
-                .title("figure")
-                .build();
-
-        // 입찰
-        Bid ysgBidAlbum = Bid.builder()
-                .bidId(1L)
-                .auctionId(album)
-                .bidPrice(5000L)
-                .bidder(ysg)
-                .build();
-
-        Bid ysgBidAlbum2 = Bid.builder()
-                .bidId(3L)
-                .auctionId(album)
-                .bidPrice(6000L)
-                .bidder(ysg)
-                .build();
-
-        Bid ysgBidPhotoCard = Bid.builder()
-                .bidId(2L)
-                .auctionId(photoCard)
-                .bidPrice(6000L)
-                .bidder(ysg)
-                .build();
-
-
-
-        List<Bid> bidList = new ArrayList<>();
-        bidList.add(ysgBidAlbum);
-        bidList.add(ysgBidAlbum2);
-        bidList.add(ysgBidPhotoCard);
+        List<Auction> auctionList = new ArrayList<>();
+        auctionList.add(album);
+        auctionList.add(photoCard);
 
         //given
         // 예치금
@@ -114,15 +86,16 @@ class BidServiceImplTest {
                 .willReturn(Optional.ofNullable(ysgMoney));
 
         // 입찰내역
-        // 앨범에 입찰내역이 2개(5000원과 6000원) 있지만 가장높은 입찰가 6000원만 합산
-        // 따라서 앨범에 6000원 , 포토카드에 6000원 입찰되어있는 상태 (총 1만2천원 사용중)
-        given(bidRepository.findByBidderAndAuctionIdNotIn(ysg.getMemberId(),figure.getAuctionId()))
-                .willReturn(bidList);
+        // 앨범에 5000원, 포토카드에 6000원으로 상위 입찰되어있는 상태 (총 11000원이 입찰에 사용중)
+        given(auctionRepository.findByCurrentBidderAndStatus(ysg.getNickname(),true))
+                .willReturn(auctionList);
 
         //when
-        // 위와 같은 상황에서 피규어에 5000원까지 입찰 가능
-        bidService.balanceCheck(5000L,1L,figure);
+        Long canUseBalance = bidService.balanceCheck(ysg);
 
+        //then
+        // 보유한 예치금은 17000원이고 입찰에 11000원이 사용중이므로 사용 가능한 예치금은 6000원임을 예상
+        assertEquals(canUseBalance,6000L);
 
     }
 
@@ -130,7 +103,6 @@ class BidServiceImplTest {
     @DisplayName("낙찰시 보유한 예치금에서 입찰가만큼 차감")
     void finishBid() {
         //given
-
         // 경매 물품
         // 종료된 경매 물품
         Auction album = Auction.builder()

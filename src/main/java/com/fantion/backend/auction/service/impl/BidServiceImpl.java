@@ -16,7 +16,6 @@ import com.fantion.backend.member.repository.BalanceHistoryRepository;
 import com.fantion.backend.member.repository.MemberRepository;
 import com.fantion.backend.member.repository.MoneyRepository;
 import com.fantion.backend.type.BalanceType;
-import com.fantion.backend.type.BidStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -64,8 +63,16 @@ public class BidServiceImpl implements BidService {
         Member member = memberRepository.findById(loginUserId)
                 .orElseThrow(()-> new RuntimeException());
 
-        // 예치금 확인
-        balanceCheck(request.getBidPrice(), member.getMemberId(), auction);
+        // 사용 가능한 예치금
+        Long canUseBalance = balanceCheck(member);
+
+        // 사용 가능한 예치금이 입찰가보다 더 적을 경우
+        if (canUseBalance < request.getBidPrice()) {
+            throw new RuntimeException();
+        }
+
+        // 상위 입찰 설정
+        auction.topBid(request.getBidPrice(),member.getNickname());
 
         // 입찰 생성
         Bid bid = Bid.builder()
@@ -73,7 +80,6 @@ public class BidServiceImpl implements BidService {
                 .bidPrice(request.getBidPrice())
                 .bidder(member)
                 .createDate(LocalDateTime.now())
-                .status(BidStatus.PROGRESS)
                 .build();
 
         BidDto.Response response = BidDto.Response(bidRepository.save(bid));
@@ -82,57 +88,43 @@ public class BidServiceImpl implements BidService {
         return response;
     }
 
-    // 예치금 확인
-    public void balanceCheck(Long bidPrice, Long memberId, Auction auction) {
-        // 사용자의 예치금 조회
-        Money money = moneyRepository.findByMemberId(memberId)
+    // 사용 가능한 예치금 조회
+    @Override
+    public Long useBalanceCheck() {
+        // 로그인한 사용자 가져오기
+        Long loginUserId = Long.valueOf(MemberAuthUtil.getLoginUserId());
+
+        // 사용자 조회
+        Member member = memberRepository.findById(loginUserId)
                 .orElseThrow(()-> new RuntimeException());
 
-        Long balance = money.getBalance();
+        // 사용 가능한 예치금
+        Long canUseBalance = balanceCheck(member);
 
-        // 사용자 입찰 내역 조회
-        // - 사용자의 현재 진행중인 경매의 입찰내역에서 입찰하려는 경매 물품의 입찰 내역은 제외 후 조회
-        List<Bid> bidList = bidRepository.findByBidderAndAuctionIdNotIn(memberId, auction.getAuctionId());
+        return canUseBalance;
+    }
 
-        // 입찰내역 Map
-        Map<Long, Long> bidPriceMap = new HashMap<>();
+    // 사용 가능한 예치금 확인
+    public Long balanceCheck(Member member) {
+        // 사용자의 보유한 예치금 조회
+        Money money = moneyRepository.findByMemberId(member.getMemberId())
+                .orElseThrow(()-> new RuntimeException());
+        Long haveBalance = money.getBalance();
+
+        // 해당 사용자가 상위 입찰인 진행중인 경매 물품 조회
+        List<Auction> topBidAuctionList = auctionRepository.findByCurrentBidderAndStatus(member.getNickname(), true);
 
         // 입찰내역들의 입찰가 합산 금액
         Long totalBidPrice = 0L;
 
-        // 같은 경매물품에서 가장 높은 입찰가
-        Long maxPrice = 0L;
-
-        for (int i = 0; i < bidList.size(); i++) {
-            Bid bid = bidList.get(i);
-            Long auctionId = bid.getAuctionId().getAuctionId();
-
-            // 첫 입찰가 세팅
-            if (bidPriceMap.get(auctionId) == null) {
-                maxPrice = bid.getBidPrice();
-            } else {
-                maxPrice =  Math.max(bidPriceMap.get(auctionId), bid.getBidPrice());
-            }
-
-            // 경매 물품 식별자를 Key , 그 경매 물품의 가장 높은 입찰가를 Value로 셋팅
-            bidPriceMap.put(auctionId,maxPrice);
+        for (int i = 0; i < topBidAuctionList.size(); i++) {
+            Auction topBidAuction = topBidAuctionList.get(i);
+            totalBidPrice += topBidAuction.getCurrentBidPrice();
         }
 
-        // 입찰내역들의 입찰가 합산
-        for (Map.Entry<Long, Long> entry : bidPriceMap.entrySet()) {
-            log.info("[key]: {} / [value]: {}" ,entry.getKey(), entry.getValue());
-            totalBidPrice += entry.getValue();
-        }
-
-        // 현재 경매 물품의 입찰가 합산
-        totalBidPrice += bidPrice;
-        log.info("totalBidPrice : {}",totalBidPrice);
-
-        // 예치금이 부족한 경우
-        if (balance < totalBidPrice) {
-            throw new RuntimeException();
-        }
+        return haveBalance - totalBidPrice;
     }
+
 
     // 입찰내역 구독
     @Transactional
@@ -194,7 +186,6 @@ public class BidServiceImpl implements BidService {
 
                     // 경매 마감 설정
                     auction.setStatus(false);
-                    bid.setStatus(BidStatus.FINISH);
 
                     // 입찰자를 통해 예치금 조회
                     Money money = moneyRepository.findByMemberId(bidder.getMemberId())
@@ -218,5 +209,7 @@ public class BidServiceImpl implements BidService {
             }
         }
     }
+
+
 
 }

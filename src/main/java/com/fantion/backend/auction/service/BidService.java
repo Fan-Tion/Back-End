@@ -19,7 +19,7 @@ public interface BidService {
     // 입찰 마감 (낙찰 및 유찰)
     void finishBid();
 
-    // 예치금 확인
-    void balanceCheck(Long bidPrice, Long memberId, Auction auction);
+    // 사용 가능한 예치금 조회
+    Long useBalanceCheck();
 
 }

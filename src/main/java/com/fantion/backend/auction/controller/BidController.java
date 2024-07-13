@@ -27,4 +27,9 @@ public class BidController {
         return  bidService.createBid(request);
     }
 
+    @GetMapping("/balance")
+    private Long useBalanceCheck(){
+        return bidService.useBalanceCheck();
+    }
+
 }

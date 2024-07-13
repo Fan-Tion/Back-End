@@ -12,10 +12,6 @@ import java.util.Optional;
 public interface BidRepository extends JpaRepository<Bid, Long> {
 
     Optional<Bid> findByAuctionIdOrderByBidPriceDesc(Auction auctionId);
-    @Query(value = "select * from bid b " +
-            "where b.auction_id != :auction_id " +
-            "and b.member_id = :member_id " +
-            "and status = 'PROGRESS'",nativeQuery = true)
-    List<Bid> findByBidderAndAuctionIdNotIn(@Param("member_id") Long memberId,@Param("auction_id") Long auctionId);
+
 
 }
