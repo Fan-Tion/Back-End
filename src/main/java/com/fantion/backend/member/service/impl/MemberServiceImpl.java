@@ -18,7 +18,6 @@ import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.validator.routines.EmailValidator;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
@@ -43,8 +42,9 @@ public class MemberServiceImpl implements MemberService {
       Member member = byEmail.get();
 
       // 탈퇴상태가 아니면 중복가입 exception
-      if (!member.getStatus().equals(MemberStatus.WITHDRAWN))
-      throw new DuplicateEmailException();
+      if (!member.getStatus().equals(MemberStatus.WITHDRAWN)) {
+        throw new DuplicateEmailException();
+      }
     }
 
     Member member = new Member();
@@ -82,7 +82,7 @@ public class MemberServiceImpl implements MemberService {
       memberRepository.save(member);
     }
 
-    SignupDto.Response  response = SignupDto.Response.builder()
+    SignupDto.Response response = SignupDto.Response.builder()
         .email(member.getEmail())
         .success(true)
         .build();

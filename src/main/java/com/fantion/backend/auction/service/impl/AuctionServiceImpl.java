@@ -9,8 +9,16 @@ import com.fantion.backend.auction.repository.AuctionRepository;
 import com.fantion.backend.auction.service.AuctionService;
 import com.fantion.backend.exception.impl.*;
 import com.fantion.backend.member.repository.MemberRepository;
+import com.fantion.backend.type.CategoryType;
 import com.fantion.backend.type.SearchType;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.Valid;
+import java.time.Duration;
+import java.time.LocalDate;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Random;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
@@ -19,6 +27,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpHeaders;
 import org.springframework.jca.endpoint.GenericMessageEndpointFactory.InternalResourceException;
 import org.springframework.stereotype.Service;
@@ -43,8 +52,12 @@ public class AuctionServiceImpl implements AuctionService {
 
   private final AuctionRepository auctionRepository;
   private final MemberRepository memberRepository;
+
+  private final RedisTemplate<String, Object> redisTemplate;
+
+  private final ObjectMapper objectMapper = new ObjectMapper();
   private Path imgPath = Paths.get("images/auction/" + getUserId() + "/");
-  private String serverUrl = "https://localhost:8080/auction/";
+  private String serverUrl = "http://localhost:8080/auction/";
 
   /**
    * 경매 생성
@@ -66,7 +79,7 @@ public class AuctionServiceImpl implements AuctionService {
   public AuctionDto.Response findAuction(Long auctionId) {
     // 상세보기할 경매 조회
     Auction auction = auctionRepository.findById(auctionId)
-            .orElseThrow(()-> new RuntimeException());
+        .orElseThrow(() -> new RuntimeException());
 
     return toResponse(auction);
   }
@@ -74,7 +87,6 @@ public class AuctionServiceImpl implements AuctionService {
   /**
    * 경매 수정
    */
-
   @Override
   @Transactional
   public Response updateAuction(
@@ -116,19 +128,103 @@ public class AuctionServiceImpl implements AuctionService {
    * 경매 검색
    */
   @Override
-  public Page<Response> getSearchList(@Valid SearchDto searchDto) {
-    Pageable pageable = getPageable(searchDto.getPage());
+  public Page<Response> getSearchList(
+      int page,
+      SearchType searchOption,
+      CategoryType categoryType,
+      String keyword) {
+    Pageable pageable = getPageable(page);
     Page<Auction> auctionPage = null;
 
     try {
-      if (searchDto.getSearchOption() == SearchType.TITLE) {
-        auctionPage = auctionRepository.findByTitleContaining(searchDto.getKeyword(), pageable);
+      if (searchOption == SearchType.TITLE) {
+        auctionPage = auctionRepository.findByTitleContaining(keyword, pageable);
+      } else if (searchOption == SearchType.CATEGORY) {
+        auctionPage = auctionRepository.findByCategoryAndTitleContaining(categoryType, keyword,pageable);
       }
     } catch (Exception e) {
       throw new AuctionHttpMessageNotReadableException();
     }
 
     return covertToResponseList(auctionPage);
+  }
+
+  /**
+   * 이미지 가져오기
+   */
+  @Override
+  public Resource getImage(Path imagePath, HttpHeaders headers) {
+    try {
+      Resource resource = new UrlResource(imagePath.toUri());
+      return resource;
+    } catch (MalformedURLException e) {
+      throw new ImageMalformedURLException();
+    } catch (InternalResourceException e) {
+      throw new ImageInternalServerException();
+    }
+  }
+
+  /**
+   * 옥션 기간별 거래목록 생성 및 갱신
+   */
+  @Override
+  public void endAuctionSaveOrUpdate(String value) {
+    Map<String, Integer> map = getAuctionDateValue();
+    if (map == null) {
+      map = new HashMap<>();
+    }
+    map.put(value, map.getOrDefault(value, 0) + 1);
+
+    try {
+      String json = objectMapper.writeValueAsString(map);
+//      redisTemplate.opsForValue().set(LocalDate.now().toString(), json, Duration.ofDays(1));
+      redisTemplate.opsForValue().set(LocalDate.now().toString(), json, Duration.ofMinutes(5));
+    } catch (JsonProcessingException e) {
+      throw new AuctionJsonProcessingException();
+    }
+  }
+
+  /**
+   * 전날 거래량 가져오기
+   */
+  @Override
+  public Map<String, Integer> getAuctionDateValue() {
+    String json = (String) redisTemplate.opsForValue()
+        .get(LocalDate.now().minusDays(0).toString());
+    if (json != null) {
+      try {
+        return objectMapper.readValue(json, Map.class);
+      } catch (JsonProcessingException e) {
+        throw new AuctionJsonProcessingException();
+      }
+    }
+    return null;
+  }
+
+  @Override
+  public List<String> mapToListLimitFive(Map<String, Integer> map) {
+    List<String> auctionDateList = map.entrySet()
+        .stream()
+        .sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
+        .limit(5)
+        .map(Map.Entry::getKey)
+        .collect(Collectors.toList());
+
+    Random random = new Random();
+    CategoryType[] categoryArray = CategoryType.values();
+
+    while (auctionDateList.size() < 5) {
+      String categoryTypeStr
+          = categoryArray[random.nextInt(categoryArray.length)].name();
+
+      if (!auctionDateList.contains(categoryTypeStr)) {
+        auctionDateList.add(categoryTypeStr);
+      }
+    }
+
+    return auctionDateList.stream()
+        .map(x -> serverUrl + "search?searchType=CATEGORY&categoryType=" + x + "&keyword=&page=0")
+        .collect(Collectors.toList());
   }
 
   /**
@@ -153,18 +249,6 @@ public class AuctionServiceImpl implements AuctionService {
     auction.setStatus(true);
 
     return auction;
-  }
-
-  @Override
-  public Resource getImage(Path imagePath, HttpHeaders headers) {
-    try {
-      Resource resource = new UrlResource(imagePath.toUri());
-      return resource;
-    } catch (MalformedURLException e) {
-      throw new ImageMalformedURLException();
-    } catch (InternalResourceException e) {
-      throw new ImageInternalServerException();
-    }
   }
 
   /**
