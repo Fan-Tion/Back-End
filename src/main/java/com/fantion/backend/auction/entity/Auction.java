@@ -1,6 +1,7 @@
 package com.fantion.backend.auction.entity;
 
 import com.fantion.backend.member.entity.Member;
+import com.fantion.backend.type.CategoryType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -33,6 +34,9 @@ public class Auction {
 
   @Column(name = "title")
   private String title;
+
+  @Column(name = "category")
+  private CategoryType category;
 
   @Column(name = "auction_type")
   private boolean auctionType;

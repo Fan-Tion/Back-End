@@ -1,5 +1,6 @@
 package com.fantion.backend.auction.dto;
 
+import com.fantion.backend.type.CategoryType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -23,6 +24,8 @@ public class AuctionDto {
 
     @NotBlank(message = "제목은 꼭 입력해야 합니다.")
     private String title;
+    @NotNull(message = "카테고리는 꼭 입력해야 합니다.")
+    private CategoryType category;
     @NotNull(message = "경매 방식은 꼭 입력해야 합니다.")
     private boolean auctionType;
     @NotBlank(message = "설명은 꼭 입력해야 합니다.")
@@ -44,6 +47,7 @@ public class AuctionDto {
 
     private String title;
     private String auctionUserNickname;
+    private CategoryType category;
     private boolean auctionType;
     private List<String> auctionImage;
     private String description;

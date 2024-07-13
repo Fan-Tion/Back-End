@@ -3,11 +3,17 @@ package com.fantion.backend.member.service.impl;
 import com.fantion.backend.exception.impl.DuplicateEmailException;
 import com.fantion.backend.exception.impl.ImageSaveException;
 import com.fantion.backend.exception.impl.InvalidEmailException;
+import com.fantion.backend.exception.impl.InvalidPasswordException;
+import com.fantion.backend.exception.impl.NotFoundMemberException;
+import com.fantion.backend.exception.impl.SuspendedMemberException;
 import com.fantion.backend.exception.impl.UnsupportedImageTypeException;
+import com.fantion.backend.member.dto.SigninDto;
 import com.fantion.backend.member.dto.SignupDto;
 import com.fantion.backend.member.dto.SignupDto.Request;
 import com.fantion.backend.member.dto.SignupDto.Response;
+import com.fantion.backend.member.dto.TokenDto;
 import com.fantion.backend.member.entity.Member;
+import com.fantion.backend.member.jwt.JwtTokenProvider;
 import com.fantion.backend.member.repository.MemberRepository;
 import com.fantion.backend.member.service.MemberService;
 import com.fantion.backend.type.MemberStatus;
@@ -16,8 +22,10 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.validator.routines.EmailValidator;
+import org.springframework.data.redis.core.RedisTemplate;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -28,6 +36,8 @@ import org.springframework.web.multipart.MultipartFile;
 public class MemberServiceImpl implements MemberService {
 
   private final MemberRepository memberRepository;
+  private final JwtTokenProvider jwtTokenProvider;
+  private final RedisTemplate redisTemplate;
 
   @Override
   public Response signup(Request request, MultipartFile file) {
@@ -43,8 +53,9 @@ public class MemberServiceImpl implements MemberService {
       Member member = byEmail.get();
 
       // 탈퇴상태가 아니면 중복가입 exception
-      if (!member.getStatus().equals(MemberStatus.WITHDRAWN))
-      throw new DuplicateEmailException();
+      if (!member.getStatus().equals(MemberStatus.WITHDRAWN)) {
+        throw new DuplicateEmailException();
+      }
     }
 
     Member member = new Member();
@@ -82,12 +93,43 @@ public class MemberServiceImpl implements MemberService {
       memberRepository.save(member);
     }
 
-    SignupDto.Response  response = SignupDto.Response.builder()
+    SignupDto.Response response = SignupDto.Response.builder()
         .email(member.getEmail())
         .success(true)
         .build();
 
     return response;
+  }
+
+  @Override
+  public TokenDto signin(SigninDto signinDto) {
+
+    Member member = memberRepository.findByEmail(signinDto.getEmail())
+        .orElseThrow(() -> new NotFoundMemberException());
+
+    // 회원 상태에 따른 exception
+    if (member.getStatus().equals(MemberStatus.SUSPENDED)) {
+      throw new SuspendedMemberException();
+    } else if (member.getStatus().equals(MemberStatus.WITHDRAWN)) {
+      throw new NotFoundMemberException();
+    }
+
+    // 비밀번호 확인
+    if (!member.getPassword().equals(signinDto.getPassword())) {
+      throw new InvalidPasswordException();
+    }
+
+    // 토큰 생성
+    TokenDto tokens = jwtTokenProvider.createTokens(member.getEmail(), member.getMemberId(),
+        member.getNickname());
+
+    // Redis에 RefreshToken 저장
+    String refreshToken = tokens.getRefreshToken();
+    Long refreshTokenExpiresIn = 86400000L;
+    redisTemplate.opsForValue()
+        .set("RefreshToken: " + member.getEmail(), refreshToken, refreshTokenExpiresIn, TimeUnit.MILLISECONDS);
+
+    return tokens;
   }
 
   private boolean isValidEmail(String email) {
