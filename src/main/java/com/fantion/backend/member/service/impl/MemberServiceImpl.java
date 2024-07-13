@@ -1,15 +1,22 @@
 package com.fantion.backend.member.service.impl;
 
 import com.fantion.backend.exception.impl.DuplicateEmailException;
+import com.fantion.backend.exception.impl.DuplicateLinkException;
 import com.fantion.backend.exception.impl.DuplicateNicknameException;
 import com.fantion.backend.exception.impl.ImageSaveException;
 import com.fantion.backend.exception.impl.InvalidEmailException;
 import com.fantion.backend.exception.impl.InvalidNicknameException;
 import com.fantion.backend.exception.impl.InvalidPasswordException;
 import com.fantion.backend.exception.impl.NotFoundMemberException;
+import com.fantion.backend.exception.impl.OtherSnsLinkException;
+import com.fantion.backend.exception.impl.SnsNotLinkedException;
 import com.fantion.backend.exception.impl.SuspendedMemberException;
 import com.fantion.backend.exception.impl.UnsupportedImageTypeException;
+import com.fantion.backend.member.configuration.NaverConfiguration;
+import com.fantion.backend.member.configuration.NaverLoginClient;
+import com.fantion.backend.member.configuration.NaverProfileClient;
 import com.fantion.backend.member.dto.CheckDto;
+import com.fantion.backend.member.dto.NaverMemberDto;
 import com.fantion.backend.member.dto.SigninDto;
 import com.fantion.backend.member.dto.SignupDto;
 import com.fantion.backend.member.dto.SignupDto.Request;
@@ -21,15 +28,20 @@ import com.fantion.backend.member.repository.MemberRepository;
 import com.fantion.backend.member.service.MemberService;
 import com.fantion.backend.type.MemberStatus;
 import java.io.File;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
@@ -45,12 +57,17 @@ public class MemberServiceImpl implements MemberService {
   private final MemberRepository memberRepository;
   private final JwtTokenProvider jwtTokenProvider;
   private final RedisTemplate redisTemplate;
+  private final NaverLoginClient naverLoginClient;
+  private final NaverProfileClient naverProfileClient;
+  private final NaverConfiguration naverConfiguration;
+  private final EmailValidator emailValidator = EmailValidator.getInstance();
+  private final Random random = new Random();
 
   @Override
   public Response signup(Request request, MultipartFile file) {
 
     // 이메일 체크
-    if (!isValidEmail(request.getEmail())) {
+    if (!emailValidator.isValid(request.getEmail())) {
       throw new InvalidEmailException();
     }
 
@@ -71,10 +88,10 @@ public class MemberServiceImpl implements MemberService {
       throw new DuplicateNicknameException();
     }
 
-    Member member = new Member();
+    Member member;
     // 멤버정보 DB에 저장
     // 이미지 파일이 없을 때
-    if (file.isEmpty() || file == null) {
+    if (file == null || file.isEmpty()) {
       member = SignupDto.signupInput(request, null);
       memberRepository.save(member);
     } else { // 이미지 파일이 있을 때
@@ -106,50 +123,18 @@ public class MemberServiceImpl implements MemberService {
       memberRepository.save(member);
     }
 
-    SignupDto.Response response = SignupDto.Response.builder()
+    return SignupDto.Response.builder()
         .email(member.getEmail())
         .success(true)
         .build();
-
-    return response;
   }
 
-  @Override
-  public TokenDto signin(SigninDto signinDto) {
-
-    Member member = memberRepository.findByEmail(signinDto.getEmail())
-        .orElseThrow(() -> new NotFoundMemberException());
-
-    // 회원 상태에 따른 exception
-    if (member.getStatus().equals(MemberStatus.SUSPENDED)) {
-      throw new SuspendedMemberException();
-    } else if (member.getStatus().equals(MemberStatus.WITHDRAWN)) {
-      throw new NotFoundMemberException();
-    }
-
-    // 비밀번호 확인
-    if (!member.getPassword().equals(signinDto.getPassword())) {
-      throw new InvalidPasswordException();
-    }
-
-    // 토큰 생성
-    TokenDto tokens = jwtTokenProvider.createTokens(member.getEmail(), member.getMemberId(),
-        member.getNickname());
-
-    // Redis에 RefreshToken 저장
-    String refreshToken = tokens.getRefreshToken();
-    redisTemplate.opsForValue()
-        .set("RefreshToken: " + member.getEmail(), refreshToken, REFRESH_TOKEN_EXPIRES_IN,
-            TimeUnit.MILLISECONDS);
-
-    return tokens;
-  }
 
   @Override
   public CheckDto checkEmail(String email) {
 
     // 이메일 체크
-    if (!isValidEmail(email)) {
+    if (!emailValidator.isValid(email)) {
       throw new InvalidEmailException();
     }
 
@@ -158,7 +143,9 @@ public class MemberServiceImpl implements MemberService {
       throw new DuplicateEmailException();
     }
 
-    return CheckDto.builder().success(true).build();
+    return CheckDto.builder()
+        .success(true)
+        .build();
   }
 
   @Override
@@ -182,10 +169,150 @@ public class MemberServiceImpl implements MemberService {
     redisTemplate.opsForValue()
         .set("Nickname: " + nickname, nickname, NICKNAME_EXPIRES_IN, TimeUnit.MILLISECONDS);
 
-    return CheckDto.builder().success(true).build();
+    return CheckDto.builder()
+        .success(true)
+        .build();
   }
 
-  private boolean isValidEmail(String email) {
-    return EmailValidator.getInstance().isValid(email);
+  @Override
+  public TokenDto.Local signin(SigninDto signinDto) {
+
+    Member member = memberRepository.findByEmail(signinDto.getEmail())
+        .orElseThrow(NotFoundMemberException::new);
+
+    // 회원 상태에 따른 exception
+    if (member.getStatus().equals(MemberStatus.SUSPENDED)) {
+      throw new SuspendedMemberException();
+    } else if (member.getStatus().equals(MemberStatus.WITHDRAWN)) {
+      throw new NotFoundMemberException();
+    }
+
+    // 비밀번호 확인
+    if (!member.getPassword().equals(signinDto.getPassword())) {
+      throw new InvalidPasswordException();
+    }
+
+    // 토큰 생성
+    TokenDto.Local tokens = jwtTokenProvider.createTokens(member.getEmail(), member.getMemberId(),
+        member.getNickname());
+
+    // Redis에 RefreshToken 저장
+    String refreshToken = tokens.getRefreshToken();
+    redisTemplate.opsForValue()
+        .set("RefreshToken: " + member.getEmail(), refreshToken, REFRESH_TOKEN_EXPIRES_IN,
+            TimeUnit.MILLISECONDS);
+
+    return tokens;
+  }
+
+  @Override
+  public String naverRequest() {
+    ResponseEntity<String> response = naverLoginClient.naverRequest("code",
+        naverConfiguration.getClientId(), naverConfiguration.getState(),
+        naverConfiguration.getRedirectUri());
+    return response.getBody();
+  }
+
+  @Override
+  public TokenDto.Local neverSignin(String code) {
+
+    // 네이버 토큰 가져오기
+    ResponseEntity<TokenDto.Naver> naverTokens = naverLoginClient.getToken("authorization_code",
+        naverConfiguration.getClientId(),
+        naverConfiguration.getClientSecret(), code, naverConfiguration.getState());
+
+    // 가져온 토큰으로 프로필 정보 가져오기
+    String accessToken = "Bearer " + naverTokens.getBody().getAccessToken();
+    ResponseEntity<NaverMemberDto> profile = naverProfileClient.getProfile(accessToken);
+    NaverMemberDto.NaverMemberDetail profileDto = profile.getBody().getNaverMemberDetail();
+
+    Optional<Member> byEmail = memberRepository.findByEmail(profileDto.getEmail());
+    if (byEmail.isPresent()) {
+      Member member = byEmail.get();
+      if (member.getIsNaver() && !member.getIsKakao()) { // 연동한 회원
+        TokenDto.Local tokens = jwtTokenProvider.createTokens(member.getEmail(), member.getMemberId(),
+            member.getNickname());
+
+        // Redis에 RefreshToken 저장
+        String refreshToken = tokens.getRefreshToken();
+        redisTemplate.opsForValue()
+            .set("RefreshToken: " + member.getEmail(), refreshToken, REFRESH_TOKEN_EXPIRES_IN,
+                TimeUnit.MILLISECONDS);
+
+        return tokens;
+      } else if (member.getIsKakao()) { // 카카오 연동 회원
+        throw new OtherSnsLinkException();
+      } else { // 연동안한 회원
+        throw new SnsNotLinkedException();
+      }
+    } else { // 비회원
+      // 신규 회원 가입 진행
+      String password = UUID.randomUUID().toString();
+      Member member = Member.builder()
+          .email(profileDto.getEmail())
+          .password(password)
+          .nickname(profileDto.getNickname())
+          .auth(true)
+          .isKakao(false)
+          .isNaver(true)
+          .address("주소를 설정해주세요.")
+          .phoneNumber(profileDto.getMobile())
+          .totalRating(0)
+          .ratingCnt(0)
+          .rating(0)
+          .status(MemberStatus.ACTIVE)
+          .profileImage(profileDto.getProfileImage())
+          .createDate(LocalDateTime.now())
+          .build();
+      memberRepository.save(member);
+
+      TokenDto.Local tokens = jwtTokenProvider.createTokens(member.getEmail(), member.getMemberId(),
+          member.getNickname());
+
+      // Redis에 RefreshToken 저장
+      String refreshToken = tokens.getRefreshToken();
+      redisTemplate.opsForValue()
+          .set("RefreshToken: " + member.getEmail(), refreshToken, REFRESH_TOKEN_EXPIRES_IN,
+              TimeUnit.MILLISECONDS);
+      return tokens;
+    }
+  }
+
+  @Override
+  public CheckDto naverLink(String email) {
+
+    // 현재 토큰에 저장된 email 과 값으로 받은 email이 일치하는지 확인
+    String currentEmail = getCurrentEmail();
+    if (!email.equals(currentEmail)) {
+      throw new InvalidEmailException();
+    }
+
+    Member member = memberRepository.findByEmail(email).orElseThrow(NotFoundMemberException::new);
+
+    // 카카오나 이미 연동한 회원일 경우 exception
+    if (member.getIsKakao()) {
+      throw new OtherSnsLinkException();
+    } else if (member.getIsNaver()) {
+      throw new DuplicateLinkException();
+    } else {
+      Member updateMember = member.toBuilder()
+          .auth(true)
+          .isNaver(true)
+          .build();
+      memberRepository.save(updateMember);
+    }
+
+    return CheckDto.builder()
+        .success(true)
+        .build();
+  }
+
+  public static String getCurrentEmail() {
+    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+    if (authentication.getName() != null) {
+      return authentication.getName();
+    }
+    return null;
   }
 }

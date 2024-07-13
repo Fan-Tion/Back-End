@@ -16,8 +16,7 @@ import com.fantion.backend.payment.component.PaymentComponent;
 import com.fantion.backend.payment.dto.ConfirmDto;
 import com.fantion.backend.payment.dto.PaymentDto;
 import com.fantion.backend.payment.dto.PaymentDto.Request;
-import com.fantion.backend.payment.dto.PaymentDto.Response;
-import com.fantion.backend.payment.dto.ResponseDto.Success;
+import com.fantion.backend.payment.dto.ResponseDto;
 import com.fantion.backend.payment.dto.ResponseDto.fail;
 import com.fantion.backend.payment.entity.Payment;
 import com.fantion.backend.payment.repository.PaymentRepository;
@@ -46,6 +45,7 @@ public class PaymentServiceImpl implements PaymentService {
   private final BalanceHistoryRepository balanceHistoryRepository;
   private final PaymentComponent paymentComponent;
   private final PaymentClient paymentClient;
+  private final ObjectMapper objectMapper;
 
   @Value("${payment.success-url}")
   private String successUrl;
@@ -55,14 +55,14 @@ public class PaymentServiceImpl implements PaymentService {
 
   @Override
   @Transactional
-  public Response requestPayment(Request request) {
+  public PaymentDto.Response requestPayment(Request request) {
 
     // MemberService가 추가되면 accessToken을 이용한 유저정보 저장 및 반환 수정
     // 지금은 프론트 코드에서 그냥 던져주는 중
     String orderId = UUID.randomUUID().toString();
 
     Member member = memberRepository.findByEmail(request.getCustomerEmail())
-        .orElseThrow(() -> new NotFoundMemberException());
+        .orElseThrow(NotFoundMemberException::new);
 
     // 결제 요청 정보를 DB에 저장
     Payment payment = Payment.builder()
@@ -79,18 +79,16 @@ public class PaymentServiceImpl implements PaymentService {
     paymentRepository.save(payment);
 
     // 결제 정보 Response를 반환
-    Response response = PaymentDto.of(payment, successUrl, failUrl);
-
-    return response;
+    return PaymentDto.of(payment, successUrl, failUrl);
   }
 
   @Override
   @Transactional
-  public Success successPayment(String orderId, String paymentKey, Long amount) {
+  public ResponseDto.Success successPayment(String orderId, String paymentKey, Long amount) {
 
     // DB에 저장되어있는 값과 Param으로 들어온 값이 같은지 검증
     Payment payment = paymentRepository.findByOrderId(orderId)
-        .orElseThrow(() -> new NotFoundPaymentException());
+        .orElseThrow(NotFoundPaymentException::new);
     if (!payment.getAmount().equals(amount)) {
       throw new ValidPaymentInfoException();
     }
@@ -115,7 +113,7 @@ public class PaymentServiceImpl implements PaymentService {
       // 해당 회원의 예치금 충전
       String email = payment.getMemberId().getEmail();
       Member member = memberRepository.findByEmail(email)
-          .orElseThrow(() -> new NotFoundMemberException());
+          .orElseThrow(NotFoundMemberException::new);
 
       Optional<Money> byMemberId = moneyRepository.findByMemberId(member.getMemberId());
       if (byMemberId.isEmpty()) { // 첫 예치금 충전 회원
@@ -147,7 +145,6 @@ public class PaymentServiceImpl implements PaymentService {
       // 에러 응답 본문 가져오기
       String responseBody = fe.contentUTF8();
       // JSON 응답을 파싱하여 원하는 정보 추출
-      ObjectMapper objectMapper = new ObjectMapper();
       try {
         JsonNode jsonNode = objectMapper.readTree(responseBody);
         String errorCode = jsonNode.path("code").asText();
@@ -162,7 +159,7 @@ public class PaymentServiceImpl implements PaymentService {
   }
 
   @Override
-  public fail failPayment(String code, String message, String orderId) {
+  public ResponseDto.fail failPayment(String code, String message, String orderId) {
 
     return fail.builder()
         .errorCode(code)

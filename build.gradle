@@ -42,6 +42,7 @@ dependencies {
 
     // FeignClient
     implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
+    implementation 'org.springframework.cloud:spring-cloud-starter-loadbalancer'
 
     // EmailValidator
     implementation 'commons-validator:commons-validator:1.7'

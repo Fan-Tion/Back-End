@@ -10,7 +10,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.springframework.security.crypto.bcrypt.BCrypt;
 
 public class SignupDto {
 
@@ -42,15 +41,15 @@ public class SignupDto {
     private String email;
   }
 
-  public static Member signupInput(Request request, String imageUrl) {
+  public static Member signupInput(SignupDto.Request request, String imageUrl) {
 
     return Member.builder()
         .email(request.getEmail())
         .password(request.getPassword())
         .nickname(request.getNickname())
         .auth(false)
-        .kakao(false)
-        .naver(false)
+        .isKakao(false)
+        .isNaver(false)
         .address(request.getAddress())
         .totalRating(0)
         .rating(0)
