@@ -246,12 +246,22 @@ public class MemberServiceImpl implements MemberService {
         throw new SnsNotLinkedException();
       }
     } else { // 비회원
+      // 중복 닉네임이 있을 경우
+      String nickname = profileDto.getNickname();
+      Optional<Member> byNickname = memberRepository.findByNickname(nickname);
+      while (byNickname.isPresent()) {
+        int randomNumber = random.nextInt(100);
+        String newNickname = nickname + randomNumber;
+        byNickname = memberRepository.findByNickname(newNickname);
+        nickname = newNickname; // 중복이 없을 때까지 새로운 닉네임으로 갱신
+      }
+
       // 신규 회원 가입 진행
       String password = UUID.randomUUID().toString();
       Member member = Member.builder()
           .email(profileDto.getEmail())
           .password(password)
-          .nickname(profileDto.getNickname())
+          .nickname(nickname)
           .auth(true)
           .isKakao(false)
           .isNaver(true)
