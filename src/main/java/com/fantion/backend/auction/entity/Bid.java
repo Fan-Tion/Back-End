@@ -31,7 +31,7 @@ public class Bid {
   private Long bidPrice;              // 입찰가
 
   @ManyToOne
-  @JoinColumn(name = "member_id")
+  @JoinColumn(name = "bidder")
   private Member bidder;              // 입찰자
 
   @Column(name = "create_date")

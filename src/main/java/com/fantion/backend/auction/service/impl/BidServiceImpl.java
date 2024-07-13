@@ -57,10 +57,10 @@ public class BidServiceImpl implements BidService {
         }
 
         // 로그인한 사용자 가져오기
-        Long loginUserId = Long.valueOf(MemberAuthUtil.getLoginUserId());
+        String loginEmail = MemberAuthUtil.getLoginUserId();
 
         // 사용자 조회
-        Member member = memberRepository.findById(loginUserId)
+        Member member = memberRepository.findByEmail(loginEmail)
                 .orElseThrow(()-> new RuntimeException());
 
         // 사용 가능한 예치금
@@ -92,10 +92,10 @@ public class BidServiceImpl implements BidService {
     @Override
     public Long useBalanceCheck() {
         // 로그인한 사용자 가져오기
-        Long loginUserId = Long.valueOf(MemberAuthUtil.getLoginUserId());
+        String loginEmail = MemberAuthUtil.getLoginUserId();
 
         // 사용자 조회
-        Member member = memberRepository.findById(loginUserId)
+        Member member = memberRepository.findByEmail(loginEmail)
                 .orElseThrow(()-> new RuntimeException());
 
         // 사용 가능한 예치금

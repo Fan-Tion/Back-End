@@ -16,7 +16,7 @@ public class BidController {
 
     private final BidService bidService;
 
-    @GetMapping(value = "/{auctionId}",produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @GetMapping(value = "/subscribe/{auctionId}",produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     private SseEmitter subscribeBid(@PathVariable(name = "auctionId") Long auctionId){
         return bidService.subscribeBid(auctionId);
     }
