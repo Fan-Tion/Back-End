@@ -1,6 +1,8 @@
 package com.fantion.backend.auction.service;
 
+import com.fantion.backend.auction.dto.BalanceCheckDto;
 import com.fantion.backend.auction.dto.BidDto;
+import com.fantion.backend.auction.dto.BuyNowDto;
 import com.fantion.backend.auction.entity.Auction;
 import com.fantion.backend.member.entity.Member;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -20,6 +22,9 @@ public interface BidService {
     void finishBid();
 
     // 사용 가능한 예치금 조회
-    Long useBalanceCheck();
+    BalanceCheckDto.Response useBalanceCheck();
+
+    // 즉시 구매
+    BuyNowDto.Response buyNow(BuyNowDto.Request request);
 
 }

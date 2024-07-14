@@ -1,6 +1,8 @@
 package com.fantion.backend.auction.service.impl;
 
+import com.fantion.backend.auction.dto.BalanceCheckDto;
 import com.fantion.backend.auction.dto.BidDto;
+import com.fantion.backend.auction.dto.BuyNowDto;
 import com.fantion.backend.auction.entity.Auction;
 import com.fantion.backend.auction.entity.Bid;
 import com.fantion.backend.auction.repository.AuctionRepository;
@@ -24,9 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 @Slf4j
@@ -64,7 +64,7 @@ public class BidServiceImpl implements BidService {
                 .orElseThrow(()-> new RuntimeException());
 
         // 사용 가능한 예치금
-        Long canUseBalance = balanceCheck(member);
+        Long canUseBalance = balanceCheck(member).getCanUseBalance();
 
         // 사용 가능한 예치금이 입찰가보다 더 적을 경우
         if (canUseBalance < request.getBidPrice()) {
@@ -90,7 +90,7 @@ public class BidServiceImpl implements BidService {
 
     // 사용 가능한 예치금 조회
     @Override
-    public Long useBalanceCheck() {
+    public BalanceCheckDto.Response useBalanceCheck() {
         // 로그인한 사용자 가져오기
         String loginEmail = MemberAuthUtil.getLoginUserId();
 
@@ -98,14 +98,11 @@ public class BidServiceImpl implements BidService {
         Member member = memberRepository.findByEmail(loginEmail)
                 .orElseThrow(()-> new RuntimeException());
 
-        // 사용 가능한 예치금
-        Long canUseBalance = balanceCheck(member);
-
-        return canUseBalance;
+        return balanceCheck(member);
     }
 
     // 사용 가능한 예치금 확인
-    public Long balanceCheck(Member member) {
+    public BalanceCheckDto.Response balanceCheck(Member member) {
         // 사용자의 보유한 예치금 조회
         Money money = moneyRepository.findByMemberId(member.getMemberId())
                 .orElseThrow(()-> new RuntimeException());
@@ -122,9 +119,14 @@ public class BidServiceImpl implements BidService {
             totalBidPrice += topBidAuction.getCurrentBidPrice();
         }
 
-        return haveBalance - totalBidPrice;
-    }
+        BalanceCheckDto.Response balanceCheckResponse = BalanceCheckDto.Response.builder()
+                .totalBidPrice(totalBidPrice)
+                .canUseBalance(haveBalance - totalBidPrice)
+                .build();
 
+
+        return balanceCheckResponse;
+    }
 
     // 입찰내역 구독
     @Transactional
@@ -165,8 +167,8 @@ public class BidServiceImpl implements BidService {
     @Override
     public void finishBid() {
         // 매일 한번씩 종료일이 지난 경매물품이 있는지 확인후 경매 마감 설정
-        // 경매 물품 전체 조회
-        List<Auction> auctionList = auctionRepository.findAll();
+        // 진행중인 경매 전체 조회
+        List<Auction> auctionList = auctionRepository.findByStatus(true);
         for (int i = 0; i < auctionList.size(); i++) {
             Auction auction = auctionList.get(i);
             LocalDateTime endDate = auction.getEndDate();
@@ -209,6 +211,61 @@ public class BidServiceImpl implements BidService {
             }
         }
     }
+
+    // 즉시 구매
+    @Override
+    public BuyNowDto.Response buyNow(BuyNowDto.Request request) {
+        // 로그인한 사용자 가져오기
+        String loginEmail = MemberAuthUtil.getLoginUserId();
+
+        // 사용자 조회
+        Member member = memberRepository.findByEmail(loginEmail)
+                .orElseThrow(()-> new RuntimeException());
+
+        // 사용자가 보유한 예치금 조회
+        Money money = moneyRepository.findByMemberId(member.getMemberId())
+                .orElseThrow(()-> new RuntimeException());
+
+        // 즉시 구매하려는 경매 물품 조회
+        Auction auction = auctionRepository.findById(request.getAuctionId())
+                .orElseThrow(()-> new RuntimeException());
+
+        Long buyNowPrice = auction.getBuyNowPrice();
+        Long balance = money.getBalance();
+
+        // 즉시 구매
+        money.successBid(buyNowPrice);
+
+        // 경매 마감 설정
+        auction.setStatus(false);
+
+        // 상위 입찰 설정
+        auction.topBid(auction.getBuyNowPrice(),member.getNickname());
+
+        // 예치금 내역 생성
+        BalanceHistory history = BalanceHistory.builder()
+                .memberId(member)
+                .balance(auction.getBuyNowPrice())
+                .type(BalanceType.USE)
+                .build();
+
+        // 예치금 내역 저장
+        balanceHistoryRepository.save(history);
+
+        BuyNowDto.Response response = BuyNowDto.Response.builder()
+                .title(auction.getTitle())
+                .buyNowPrice(buyNowPrice)
+                .balance(balance - buyNowPrice)
+                .build();
+
+        return response;
+    }
+
+
+
+
+
+
 
 
 

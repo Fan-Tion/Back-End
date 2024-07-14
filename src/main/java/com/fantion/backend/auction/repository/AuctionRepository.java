@@ -10,4 +10,7 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
 
   Page<Auction> findByTitleContaining(String keyword, Pageable pageable);
   List<Auction> findByCurrentBidderAndStatus(String currentBidder,boolean status);
+
+  List<Auction> findByStatus(boolean status);
+
 }

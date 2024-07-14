@@ -1,5 +1,6 @@
 package com.fantion.backend.auction.service.impl;
 
+import com.fantion.backend.auction.dto.BuyNowDto;
 import com.fantion.backend.auction.entity.Auction;
 import com.fantion.backend.auction.entity.Bid;
 import com.fantion.backend.auction.repository.AuctionRepository;
@@ -8,6 +9,7 @@ import com.fantion.backend.member.entity.BalanceHistory;
 import com.fantion.backend.member.entity.Member;
 import com.fantion.backend.member.entity.Money;
 import com.fantion.backend.member.repository.BalanceHistoryRepository;
+import com.fantion.backend.member.repository.MemberRepository;
 import com.fantion.backend.member.repository.MoneyRepository;
 import com.fantion.backend.type.BalanceType;
 import org.junit.jupiter.api.DisplayName;
@@ -16,6 +18,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.security.core.Authentication;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -37,6 +41,9 @@ class BidServiceImplTest {
 
     @Mock
     private AuctionRepository auctionRepository;
+
+    @Mock
+    private MemberRepository memberRepository;
 
     @Mock
     private BalanceHistoryRepository balanceHistoryRepository;
@@ -91,7 +98,7 @@ class BidServiceImplTest {
                 .willReturn(auctionList);
 
         //when
-        Long canUseBalance = bidService.balanceCheck(ysg);
+        Long canUseBalance = bidService.balanceCheck(ysg).getCanUseBalance();
 
         //then
         // 보유한 예치금은 17000원이고 입찰에 11000원이 사용중이므로 사용 가능한 예치금은 6000원임을 예상
@@ -179,7 +186,7 @@ class BidServiceImplTest {
                 .build();
 
         // 경매 물품 리스트 모킹
-        given(auctionRepository.findAll())
+        given(auctionRepository.findByStatus(true))
                 .willReturn(auctionList);
 
         // 종료일이 지난 경매물품 모킹
@@ -207,6 +214,5 @@ class BidServiceImplTest {
         assertEquals(testerMoney.getBalance(),13000L);
 
     }
-
 
 }
