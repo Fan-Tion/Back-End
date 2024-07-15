@@ -3,6 +3,7 @@ package com.fantion.backend.auction.service.impl;
 import com.fantion.backend.auction.dto.AuctionDto;
 import com.fantion.backend.auction.dto.AuctionDto.Request;
 import com.fantion.backend.auction.dto.AuctionDto.Response;
+import com.fantion.backend.auction.dto.CategoryDto;
 import com.fantion.backend.auction.dto.SearchDto;
 import com.fantion.backend.auction.entity.Auction;
 import com.fantion.backend.auction.repository.AuctionRepository;
@@ -16,6 +17,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.Valid;
 import java.time.Duration;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -79,7 +81,7 @@ public class AuctionServiceImpl implements AuctionService {
   public AuctionDto.Response findAuction(Long auctionId) {
     // 상세보기할 경매 조회
     Auction auction = auctionRepository.findById(auctionId)
-        .orElseThrow(() -> new RuntimeException());
+        .orElseThrow(AuctionNotFoundException::new);
 
     return toResponse(auction);
   }
@@ -140,7 +142,13 @@ public class AuctionServiceImpl implements AuctionService {
       if (searchOption == SearchType.TITLE) {
         auctionPage = auctionRepository.findByTitleContaining(keyword, pageable);
       } else if (searchOption == SearchType.CATEGORY) {
-        auctionPage = auctionRepository.findByCategoryAndTitleContaining(categoryType, keyword,pageable);
+        if (categoryType == CategoryType.ALL) {
+          auctionPage = auctionRepository.findAll(pageable);
+        } else if (keyword == null){
+          auctionPage = auctionRepository.findByCategory(categoryType, pageable);
+        } else {
+          auctionPage = auctionRepository.findByCategoryAndTitleContaining(categoryType, keyword, pageable);
+        }
       }
     } catch (Exception e) {
       throw new AuctionHttpMessageNotReadableException();
@@ -168,17 +176,16 @@ public class AuctionServiceImpl implements AuctionService {
    * 옥션 기간별 거래목록 생성 및 갱신
    */
   @Override
-  public void endAuctionSaveOrUpdate(String value) {
+  public void endAuctionSaveOrUpdate(String categoryName) {
     Map<String, Integer> map = getAuctionDateValue();
     if (map == null) {
       map = new HashMap<>();
     }
-    map.put(value, map.getOrDefault(value, 0) + 1);
+    map.put(categoryName, map.getOrDefault(categoryName, 0) + 1);
 
     try {
       String json = objectMapper.writeValueAsString(map);
-//      redisTemplate.opsForValue().set(LocalDate.now().toString(), json, Duration.ofDays(1));
-      redisTemplate.opsForValue().set(LocalDate.now().toString(), json, Duration.ofMinutes(5));
+      redisTemplate.opsForValue().set(LocalDate.now().toString(), json, Duration.ofDays(1));
     } catch (JsonProcessingException e) {
       throw new AuctionJsonProcessingException();
     }
@@ -202,7 +209,7 @@ public class AuctionServiceImpl implements AuctionService {
   }
 
   @Override
-  public List<String> mapToListLimitFive(Map<String, Integer> map) {
+  public CategoryDto getFavoriteAuctionCategory(Map<String, Integer> map) {
     List<String> auctionDateList = map.entrySet()
         .stream()
         .sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
@@ -217,15 +224,28 @@ public class AuctionServiceImpl implements AuctionService {
       String categoryTypeStr
           = categoryArray[random.nextInt(categoryArray.length)].name();
 
-      if (!auctionDateList.contains(categoryTypeStr)) {
+      if (!auctionDateList.contains(categoryTypeStr)
+          && !categoryTypeStr.equals(CategoryType.ALL.name())
+          && !categoryTypeStr.equals(CategoryType.OTHER.name())) {
         auctionDateList.add(categoryTypeStr);
       }
     }
 
-    return auctionDateList.stream()
-        .map(x -> serverUrl + "search?searchType=CATEGORY&categoryType=" + x + "&keyword=&page=0")
-        .collect(Collectors.toList());
+    return getCategoryDto(auctionDateList);
   }
+
+  @Override
+  public CategoryDto getAllAuctionCategory() {
+    CategoryType[] categoryArray = CategoryType.values();
+    List<String> categoryList = new ArrayList<>();
+
+    for (int i = 1; i < categoryArray.length; i++) {
+      categoryList.add(categoryArray[i].name());
+    }
+
+    return getCategoryDto(categoryList);
+  }
+
 
   /**
    * 경매데이터 수정 member쪽은 임시 데이터임
@@ -394,5 +414,15 @@ public class AuctionServiceImpl implements AuctionService {
    */
   private static PageRequest getPageable(int page) {
     return PageRequest.of(page, 10);
+  }
+
+  private CategoryDto getCategoryDto(List<String> auctionDateList) {
+    CategoryDto categoryDto = new CategoryDto();
+    categoryDto.setTitleList(auctionDateList);
+    categoryDto.setCategoryList(
+        auctionDateList.stream()
+            .map(x -> serverUrl + "search?searchOption=CATEGORY&categoryOption=" + x + "&keyword=&page=0")
+            .collect(Collectors.toList()));
+    return categoryDto;
   }
 }

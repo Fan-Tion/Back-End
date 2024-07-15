@@ -3,7 +3,7 @@ package com.fantion.backend.auction.service;
 import com.fantion.backend.auction.dto.AuctionDto;
 import com.fantion.backend.auction.dto.AuctionDto.Request;
 import com.fantion.backend.auction.dto.AuctionDto.Response;
-import com.fantion.backend.auction.dto.SearchDto;
+import com.fantion.backend.auction.dto.CategoryDto;
 import com.fantion.backend.type.CategoryType;
 import com.fantion.backend.type.SearchType;
 import java.nio.file.Path;
@@ -41,5 +41,7 @@ public interface AuctionService {
 
   Map<String, Integer> getAuctionDateValue();
 
-  List<String> mapToListLimitFive(Map<String, Integer> map);
+  CategoryDto getFavoriteAuctionCategory(Map<String, Integer> map);
+
+  CategoryDto getAllAuctionCategory();
 }

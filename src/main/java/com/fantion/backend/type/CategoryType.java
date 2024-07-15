@@ -1,13 +1,14 @@
 package com.fantion.backend.type;
 
 public enum CategoryType {
-  ALBUM,
-  PHOTO_CARD,
-  FIGURE,
+  ALL,
   ACCESSORIES,
+  ALBUM,
+  CLOTHES,
+  FIGURE,
+  GAME,
+  PHOTO_CARD,
   POSTER,
   SIGN,
-  CLOTHES,
-  GAME,
   OTHER
 }

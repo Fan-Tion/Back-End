@@ -86,16 +86,16 @@ public class AuctionController {
    * 경매 종류 후 거래량 save or update
    * */
   @PostMapping("/end-auction")
-  public ResponseEntity<?> endAuctionSaveOrUpdate(@RequestParam("value") String value) {
-    auctionService.endAuctionSaveOrUpdate(value);
+  public ResponseEntity<?> endAuctionSaveOrUpdate(@RequestParam("categoryName") String categoryName) {
+    auctionService.endAuctionSaveOrUpdate(categoryName);
     return ResponseEntity.ok("save or update");
   }
 
   /**
    * 거래량 가져오기
    * */
-  @GetMapping("/get")
-  public ResponseEntity<?> getAuctionDateValue() {
+  @GetMapping("/favorite-category")
+  public ResponseEntity<?> getFavoriteAuctionCategory() {
     Map<String, Integer> map
         = auctionService.getAuctionDateValue();
 
@@ -103,9 +103,12 @@ public class AuctionController {
       map = new HashMap<>();
     }
 
-    List<String> auctionBuyCountList = auctionService.mapToListLimitFive(map);
+    return ResponseEntity.ok(auctionService.getFavoriteAuctionCategory(map));
+  }
 
-    return ResponseEntity.ok(auctionBuyCountList);
+  @GetMapping("/category")
+  public ResponseEntity<?> getAllAuctionCategory() {
+    return ResponseEntity.ok(auctionService.getAllAuctionCategory());
   }
 
   /**
@@ -124,8 +127,8 @@ public class AuctionController {
   @GetMapping("/search")
   public ResponseEntity<?> searchAuctions(
       @RequestParam("page") @Min(0) int page,
-      @RequestParam("searchType") @NotNull SearchType searchOption,
-      @RequestParam("categoryType") @NotNull CategoryType categoryOption,
+      @RequestParam("searchOption") @NotNull SearchType searchOption,
+      @RequestParam(name = "categoryOption", defaultValue = "ALL") CategoryType categoryOption,
       @RequestParam("keyword") String keyword) {
     return ResponseEntity.ok(auctionService
         .getSearchList(page, searchOption, categoryOption, keyword));
