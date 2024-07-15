@@ -18,10 +18,10 @@ public class CustomExceptionHandler {
 
     return new ResponseEntity<>(errorResponse, e.getHttpStatus());
   }
-  @ExceptionHandler(BidAbstractException.class)
-  protected ResponseEntity<BidErrorResponse> bidCustomException(BidAbstractException e) {
+  @ExceptionHandler(FantionAbstractException.class)
+  protected ResponseEntity<FantionErrorResponse> bidCustomException(FantionAbstractException e) {
 
-    BidErrorResponse errorResponse = BidErrorResponse.builder()
+    FantionErrorResponse errorResponse = FantionErrorResponse.builder()
             .status(e.getStatusCode())
             .errorCode(e.getErrorCode())
             .message(e.getMessage())

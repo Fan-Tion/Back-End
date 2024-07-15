@@ -7,6 +7,7 @@ import com.fantion.backend.auction.dto.SearchDto;
 import com.fantion.backend.auction.entity.Auction;
 import com.fantion.backend.auction.repository.AuctionRepository;
 import com.fantion.backend.auction.service.AuctionService;
+import com.fantion.backend.exception.ErrorCode;
 import com.fantion.backend.exception.impl.*;
 import com.fantion.backend.member.repository.MemberRepository;
 import com.fantion.backend.type.SearchType;
@@ -66,7 +67,7 @@ public class AuctionServiceImpl implements AuctionService {
   public AuctionDto.Response findAuction(Long auctionId) {
     // 상세보기할 경매 조회
     Auction auction = auctionRepository.findById(auctionId)
-            .orElseThrow(()-> new RuntimeException());
+            .orElseThrow(()-> new FantionException(ErrorCode.NOT_FOUND_AUCTION));
 
     return toResponse(auction);
   }

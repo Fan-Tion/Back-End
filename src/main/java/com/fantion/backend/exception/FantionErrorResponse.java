@@ -7,7 +7,7 @@ import org.springframework.http.HttpStatus;
 @Getter
 @Setter
 @Builder
-public class BidErrorResponse {
+public class FantionErrorResponse {
 
     private HttpStatus status;
     private ErrorCode errorCode;
