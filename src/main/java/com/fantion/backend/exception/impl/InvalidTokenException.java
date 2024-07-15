@@ -7,7 +7,7 @@ public class InvalidTokenException extends AbstractException {
 
   @Override
   public HttpStatus getHttpStatus() {
-    return HttpStatus.FORBIDDEN; // 403 에러를 반환하도록 수정
+    return HttpStatus.FORBIDDEN;
   }
 
   @Override

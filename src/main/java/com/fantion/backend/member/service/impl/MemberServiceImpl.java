@@ -10,7 +10,6 @@ import com.fantion.backend.exception.impl.InvalidPasswordException;
 import com.fantion.backend.exception.impl.LinkedEmailException;
 import com.fantion.backend.exception.impl.NotFoundMemberException;
 import com.fantion.backend.exception.impl.OtherSnsLinkException;
-import com.fantion.backend.exception.impl.SnsNotLinkedException;
 import com.fantion.backend.exception.impl.SuspendedMemberException;
 import com.fantion.backend.exception.impl.UnsupportedImageTypeException;
 import com.fantion.backend.member.configuration.NaverConfiguration;
@@ -62,7 +61,7 @@ public class MemberServiceImpl implements MemberService {
 
   private final MemberRepository memberRepository;
   private final JwtTokenProvider jwtTokenProvider;
-  private final RedisTemplate redisTemplate;
+  private final RedisTemplate<String, String> redisTemplate;
   private final NaverLoginClient naverLoginClient;
   private final NaverProfileClient naverProfileClient;
   private final NaverConfiguration naverConfiguration;
@@ -166,7 +165,7 @@ public class MemberServiceImpl implements MemberService {
     }
 
     String redisKey = "Nickname: " + nickname;
-    String email = (String) redisTemplate.opsForValue().get(redisKey);
+    String email = redisTemplate.opsForValue().get(redisKey);
     Optional<Member> byNickname = memberRepository.findByNickname(nickname);
 
     // Redis나 DB에 저장되있는 닉네임일 경우 Exception
@@ -237,7 +236,7 @@ public class MemberServiceImpl implements MemberService {
     // 연동 이메일 찾아오기
     Optional<Member> byEmail = memberRepository.findByLinkedEmail(profileDto.getEmail());
 
-    if (!byEmail.isPresent()) { // 비회원
+    if (byEmail.isEmpty()) { // 비회원
       String nickname = profileDto.getNickname();
       Optional<Member> byNickname = memberRepository.findByNickname(nickname);
       while (byNickname.isPresent()) {
