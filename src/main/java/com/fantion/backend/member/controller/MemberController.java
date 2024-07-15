@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -35,12 +36,6 @@ public class MemberController {
     return ResponseEntity.ok(result);
   }
 
-  @PostMapping("/signin")
-  public ResponseEntity<TokenDto> Signin(@Valid @RequestBody SigninDto signinDto) {
-    TokenDto result = memberService.signin(signinDto);
-    return ResponseEntity.ok(result);
-  }
-
   @GetMapping("/check-email")
   public ResponseEntity<CheckDto> checkEmail(
       @RequestParam(value = "email") @Email(message = "이메일 형식이 올바르지 않습니다.") @NotBlank(message = "이메일은 공백일 수 없습니다.") String email) {
@@ -52,6 +47,31 @@ public class MemberController {
   public ResponseEntity<CheckDto> checkNickname(
       @RequestParam(value = "nickname") @NotBlank(message = "닉네임은 공백일 수 없습니다.") String nickname) {
     CheckDto result = memberService.checkNickname(nickname);
+    return ResponseEntity.ok(result);
+  }
+
+  @PostMapping("/signin")
+  public ResponseEntity<TokenDto.Local> Signin(@Valid @RequestBody SigninDto signinDto) {
+    TokenDto.Local result = memberService.signin(signinDto);
+    return ResponseEntity.ok(result);
+  }
+
+  @GetMapping("/naver/request")
+  public ResponseEntity<String> naverRequest() {
+    String result = memberService.naverRequest();
+    return ResponseEntity.ok(result);
+  }
+
+  @GetMapping("/naver/signin")
+  public ResponseEntity<TokenDto.Local> naverSignin(@RequestParam(value = "code") String code) {
+    TokenDto.Local result = memberService.neverSignin(code);
+    return ResponseEntity.ok(result);
+  }
+
+  @PutMapping("/naver/link")
+  public ResponseEntity<CheckDto> naverLink(
+      @RequestParam(value = "linkEmail") @Email(message = "이메일 형식이 올바르지 않습니다.") @NotBlank(message = "이메일은 공백일 수 없습니다.") String linkEmail) {
+    CheckDto result = memberService.naverLink(linkEmail);
     return ResponseEntity.ok(result);
   }
 }
