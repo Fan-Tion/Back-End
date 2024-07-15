@@ -1,23 +1,22 @@
 package com.fantion.backend.exception.impl;
 
 import com.fantion.backend.exception.AbstractException;
-import java.io.IOException;
 import org.springframework.http.HttpStatus;
 
-public class NotFoundMemberException extends AbstractException {
+public class ImageInvalidPathException extends AbstractException {
 
   @Override
   public HttpStatus getHttpStatus() {
-    return HttpStatus.NOT_FOUND;
+    return HttpStatus.BAD_REQUEST;
   }
 
   @Override
   public String getErrorCode() {
-    return "MEMBER_NOT_FOUND";
+    return "IMAGE_NOT_HAVE_PATH";
   }
 
   @Override
   public String getMessage() {
-    return "존재하지 않는 회원입니다.";
+    return "잘못된 이미지 파일 경로입니다.";
   }
 }

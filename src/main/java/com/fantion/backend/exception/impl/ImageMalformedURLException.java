@@ -1,23 +1,22 @@
 package com.fantion.backend.exception.impl;
 
 import com.fantion.backend.exception.AbstractException;
-import java.io.IOException;
 import org.springframework.http.HttpStatus;
 
-public class NotFoundMemberException extends AbstractException {
+public class ImageMalformedURLException extends AbstractException {
 
   @Override
   public HttpStatus getHttpStatus() {
-    return HttpStatus.NOT_FOUND;
+    return HttpStatus.INTERNAL_SERVER_ERROR;
   }
 
   @Override
   public String getErrorCode() {
-    return "MEMBER_NOT_FOUND";
+    return "IMAGE_MALFORMED";
   }
 
   @Override
   public String getMessage() {
-    return "존재하지 않는 회원입니다.";
+    return "잘못된 형식의 URL입니다.";
   }
 }

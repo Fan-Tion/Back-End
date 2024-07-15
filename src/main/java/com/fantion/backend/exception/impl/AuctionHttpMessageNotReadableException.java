@@ -1,23 +1,22 @@
 package com.fantion.backend.exception.impl;
 
 import com.fantion.backend.exception.AbstractException;
-import java.io.IOException;
 import org.springframework.http.HttpStatus;
 
-public class NotFoundMemberException extends AbstractException {
+public class AuctionHttpMessageNotReadableException extends AbstractException {
 
   @Override
   public HttpStatus getHttpStatus() {
-    return HttpStatus.NOT_FOUND;
+    return HttpStatus.BAD_REQUEST;
   }
 
   @Override
   public String getErrorCode() {
-    return "MEMBER_NOT_FOUND";
+    return "Enum_Invalid_Format";
   }
 
   @Override
   public String getMessage() {
-    return "존재하지 않는 회원입니다.";
+    return "경매 카테고리가 존재하지 않습니다.";
   }
 }
