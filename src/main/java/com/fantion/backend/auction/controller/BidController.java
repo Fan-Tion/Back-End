@@ -2,6 +2,7 @@ package com.fantion.backend.auction.controller;
 
 import com.fantion.backend.auction.dto.BalanceCheckDto;
 import com.fantion.backend.auction.dto.BidDto;
+import com.fantion.backend.auction.dto.BidSubscribeDto;
 import com.fantion.backend.auction.dto.BuyNowDto;
 import com.fantion.backend.auction.service.BidService;
 import lombok.RequiredArgsConstructor;
@@ -18,9 +19,9 @@ public class BidController {
 
     private final BidService bidService;
 
-    @GetMapping(value = "/subscribe/{auctionId}",produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    private SseEmitter subscribeBid(@PathVariable(name = "auctionId") Long auctionId){
-        return bidService.subscribeBid(auctionId);
+    @GetMapping(produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    private SseEmitter subscribeBid(@RequestBody BidSubscribeDto.Request request){
+        return bidService.subscribeBid(request);
     }
 
     @PostMapping

@@ -2,6 +2,7 @@ package com.fantion.backend.auction.service;
 
 import com.fantion.backend.auction.dto.BalanceCheckDto;
 import com.fantion.backend.auction.dto.BidDto;
+import com.fantion.backend.auction.dto.BidSubscribeDto;
 import com.fantion.backend.auction.dto.BuyNowDto;
 import com.fantion.backend.auction.entity.Auction;
 import com.fantion.backend.member.entity.Member;
@@ -13,7 +14,7 @@ public interface BidService {
     BidDto.Response createBid(BidDto.Request request);
 
     // 입찰내역 구독
-    SseEmitter subscribeBid(Long auctionId);
+    SseEmitter subscribeBid(BidSubscribeDto.Request request);
 
     // 입찰내역 발행
     void publishBid(BidDto.Response bid);

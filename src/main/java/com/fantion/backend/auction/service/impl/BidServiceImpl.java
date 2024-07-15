@@ -2,6 +2,7 @@ package com.fantion.backend.auction.service.impl;
 
 import com.fantion.backend.auction.dto.BalanceCheckDto;
 import com.fantion.backend.auction.dto.BidDto;
+import com.fantion.backend.auction.dto.BidSubscribeDto;
 import com.fantion.backend.auction.dto.BuyNowDto;
 import com.fantion.backend.auction.entity.Auction;
 import com.fantion.backend.auction.entity.Bid;
@@ -133,8 +134,8 @@ public class BidServiceImpl implements BidService {
     // 입찰내역 구독
     @Transactional
     @Override
-    public SseEmitter subscribeBid(Long auctionId) {
-        String channel = String.valueOf(auctionId);
+    public SseEmitter subscribeBid(BidSubscribeDto.Request request) {
+        String channel = String.valueOf(request.getAuctionId());
         // SSE 통신 객체 생성
         SseEmitter sseEmitter = sseEmitterService.createEmitter(channel);
 
