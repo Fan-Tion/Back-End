@@ -1,5 +1,6 @@
 package com.fantion.backend.member.service;
 
+import com.fantion.backend.member.dto.CheckDto;
 import com.fantion.backend.member.dto.SigninDto;
 import com.fantion.backend.member.dto.SignupDto;
 import com.fantion.backend.member.dto.SignupDto.Request;
@@ -15,4 +16,8 @@ public interface MemberService {
   Response signup(Request request, MultipartFile file);
 
   TokenDto signin(SigninDto signinDto);
+
+  CheckDto checkEmail(String email);
+
+  CheckDto checkNickname(String nickname);
 }
