@@ -29,6 +29,8 @@ public class SignupDto {
     private String nickname;
     @NotBlank(message = "주소는 공백일 수 없습니다.")
     private String address;
+    @NotBlank(message = "핸드폰 번호는 공백일 수 없습니다.")
+    private String phoneNumber;
   }
 
   @Getter
@@ -51,6 +53,7 @@ public class SignupDto {
         .isKakao(false)
         .isNaver(false)
         .address(request.getAddress())
+        .phoneNumber(request.getPhoneNumber())
         .totalRating(0)
         .rating(0)
         .status(MemberStatus.ACTIVE)

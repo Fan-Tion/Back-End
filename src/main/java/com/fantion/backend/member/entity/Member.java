@@ -41,5 +41,6 @@ public class Member {
   private MemberStatus status;
 
   private String profileImage;
+  private String linkedEmail;
   private LocalDateTime createDate;
 }

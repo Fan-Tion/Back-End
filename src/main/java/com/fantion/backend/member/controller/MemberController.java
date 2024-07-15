@@ -5,7 +5,6 @@ import com.fantion.backend.member.dto.SigninDto;
 import com.fantion.backend.member.dto.SignupDto;
 import com.fantion.backend.member.dto.SignupDto.Response;
 import com.fantion.backend.member.dto.TokenDto;
-import com.fantion.backend.member.dto.TokenDto.Naver;
 import com.fantion.backend.member.service.MemberService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
@@ -71,8 +70,8 @@ public class MemberController {
 
   @PutMapping("/naver/link")
   public ResponseEntity<CheckDto> naverLink(
-      @RequestParam(value = "email") @Email(message = "이메일 형식이 올바르지 않습니다.") @NotBlank(message = "이메일은 공백일 수 없습니다.") String email) {
-    CheckDto result = memberService.naverLink(email);
+      @RequestParam(value = "linkEmail") @Email(message = "이메일 형식이 올바르지 않습니다.") @NotBlank(message = "이메일은 공백일 수 없습니다.") String linkEmail) {
+    CheckDto result = memberService.naverLink(linkEmail);
     return ResponseEntity.ok(result);
   }
 }
