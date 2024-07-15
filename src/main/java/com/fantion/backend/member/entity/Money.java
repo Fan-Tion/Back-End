@@ -28,7 +28,6 @@ public class Money {
   @OneToOne
   @JoinColumn(name = "member_id")
   private Member member;
-
   private Long balance;
 
   // 낙찰

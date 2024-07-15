@@ -3,12 +3,15 @@ package com.fantion.backend.payment.component;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
+@Getter
+@Setter
 @Component
 @ConfigurationProperties(prefix = "payment")
-@Data
 public class PaymentComponent {
   private static final String BASIC_DELIMITER = ":";
   private static final String AUTH_HEADER_PREFIX = "Basic ";

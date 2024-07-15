@@ -31,7 +31,7 @@ public class JwtTokenProvider {
     this.key = Keys.hmacShaKeyFor(keyBytes);
   }
 
-  public TokenDto createTokens(String email, Long memberId, String nickname) {
+  public TokenDto.Local createTokens(String email, Long memberId, String nickname) {
 
     // AccessToken 클레임 설정
     Claims accessTokenClaims = Jwts.claims().setSubject(email);
@@ -51,22 +51,20 @@ public class JwtTokenProvider {
         .setClaims(accessTokenClaims)
         .setIssuedAt(new Date(now))
         .setExpiration(accessTokenExpiresIn)
-        .signWith(SignatureAlgorithm.HS256, key)
+        .signWith(key, SignatureAlgorithm.HS256)
         .compact();
 
     String refreshToken = Jwts.builder()
         .setClaims(refreshTokenClaims)
         .setIssuedAt(new Date(now))
         .setExpiration(refreshTokenExpiresIn)
-        .signWith(SignatureAlgorithm.HS256, key)
+        .signWith(key, SignatureAlgorithm.HS256)
         .compact();
 
-    TokenDto tokens = TokenDto.builder()
+    return TokenDto.Local.builder()
         .accessToken(accessToken)
         .refreshToken(refreshToken)
         .build();
-
-    return tokens;
   }
 
   public String reissue(String email) {
@@ -77,14 +75,12 @@ public class JwtTokenProvider {
     long now = (new Date()).getTime();
     Date accessTokenExpiresIn = new Date(now + 3600000);
 
-    String accessToken = Jwts.builder()
+    return Jwts.builder()
         .setClaims(claims)
         .setIssuedAt(new Date(now))
         .setExpiration(accessTokenExpiresIn)
-        .signWith(SignatureAlgorithm.HS256, key)
+        .signWith(key, SignatureAlgorithm.HS256)
         .compact();
-
-    return accessToken;
   }
 
   public Authentication getAuthentication(String token) {
@@ -110,7 +106,7 @@ public class JwtTokenProvider {
 
   public boolean validateToken(String token) {
     try {
-      Jwts.parser().setSigningKey(key).parseClaimsJws(token);
+      Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token);
       return true;
     } catch (Exception e) {
       return false;
@@ -118,7 +114,7 @@ public class JwtTokenProvider {
   }
 
   public Claims getClaimsFromToken(String token) {
-    return Jwts.parser().setSigningKey(key).parseClaimsJws(token).getBody();
+    return Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token).getBody();
   }
 
   public List<String> getRolesFromToken(String token) {

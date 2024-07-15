@@ -19,7 +19,7 @@ public class CustomExceptionHandler {
     return new ResponseEntity<>(errorResponse, e.getHttpStatus());
   }
   @ExceptionHandler(FantionAbstractException.class)
-  protected ResponseEntity<FantionErrorResponse> bidCustomException(FantionAbstractException e) {
+  protected ResponseEntity<FantionErrorResponse> fantionCustomException(FantionAbstractException e) {
 
     FantionErrorResponse errorResponse = FantionErrorResponse.builder()
             .status(e.getStatusCode())
