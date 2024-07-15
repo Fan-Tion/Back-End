@@ -64,7 +64,6 @@ public class MemberServiceImpl implements MemberService {
       if (!member.getStatus().equals(MemberStatus.WITHDRAWN)) {
         throw new DuplicateEmailException();
       }
-    }
 
     // 닉네임 중복 체크
     Optional<Member> byNickname = memberRepository.findByNickname(request.getNickname());

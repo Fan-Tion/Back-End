@@ -18,4 +18,16 @@ public class CustomExceptionHandler {
 
     return new ResponseEntity<>(errorResponse, e.getHttpStatus());
   }
+  @ExceptionHandler(BidAbstractException.class)
+  protected ResponseEntity<BidErrorResponse> bidCustomException(BidAbstractException e) {
+
+    BidErrorResponse errorResponse = BidErrorResponse.builder()
+            .status(e.getStatusCode())
+            .errorCode(e.getErrorCode())
+            .message(e.getMessage())
+            .build();
+
+    return new ResponseEntity<>(errorResponse, e.getStatusCode());
+  }
+
 }
