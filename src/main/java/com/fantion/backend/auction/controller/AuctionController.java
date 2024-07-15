@@ -45,26 +45,14 @@ public class AuctionController {
   private final AuctionService auctionService;
   private final MemberRepository memberRepository;
 
-  /**
-   * 경매 생성
-   */
+
   @PostMapping("")
   public ResponseEntity<?> createAuction(
       @Valid @RequestPart("request") AuctionDto.Request request,
       @RequestPart("auctionImage") List<MultipartFile> auctionImage) {
-    memberRepository.save(
-        new Member(1L, "email",
-            "password", "nickname",
-            true, true, true,
-            "address", 0, 0, 0,
-            MemberStatus.ACTIVE, null, LocalDateTime.now()));
-
     return ResponseEntity.ok(auctionService.createAuction(request, auctionImage));
   }
 
-  /**
-   * 경매 수정
-   */
   @PutMapping("/{auctionId}")
   public ResponseEntity<?> updateAuction(
       @Valid @RequestPart("request") AuctionDto.Request request,
@@ -73,9 +61,6 @@ public class AuctionController {
     return ResponseEntity.ok(auctionService.updateAuction(request, auctionImage, auctionId));
   }
 
-  /**
-   * 경매 삭제
-   */
   @DeleteMapping("/{auctionId}")
   public ResponseEntity<?> deleteAuction(
       @PathVariable("auctionId") Long auctionId) {
@@ -91,9 +76,6 @@ public class AuctionController {
     return ResponseEntity.ok("save or update");
   }
 
-  /**
-   * 거래량 가져오기
-   * */
   @GetMapping("/favorite-category")
   public ResponseEntity<?> getFavoriteAuctionCategory() {
     Map<String, Integer> map
@@ -111,9 +93,6 @@ public class AuctionController {
     return ResponseEntity.ok(auctionService.getAllAuctionCategory());
   }
 
-  /**
-   * 경매 리스트
-   * */
   @GetMapping("/list")
   public ResponseEntity<?> getAllAuctions(
       @Valid @RequestParam(value = "page", defaultValue = "0") int page
@@ -121,9 +100,6 @@ public class AuctionController {
     return ResponseEntity.ok(auctionService.getList(page));
   }
 
-  /**
-   * 경매 검색
-   * */
   @GetMapping("/search")
   public ResponseEntity<?> searchAuctions(
       @RequestParam("page") @Min(0) int page,

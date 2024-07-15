@@ -1,26 +1,40 @@
 package com.fantion.backend.auction.service.impl;
 
 import com.fantion.backend.auction.dto.AuctionDto;
-import com.fantion.backend.auction.dto.AuctionDto.Request;
-import com.fantion.backend.auction.dto.AuctionDto.Response;
 import com.fantion.backend.auction.dto.CategoryDto;
-import com.fantion.backend.auction.dto.SearchDto;
 import com.fantion.backend.auction.entity.Auction;
 import com.fantion.backend.auction.repository.AuctionRepository;
 import com.fantion.backend.auction.service.AuctionService;
-import com.fantion.backend.exception.impl.*;
+import com.fantion.backend.exception.impl.AuctionHttpMessageNotReadableException;
+import com.fantion.backend.exception.impl.AuctionJsonProcessingException;
+import com.fantion.backend.exception.impl.AuctionNotFoundException;
+import com.fantion.backend.exception.impl.ImageException;
+import com.fantion.backend.exception.impl.ImageIOException;
+import com.fantion.backend.exception.impl.ImageInternalServerException;
+import com.fantion.backend.exception.impl.ImageInvalidPathException;
+import com.fantion.backend.exception.impl.ImageMalformedURLException;
+import com.fantion.backend.exception.impl.ImageSecurityException;
+import com.fantion.backend.exception.impl.NotFoundMemberException;
 import com.fantion.backend.member.repository.MemberRepository;
 import com.fantion.backend.type.CategoryType;
 import com.fantion.backend.type.SearchType;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.Valid;
+import java.io.File;
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.nio.file.*;
 import java.time.Duration;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
@@ -32,18 +46,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpHeaders;
 import org.springframework.jca.endpoint.GenericMessageEndpointFactory.InternalResourceException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.io.File;
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.nio.file.*;
-import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
 
 import static org.springframework.util.FileSystemUtils.deleteRecursively;
 
@@ -58,15 +65,13 @@ public class AuctionServiceImpl implements AuctionService {
   private final RedisTemplate<String, Object> redisTemplate;
 
   private final ObjectMapper objectMapper = new ObjectMapper();
-  private Path imgPath = Paths.get("images/auction/" + getUserId() + "/");
+  private Path imgPath = Paths.get("images/auction/" + getLoginUserId() + "/");
   private String serverUrl = "http://localhost:8080/auction/";
 
-  /**
-   * 경매 생성
-   */
+
   @Override
   @Transactional
-  public Response createAuction(@Valid Request request, List<MultipartFile> auctionImage) {
+  public AuctionDto.Response createAuction(@Valid AuctionDto.Request request, List<MultipartFile> auctionImage) {
     saveImages(auctionImage);
 
     Auction auction = toAuction(request);
@@ -91,8 +96,8 @@ public class AuctionServiceImpl implements AuctionService {
    */
   @Override
   @Transactional
-  public Response updateAuction(
-      @Valid Request request,
+  public AuctionDto.Response updateAuction(
+      @Valid AuctionDto.Request request,
       List<MultipartFile> auctionImage,
       Long auctionId) {
     Auction auction = updateValue(request, auctionId);
@@ -121,7 +126,7 @@ public class AuctionServiceImpl implements AuctionService {
    * 경매 리스트
    */
   @Override
-  public Page<Response> getList(int page) {
+  public Page<AuctionDto.Response> getList(int page) {
     Pageable pageable = getPageable(page);
     return covertToResponseList(auctionRepository.findAll(pageable));
   }
@@ -130,7 +135,7 @@ public class AuctionServiceImpl implements AuctionService {
    * 경매 검색
    */
   @Override
-  public Page<Response> getSearchList(
+  public Page<AuctionDto.Response> getSearchList(
       int page,
       SearchType searchOption,
       CategoryType categoryType,
@@ -208,53 +213,61 @@ public class AuctionServiceImpl implements AuctionService {
     return null;
   }
 
+
   @Override
-  public CategoryDto getFavoriteAuctionCategory(Map<String, Integer> map) {
-    List<String> auctionDateList = map.entrySet()
+  public List<CategoryDto> getAllAuctionCategory() {
+    CategoryType[] categoryArray = CategoryType.values();
+    List<CategoryDto> categoryList = new ArrayList<>();
+
+    for (int i = 1; i < categoryArray.length; i++) {
+      categoryList.add(new CategoryDto(
+          categoryArray[i].name(),
+          serverUrl + "search?searchOption=CATEGORY&categoryOption="
+              + categoryArray[i].name() + "&keyword=&page=0"));
+    }
+
+    return categoryList;
+  }
+
+  @Override
+  public List<CategoryDto> getFavoriteAuctionCategory(Map<String, Integer> map) {
+    List<CategoryDto> categoryList = map.entrySet()
         .stream()
         .sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
         .limit(5)
-        .map(Map.Entry::getKey)
+        .map(entry -> new CategoryDto(
+            entry.getKey(), serverUrl + "search?searchOption=CATEGORY&categoryOption="
+                + entry.getKey() + "&keyword=&page=0"))
         .collect(Collectors.toList());
 
     Random random = new Random();
     CategoryType[] categoryArray = CategoryType.values();
 
-    while (auctionDateList.size() < 5) {
+    while (categoryList.size() < 5) {
       String categoryTypeStr
           = categoryArray[random.nextInt(categoryArray.length)].name();
 
-      if (!auctionDateList.contains(categoryTypeStr)
-          && !categoryTypeStr.equals(CategoryType.ALL.name())
-          && !categoryTypeStr.equals(CategoryType.OTHER.name())) {
-        auctionDateList.add(categoryTypeStr);
+      if (ableCategoryCheck(categoryList, categoryTypeStr)) {
+        categoryList.add(
+            new CategoryDto(
+                categoryTypeStr,
+                serverUrl + "search?searchOption=CATEGORY&categoryOption="
+                    + categoryTypeStr + "&keyword=&page=0"));
       }
     }
 
-    return getCategoryDto(auctionDateList);
+    return categoryList;
   }
-
-  @Override
-  public CategoryDto getAllAuctionCategory() {
-    CategoryType[] categoryArray = CategoryType.values();
-    List<String> categoryList = new ArrayList<>();
-
-    for (int i = 1; i < categoryArray.length; i++) {
-      categoryList.add(categoryArray[i].name());
-    }
-
-    return getCategoryDto(categoryList);
-  }
-
 
   /**
    * 경매데이터 수정 member쪽은 임시 데이터임
    */
-  private Auction updateValue(Request request, Long auctionId) {
+  private Auction updateValue(AuctionDto.Request request, Long auctionId) {
     Auction auction = auctionRepository.findById(auctionId)
         .orElseThrow(AuctionNotFoundException::new);
 
-    auction.setMember(memberRepository.findById(1L).orElseThrow(NotFoundMemberException::new));
+    auction.setMember(memberRepository.findByEmail(getLoginUserEmail())
+        .orElseThrow(NotFoundMemberException::new));
     auction.setTitle(request.getTitle());
     auction.setAuctionType(request.isAuctionType());
     auction.setCategory(request.getCategory());
@@ -274,9 +287,10 @@ public class AuctionServiceImpl implements AuctionService {
   /**
    * request -> auction member쪽은 임시 데이터임
    */
-  private Auction toAuction(Request request) {
+  private Auction toAuction(AuctionDto.Request request) {
     return Auction.builder()
-        .member(memberRepository.findById(1L).orElseThrow(NotFoundMemberException::new))
+        .member(memberRepository.findByEmail(getLoginUserEmail())
+            .orElseThrow(NotFoundMemberException::new))
         .title(request.getTitle())
         .category(request.getCategory())
         .auctionType(request.isAuctionType())
@@ -295,11 +309,11 @@ public class AuctionServiceImpl implements AuctionService {
   /**
    * auction -> response userNickname쪽은 임시 데이터임
    */
-  private Response toResponse(Auction auction) {
-    return Response.builder()
+  private AuctionDto.Response toResponse(Auction auction) {
+    return AuctionDto.Response.builder()
         .title(auction.getTitle())
-        .auctionUserNickname(memberRepository.findById(1L).orElseThrow(
-            NotFoundMemberException::new).getNickname())
+        .auctionUserNickname(memberRepository.findByEmail(getLoginUserEmail())
+            .orElseThrow(NotFoundMemberException::new).getNickname())
         .category(auction.getCategory())
         .auctionType(auction.isAuctionType())
         .auctionImage(
@@ -318,8 +332,8 @@ public class AuctionServiceImpl implements AuctionService {
   /**
    * Page<Auction> -> Page<Response>
    */
-  private Page<Response> covertToResponseList(Page<Auction> auctionList) {
-    List<Response> responseList = auctionList.stream().map(this::toResponse)
+  private Page<AuctionDto.Response> covertToResponseList(Page<Auction> auctionList) {
+    List<AuctionDto.Response> responseList = auctionList.stream().map(this::toResponse)
         .collect(Collectors.toList());
 
     return new PageImpl<>(responseList, auctionList.getPageable(), auctionList.getTotalElements());
@@ -343,13 +357,6 @@ public class AuctionServiceImpl implements AuctionService {
     } catch (IOException e) {
       throw new ImageIOException();
     }
-  }
-
-  /**
-   * userId를 가져오기
-   */
-  private Long getUserId() {
-    return 1L;
   }
 
   /**
@@ -416,13 +423,17 @@ public class AuctionServiceImpl implements AuctionService {
     return PageRequest.of(page, 10);
   }
 
-  private CategoryDto getCategoryDto(List<String> auctionDateList) {
-    CategoryDto categoryDto = new CategoryDto();
-    categoryDto.setTitleList(auctionDateList);
-    categoryDto.setCategoryList(
-        auctionDateList.stream()
-            .map(x -> serverUrl + "search?searchOption=CATEGORY&categoryOption=" + x + "&keyword=&page=0")
-            .collect(Collectors.toList()));
-    return categoryDto;
+  private String getLoginUserEmail() {
+    return "123@naver.com";
+  }
+
+  private Long getLoginUserId() {
+    return 1L;
+  }
+
+  private static boolean ableCategoryCheck(List<CategoryDto> categoryList, String categoryTypeStr) {
+    return categoryList.stream().noneMatch(dto -> dto.getTitle().equals(categoryTypeStr))
+        && !categoryTypeStr.equals(CategoryType.ALL.name())
+        && !categoryTypeStr.equals(CategoryType.OTHER.name());
   }
 }

@@ -1,9 +1,11 @@
 package com.fantion.backend.auction.dto;
 
 import com.fantion.backend.type.SearchType;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
-@Data
+@Getter
+@Setter
 public class SearchDto {
   private int page = 0;
   private SearchType searchOption;

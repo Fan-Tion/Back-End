@@ -1,8 +1,7 @@
 package com.fantion.backend.auction.service;
 
+
 import com.fantion.backend.auction.dto.AuctionDto;
-import com.fantion.backend.auction.dto.AuctionDto.Request;
-import com.fantion.backend.auction.dto.AuctionDto.Response;
 import com.fantion.backend.auction.dto.CategoryDto;
 import com.fantion.backend.type.CategoryType;
 import com.fantion.backend.type.SearchType;
@@ -22,15 +21,15 @@ public interface AuctionService {
       List<MultipartFile> auctionImage);
 
   AuctionDto.Response updateAuction(
-      Request request,
+      AuctionDto.Request request,
       List<MultipartFile> auctionImage,
       Long auctionId);
 
   boolean deleteAuction(Long auctionId);
 
-  Page<Response> getList(int page);
+  Page<AuctionDto.Response> getList(int page);
 
-  Page<Response> getSearchList(int page, SearchType searchOption, CategoryType categoryOption, String keyword);
+  Page<AuctionDto.Response> getSearchList(int page, SearchType searchOption, CategoryType categoryOption, String keyword);
 
   // 경매 상세보기
   AuctionDto.Response findAuction(Long auctionId);
@@ -41,7 +40,7 @@ public interface AuctionService {
 
   Map<String, Integer> getAuctionDateValue();
 
-  CategoryDto getFavoriteAuctionCategory(Map<String, Integer> map);
+  List<CategoryDto> getAllAuctionCategory();
 
-  CategoryDto getAllAuctionCategory();
+  List<CategoryDto> getFavoriteAuctionCategory(Map<String, Integer> map);
 }

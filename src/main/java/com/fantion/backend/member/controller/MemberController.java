@@ -31,7 +31,7 @@ public class MemberController {
   }
 
   @PostMapping("/signin")
-  public ResponseEntity<TokenDto> Signin(@Valid @RequestBody SigninDto signinDto) {
+  public ResponseEntity<TokenDto> signIn(@Valid @RequestBody SigninDto signinDto) {
     TokenDto result = memberService.signin(signinDto);
     return ResponseEntity.ok(result);
   }
