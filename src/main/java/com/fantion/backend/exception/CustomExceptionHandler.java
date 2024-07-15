@@ -1,16 +1,12 @@
 package com.fantion.backend.exception;
 
-import com.fantion.backend.exception.impl.SnsNotLinkedException;
-import java.util.HashMap;
-import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.FieldError;
-import org.springframework.web.bind.MethodArgumentNotValidException;
-import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
 
-@ControllerAdvice
+@RestControllerAdvice
 public class CustomExceptionHandler {
 
   @ExceptionHandler(AbstractException.class)
@@ -24,13 +20,12 @@ public class CustomExceptionHandler {
     return new ResponseEntity<>(errorResponse, e.getHttpStatus());
   }
 
-  @ExceptionHandler(MethodArgumentNotValidException.class)
-  public ResponseEntity<ErrorResponse> handleValidationExceptions(MethodArgumentNotValidException e) {
+  @ExceptionHandler(HandlerMethodValidationException.class)
+  public ResponseEntity<ErrorResponse> handleValidationExceptions(HandlerMethodValidationException e) {
     ErrorResponse errorResponse = ErrorResponse.builder()
         .status(HttpStatus.BAD_REQUEST)
         .errorCode("VALIDATION_ERROR") // 일반적인 에러 코드 사용
-        .message("Validation failed: " + e.getBindingResult().getFieldError()
-            .getDefaultMessage()) // 첫 번째 오류 메시지 사용
+        .message(e.getReason())
         .build();
 
     return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);

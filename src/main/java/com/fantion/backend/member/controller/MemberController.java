@@ -74,4 +74,10 @@ public class MemberController {
     CheckDto result = memberService.naverLink(linkEmail);
     return ResponseEntity.ok(result);
   }
+
+  @PostMapping("/signout")
+  public ResponseEntity<CheckDto> signout() {
+    CheckDto result = memberService.signout();
+    return ResponseEntity.ok(result);
+  }
 }
