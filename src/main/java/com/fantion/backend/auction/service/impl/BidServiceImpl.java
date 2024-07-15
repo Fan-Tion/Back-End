@@ -10,6 +10,8 @@ import com.fantion.backend.auction.repository.BidRepository;
 import com.fantion.backend.auction.service.BidService;
 import com.fantion.backend.auction.service.RedisMessageService;
 import com.fantion.backend.auction.service.SseEmitterService;
+import com.fantion.backend.exception.ErrorCode;
+import com.fantion.backend.exception.impl.BidException;
 import com.fantion.backend.member.auth.MemberAuthUtil;
 import com.fantion.backend.member.entity.BalanceHistory;
 import com.fantion.backend.member.entity.Member;
@@ -52,7 +54,7 @@ public class BidServiceImpl implements BidService {
 
         // 경매 종료일이 지난 경우 입찰 불가능
         if (LocalDateTime.now().isAfter(endDate)) {
-            throw new RuntimeException();
+            throw new BidException(ErrorCode.TOO_OLD_AUCTION);
 
         }
 
