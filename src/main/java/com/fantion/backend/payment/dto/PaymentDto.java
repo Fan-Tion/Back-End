@@ -3,6 +3,7 @@ package com.fantion.backend.payment.dto;
 import com.fantion.backend.payment.entity.Payment;
 import com.fantion.backend.type.PaymentType;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -18,9 +19,9 @@ public class PaymentDto {
   @AllArgsConstructor
   @Builder(toBuilder = true)
   public static class Request {
-    @NotBlank(message = "결제유형은 필수값 입니다.")
+    @NotNull(message = "결제유형은 필수값 입니다.")
     private PaymentType paymentType;   // 결제 유형 (예: CARD)
-    @NotBlank(message = "결제금액은 필수값 입니다.")
+    @NotNull(message = "결제금액은 필수값 입니다.")
     private Long amount;           // 결제 금액
     @NotBlank(message = "결제상품 이름은 필수값 입니다.")
     private String orderName;     // 주문 이름 (상품명)

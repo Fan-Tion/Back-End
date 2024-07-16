@@ -3,20 +3,21 @@ package com.fantion.backend.exception.impl;
 import com.fantion.backend.exception.AbstractException;
 import org.springframework.http.HttpStatus;
 
-public class SnsNotLinkedException extends AbstractException {
+public class InvalidTokenException extends AbstractException {
 
   @Override
   public HttpStatus getHttpStatus() {
-    return HttpStatus.BAD_REQUEST;
+    return HttpStatus.FORBIDDEN;
   }
 
   @Override
   public String getErrorCode() {
-    return "SNS_NOT_LINKED";
+    return "TOKEN_INVALID";
   }
 
   @Override
   public String getMessage() {
-    return "소셜계정을 연동하지 않은 회원입니다.";
+    return "유효하지 않은 토큰입니다.";
   }
 }
+

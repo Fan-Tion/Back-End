@@ -42,4 +42,5 @@ public class Member {
   private String profileImage;
   private String linkedEmail;
   private LocalDateTime createDate;
+  private LocalDateTime withdrawalDate;
 }
