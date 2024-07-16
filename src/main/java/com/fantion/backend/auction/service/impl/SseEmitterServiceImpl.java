@@ -19,7 +19,7 @@ public class SseEmitterServiceImpl implements SseEmitterService {
 
     private final SseEmitterRepository sseEmitterRepository;
 
-    @Value("${spring.sse.timeout}")
+    @Value("${sse.timeout}")
     private Long timeout;
     @Override
     public SseEmitter createEmitter(String emitterKey) {

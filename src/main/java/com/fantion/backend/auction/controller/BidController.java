@@ -1,6 +1,9 @@
 package com.fantion.backend.auction.controller;
 
+import com.fantion.backend.auction.dto.BalanceCheckDto;
 import com.fantion.backend.auction.dto.BidDto;
+import com.fantion.backend.auction.dto.BidSubscribeDto;
+import com.fantion.backend.auction.dto.BuyNowDto;
 import com.fantion.backend.auction.service.BidService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,13 +20,25 @@ public class BidController {
     private final BidService bidService;
 
     @GetMapping(produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    private SseEmitter subscribeBid(){
-        return bidService.subscribeBid();
+    private SseEmitter subscribeBid(@RequestBody BidSubscribeDto.Request request){
+        return bidService.subscribeBid(request);
     }
 
-    @PutMapping
+    @PostMapping
     private BidDto.Response createBid(@RequestBody BidDto.Request request){
         log.info("[Controller] createBid");
         return  bidService.createBid(request);
     }
+
+    @PutMapping
+    private BuyNowDto.Response buyNow(@RequestBody BuyNowDto.Request request){
+        log.info("[Controller] buyNow");
+        return  bidService.buyNow(request);
+    }
+
+    @GetMapping("/balance")
+    private BalanceCheckDto.Response useBalanceCheck(){
+        return bidService.useBalanceCheck();
+    }
+
 }

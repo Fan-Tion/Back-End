@@ -3,14 +3,12 @@ package com.fantion.backend.auction.dto;
 import com.fantion.backend.auction.entity.Bid;
 import jakarta.validation.constraints.NotBlank;
 import java.time.LocalDateTime;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 
 public class BidDto {
-  @Data
+  @Getter
+  @Setter
   @Builder
   @AllArgsConstructor
   @NoArgsConstructor
@@ -21,8 +19,8 @@ public class BidDto {
     private Long bidPrice;          // 입찰가
 
   }
-
-  @Data
+  @Getter
+  @Setter
   @Builder
   @AllArgsConstructor
   @NoArgsConstructor
@@ -40,7 +38,7 @@ public class BidDto {
     return Response.builder()
             .auctionId(bid.getAuctionId().getAuctionId())
             .bidPrice(bid.getBidPrice())
-            .bidder(bid.getBidder())
+            .bidder(bid.getBidder().getNickname())
             .createDate(bid.getCreateDate())
             .build();
   }

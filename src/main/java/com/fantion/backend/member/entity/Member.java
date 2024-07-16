@@ -28,9 +28,10 @@ public class Member {
   private String password;
   private String nickname;
   private Boolean auth;
-  private Boolean kakao;
-  private Boolean naver;
+  private Boolean isKakao;
+  private Boolean isNaver;
   private String address;
+  private String phoneNumber;
   private Integer totalRating;
   private Integer ratingCnt;
   private Integer rating;
@@ -39,5 +40,7 @@ public class Member {
   private MemberStatus status;
 
   private String profileImage;
+  private String linkedEmail;
   private LocalDateTime createDate;
+  private LocalDateTime withdrawalDate;
 }

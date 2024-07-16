@@ -1,5 +1,7 @@
 package com.fantion.backend.member.entity;
 
+import com.fantion.backend.exception.ErrorCode;
+import com.fantion.backend.exception.impl.FantionException;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
@@ -26,6 +28,15 @@ public class Money {
   @OneToOne
   @JoinColumn(name = "member_id")
   private Member member;
-
   private Long balance;
+
+  // 낙찰
+  public void successBid(Long bidPrice){
+    if (bidPrice > balance) {
+      throw new FantionException(ErrorCode.NOT_ENOUGH_BALANCE);
+    }
+    balance -= bidPrice;
+  }
+
+
 }

@@ -7,9 +7,11 @@ import com.fantion.backend.auction.dto.CategoryDto;
 import com.fantion.backend.auction.entity.Auction;
 import com.fantion.backend.auction.repository.AuctionRepository;
 import com.fantion.backend.auction.service.AuctionService;
+import com.fantion.backend.exception.ErrorCode;
 import com.fantion.backend.exception.impl.AuctionHttpMessageNotReadableException;
 import com.fantion.backend.exception.impl.AuctionJsonProcessingException;
 import com.fantion.backend.exception.impl.AuctionNotFoundException;
+import com.fantion.backend.exception.impl.FantionException;
 import com.fantion.backend.exception.impl.ImageException;
 import com.fantion.backend.exception.impl.ImageIOException;
 import com.fantion.backend.exception.impl.ImageInternalServerException;
@@ -43,7 +45,6 @@ import java.util.Random;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.data.domain.Page;
@@ -66,7 +67,6 @@ import org.springframework.web.multipart.MultipartFile;
 public class AuctionServiceImpl implements AuctionService {
 
   private final AuctionRepository auctionRepository;
-  @Autowired
   private final MemberRepository memberRepository;
 
   private final RedisTemplate<String, Object> redisTemplate;
@@ -76,14 +76,16 @@ public class AuctionServiceImpl implements AuctionService {
 
   @Override
   @Transactional
-  public AuctionDto.Response createAuction(@Valid AuctionDto.Request request, List<MultipartFile> auctionImage) {
+  public String createAuction(@Valid AuctionDto.Request request,
+      List<MultipartFile> auctionImage) {
     saveImages(auctionImage);
 
     Auction auction = toAuction(request);
+    Long auctionIdx = auctionRepository.count() + 1;
 
     auctionRepository.save(auction);
 
-    return toResponse(auction);
+    return serverUrl + "view/" + auctionIdx;
   }
 
   // 경매 상세보기
@@ -91,7 +93,7 @@ public class AuctionServiceImpl implements AuctionService {
   public AuctionDto.Response findAuction(Long auctionId) {
     // 상세보기할 경매 조회
     Auction auction = auctionRepository.findById(auctionId)
-        .orElseThrow(AuctionNotFoundException::new);
+        .orElseThrow(() -> new FantionException(ErrorCode.NOT_FOUND_AUCTION));
 
     return toResponse(auction);
   }
@@ -154,10 +156,11 @@ public class AuctionServiceImpl implements AuctionService {
       } else if (searchOption == SearchType.CATEGORY) {
         if (categoryType == CategoryType.ALL) {
           auctionPage = auctionRepository.findAll(pageable);
-        } else if (keyword == null){
+        } else if (keyword == null) {
           auctionPage = auctionRepository.findByCategory(categoryType, pageable);
         } else {
-          auctionPage = auctionRepository.findByCategoryAndTitleContaining(categoryType, keyword, pageable);
+          auctionPage = auctionRepository.findByCategoryAndTitleContaining(categoryType, keyword,
+              pageable);
         }
       }
     } catch (Exception e) {
@@ -242,7 +245,7 @@ public class AuctionServiceImpl implements AuctionService {
         .limit(5)
         .map(entry -> new CategoryDto(
             entry.getKey(), serverUrl + "search?searchOption=CATEGORY&categoryOption="
-                + entry.getKey() + "&keyword=&page=0"))
+            + entry.getKey() + "&keyword=&page=0"))
         .collect(Collectors.toList());
 
     Random random = new Random();
@@ -309,8 +312,7 @@ public class AuctionServiceImpl implements AuctionService {
   private AuctionDto.Response toResponse(Auction auction) {
     return AuctionDto.Response.builder()
         .title(auction.getTitle())
-        .auctionUserNickname(memberRepository.findByEmail(getLoginUserEmail())
-            .orElseThrow(NotFoundMemberException::new).getNickname())
+        .auctionUserNickname(auction.getMember().getNickname())
         .category(auction.getCategory())
         .auctionType(auction.isAuctionType())
         .auctionImage(
@@ -341,13 +343,15 @@ public class AuctionServiceImpl implements AuctionService {
    */
   public void saveImages(List<MultipartFile> images) {
     try {
-      if (!Files.exists(getImgPath())) {
-        Files.createDirectories(getImgPath());
+      Path imgPath = getImgPath();
+
+      if (!Files.exists(imgPath)) {
+        Files.createDirectories(imgPath);
       }
 
       for (int i = 0; i < images.size(); i++) {
         String filename = (i + 1) + ".jpg";
-        Path filePath = getImgPath().resolve(filename);
+        Path filePath = imgPath.resolve(filename);
 
         Files.write(filePath, images.get(i).getBytes());
       }
@@ -420,7 +424,7 @@ public class AuctionServiceImpl implements AuctionService {
     return PageRequest.of(page, 10);
   }
 
-  private  Path getImgPath() {
+  private Path getImgPath() {
     return Paths.get("images/auction/" + getLoginUserId() + "/");
   }
 
@@ -452,6 +456,4 @@ public class AuctionServiceImpl implements AuctionService {
         && !categoryTypeStr.equals(CategoryType.ALL.name())
         && !categoryTypeStr.equals(CategoryType.OTHER.name());
   }
-
-
 }

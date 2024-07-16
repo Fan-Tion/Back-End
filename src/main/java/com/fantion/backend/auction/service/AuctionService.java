@@ -11,12 +11,10 @@ import java.util.Map;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpHeaders;
-import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-@Service
 public interface AuctionService {
-  AuctionDto.Response createAuction(
+  String createAuction(
       AuctionDto.Request request,
       List<MultipartFile> auctionImage);
 

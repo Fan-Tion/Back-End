@@ -23,9 +23,9 @@ public class SecurityConfiguration {
 
     return http.csrf(AbstractHttpConfigurer::disable)
         .authorizeHttpRequests(
-            requests -> requests.requestMatchers("/payments/**", "/members/**").permitAll()
-                .requestMatchers("/auction", "/auction/**", "/auction/category", "/auction/favorite-category").permitAll()
-        )
+            requests -> requests.requestMatchers("/payments/**", "/members/**"
+                ,"/auction/category", "/auction/favorite-category", "/auction/search", "/auction/view/**").permitAll()
+                .anyRequest().authenticated())
         .sessionManagement(sessionManagement -> sessionManagement.sessionCreationPolicy(
             SessionCreationPolicy.STATELESS))
         .addFilterBefore(jwtTokenFilter, UsernamePasswordAuthenticationFilter.class)

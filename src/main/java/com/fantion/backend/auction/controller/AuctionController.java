@@ -2,17 +2,13 @@ package com.fantion.backend.auction.controller;
 
 import com.fantion.backend.auction.dto.AuctionDto;
 import com.fantion.backend.auction.service.AuctionService;
-import com.fantion.backend.member.entity.Member;
-import com.fantion.backend.member.repository.MemberRepository;
 import com.fantion.backend.type.CategoryType;
-import com.fantion.backend.type.MemberStatus;
 import com.fantion.backend.type.SearchType;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,7 +39,6 @@ public class AuctionController {
   private final Path basePath = Paths.get("images/auction");
 
   private final AuctionService auctionService;
-  private final MemberRepository memberRepository;
 
 
   @PostMapping("")
@@ -128,7 +123,7 @@ public class AuctionController {
   }
   
   @GetMapping("/view/{auctionId}")
-  private AuctionDto.Response findAuction(@PathVariable(name = "auctionId") Long auctionId){
+  public AuctionDto.Response findAuction(@PathVariable(name = "auctionId") Long auctionId){
       return auctionService.findAuction(auctionId);
   }
 }
