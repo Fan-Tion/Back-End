@@ -16,7 +16,6 @@ import org.springframework.web.filter.OncePerRequestFilter;
 @Component
 @RequiredArgsConstructor
 public class JwtTokenFilter extends OncePerRequestFilter {
-
   private final JwtTokenProvider jwtTokenProvider;
   private final RedisTemplate redisTemplate;
 

@@ -1,5 +1,7 @@
 package com.fantion.backend.auction.service.impl;
 
+import static org.springframework.util.FileSystemUtils.deleteRecursively;
+
 import com.fantion.backend.auction.dto.AuctionDto;
 import com.fantion.backend.auction.dto.CategoryDto;
 import com.fantion.backend.auction.entity.Auction;
@@ -24,7 +26,11 @@ import jakarta.validation.Valid;
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
-import java.nio.file.*;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -37,6 +43,7 @@ import java.util.Random;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.data.domain.Page;
@@ -48,11 +55,10 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.jca.endpoint.GenericMessageEndpointFactory.InternalResourceException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-
-import static org.springframework.util.FileSystemUtils.deleteRecursively;
 
 @Slf4j
 @Service
@@ -60,14 +66,13 @@ import static org.springframework.util.FileSystemUtils.deleteRecursively;
 public class AuctionServiceImpl implements AuctionService {
 
   private final AuctionRepository auctionRepository;
+  @Autowired
   private final MemberRepository memberRepository;
 
   private final RedisTemplate<String, Object> redisTemplate;
 
   private final ObjectMapper objectMapper = new ObjectMapper();
-  private Path imgPath = Paths.get("images/auction/" + getLoginUserId() + "/");
   private String serverUrl = "http://localhost:8080/auction/";
-
 
   @Override
   @Transactional
@@ -102,7 +107,7 @@ public class AuctionServiceImpl implements AuctionService {
       Long auctionId) {
     Auction auction = updateValue(request, auctionId);
 
-    emptyDirectory(imgPath);
+    emptyDirectory(getImgPath());
     saveImages(auctionImage);
 
     return toResponse(auction);
@@ -117,7 +122,7 @@ public class AuctionServiceImpl implements AuctionService {
   public boolean deleteAuction(Long auctionId) {
     auctionRepository.deleteById(auctionId);
 
-    emptyDirectory(imgPath);
+    emptyDirectory(getImgPath());
 
     return true;
   }
@@ -259,9 +264,7 @@ public class AuctionServiceImpl implements AuctionService {
     return categoryList;
   }
 
-  /**
-   * 경매데이터 수정 member쪽은 임시 데이터임
-   */
+
   private Auction updateValue(AuctionDto.Request request, Long auctionId) {
     Auction auction = auctionRepository.findById(auctionId)
         .orElseThrow(AuctionNotFoundException::new);
@@ -284,9 +287,6 @@ public class AuctionServiceImpl implements AuctionService {
     return auction;
   }
 
-  /**
-   * request -> auction member쪽은 임시 데이터임
-   */
   private Auction toAuction(AuctionDto.Request request) {
     return Auction.builder()
         .member(memberRepository.findByEmail(getLoginUserEmail())
@@ -306,9 +306,6 @@ public class AuctionServiceImpl implements AuctionService {
         .build();
   }
 
-  /**
-   * auction -> response userNickname쪽은 임시 데이터임
-   */
   private AuctionDto.Response toResponse(Auction auction) {
     return AuctionDto.Response.builder()
         .title(auction.getTitle())
@@ -344,13 +341,13 @@ public class AuctionServiceImpl implements AuctionService {
    */
   public void saveImages(List<MultipartFile> images) {
     try {
-      if (!Files.exists(imgPath)) {
-        Files.createDirectories(imgPath);
+      if (!Files.exists(getImgPath())) {
+        Files.createDirectories(getImgPath());
       }
 
       for (int i = 0; i < images.size(); i++) {
         String filename = (i + 1) + ".jpg";
-        Path filePath = imgPath.resolve(filename);
+        Path filePath = getImgPath().resolve(filename);
 
         Files.write(filePath, images.get(i).getBytes());
       }
@@ -367,7 +364,7 @@ public class AuctionServiceImpl implements AuctionService {
       List<String> imageExtensions = Arrays.asList("jpg", "jpeg", "png", "gif", "bmp");
 
       // 폴더 내의 모든 파일 경로를 필터링하여 이미지 파일 경로만 수집
-      List<String> imagePaths = Files.walk(imgPath)
+      List<String> imagePaths = Files.walk(getImgPath())
           .filter(Files::isRegularFile)
           .map(Path::toString)
           .filter(x -> {
@@ -423,12 +420,31 @@ public class AuctionServiceImpl implements AuctionService {
     return PageRequest.of(page, 10);
   }
 
-  private String getLoginUserEmail() {
-    return "123@naver.com";
+  private  Path getImgPath() {
+    return Paths.get("images/auction/" + getLoginUserId() + "/");
   }
 
   private Long getLoginUserId() {
-    return 1L;
+    String email = getLoginUserEmail();
+    if (email != null) {
+      return memberRepository.findByEmail(email)
+          .orElseThrow(NotFoundMemberException::new)
+          .getMemberId();
+    }
+    throw new RuntimeException("User is not authenticated");
+  }
+
+  public String getLoginUserEmail() {
+    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    if (authentication != null && authentication.isAuthenticated()) {
+      Object principal = authentication.getPrincipal();
+      if (principal instanceof UserDetails) {
+        return ((UserDetails) principal).getUsername();
+      } else {
+        return principal.toString();
+      }
+    }
+    return null;
   }
 
   private static boolean ableCategoryCheck(List<CategoryDto> categoryList, String categoryTypeStr) {
@@ -436,4 +452,6 @@ public class AuctionServiceImpl implements AuctionService {
         && !categoryTypeStr.equals(CategoryType.ALL.name())
         && !categoryTypeStr.equals(CategoryType.OTHER.name());
   }
+
+
 }
