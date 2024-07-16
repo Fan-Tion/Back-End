@@ -2,7 +2,7 @@ package com.fantion.backend.exception;
 
 import org.springframework.http.HttpStatus;
 
-public abstract class BidAbstractException extends RuntimeException{
+public abstract class FantionAbstractException extends RuntimeException{
 
 
     abstract public HttpStatus getStatusCode();

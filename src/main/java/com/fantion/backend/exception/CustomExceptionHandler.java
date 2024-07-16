@@ -2,6 +2,8 @@ package com.fantion.backend.exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
@@ -11,6 +13,7 @@ public class CustomExceptionHandler {
 
   @ExceptionHandler(AbstractException.class)
   protected ResponseEntity<ErrorResponse> handleCustomException(AbstractException e) {
+
     ErrorResponse errorResponse = ErrorResponse.builder()
         .status(e.getHttpStatus())
         .errorCode(e.getErrorCode())
@@ -30,11 +33,11 @@ public class CustomExceptionHandler {
 
     return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
   }
-  
-  @ExceptionHandler(BidAbstractException.class)
-  protected ResponseEntity<BidErrorResponse> bidCustomException(BidAbstractException e) {
 
-    BidErrorResponse errorResponse = BidErrorResponse.builder()
+  @ExceptionHandler(FantionAbstractException.class)
+  protected ResponseEntity<FantionErrorResponse> fantionCustomException(FantionAbstractException e) {
+
+    FantionErrorResponse errorResponse = FantionErrorResponse.builder()
             .status(e.getStatusCode())
             .errorCode(e.getErrorCode())
             .message(e.getMessage())
@@ -42,4 +45,5 @@ public class CustomExceptionHandler {
 
     return new ResponseEntity<>(errorResponse, e.getStatusCode());
   }
+
 }
