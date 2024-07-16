@@ -1,9 +1,9 @@
 package com.fantion.backend.exception.impl;
 
-import com.fantion.backend.exception.AbstractException;
+import com.fantion.backend.exception.TossAbstractException;
 import org.springframework.http.HttpStatus;
 
-public class TossApiException extends AbstractException {
+public class TossApiException extends TossAbstractException {
 
   private final HttpStatus status;
   private final String errorCode;

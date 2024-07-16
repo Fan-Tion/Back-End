@@ -1,6 +1,7 @@
 package com.fantion.backend.member.jwt;
 
-import com.fantion.backend.exception.impl.InvalidTokenException;
+import com.fantion.backend.exception.ErrorCode;
+import com.fantion.backend.exception.impl.CustomException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -33,7 +34,7 @@ public class JwtTokenFilter extends OncePerRequestFilter {
 
   static { // 필요한 엔드포인트를 추가
     publicEndpoints.put(HttpMethod.POST, Arrays.asList("/members/signin", "/members/signup", "/payments/request"));
-    publicEndpoints.put(HttpMethod.GET, Arrays.asList("/payments/success", "/payments/success"));
+    publicEndpoints.put(HttpMethod.GET, Arrays.asList("/payments/success", "/payments/fail"));
   }
 
   // 특정 요청에 대해 토큰이 필요하지 않은 경우를 체크하는 메서드
@@ -81,10 +82,10 @@ public class JwtTokenFilter extends OncePerRequestFilter {
           SecurityContextHolder.getContext().setAuthentication(authentication);
         }
       } else {
-        throw new InvalidTokenException();
+        throw new CustomException(ErrorCode.TOKEN_INVALID);
       }
     } else {
-      throw new InvalidTokenException();
+      throw new CustomException(ErrorCode.TOKEN_INVALID);
     }
 
     filterChain.doFilter(request, response);

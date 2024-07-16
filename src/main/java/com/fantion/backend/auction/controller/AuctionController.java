@@ -40,12 +40,12 @@ public class AuctionController {
   public ResponseEntity<?> createAuction(
       @Valid @RequestPart("request") AuctionDto.Request request,
       @RequestPart("auctionImage") List<MultipartFile> auctionImage) {
-    memberRepository.save(
-        new Member(1L, "email",
-            "password", "nickname",
-            true, true, true,
-            "address", 0, 0, 0,
-            MemberStatus.ACTIVE, null, LocalDateTime.now()));
+//    memberRepository.save(
+//        new Member(1L, "email",
+//            "password", "nickname",
+//            true, true, true,
+//            "address", 0, 0, 0,
+//            MemberStatus.ACTIVE, null, LocalDateTime.now()));
 
     return ResponseEntity.ok(auctionService.createAuction(request, auctionImage));
   }
@@ -72,7 +72,7 @@ public class AuctionController {
 
   /**
    * 경매 리스트
-   * */
+   */
   @GetMapping("/list")
   public ResponseEntity<?> getAllAuctions(
       @Valid @RequestParam(value = "page", defaultValue = "0") int page
@@ -82,7 +82,7 @@ public class AuctionController {
 
   /**
    * 경매 검색
-   * */
+   */
   @GetMapping("/search")
   public ResponseEntity<?> searchAuctions(
       @Valid @RequestBody SearchDto searchDto) {
@@ -105,11 +105,11 @@ public class AuctionController {
         .body(auctionService.getImage(imagePath, headers));
 
   }
-  
+
   @GetMapping("/view/{auctionId}")
-  private AuctionDto.Response findAuction(@PathVariable(name = "auctionId") Long auctionId){
-      return auctionService.findAuction(auctionId);
+  private AuctionDto.Response findAuction(@PathVariable(name = "auctionId") Long auctionId) {
+    return auctionService.findAuction(auctionId);
   }
-  
+
 
 }
