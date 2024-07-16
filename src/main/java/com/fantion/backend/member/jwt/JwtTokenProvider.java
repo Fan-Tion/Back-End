@@ -121,4 +121,10 @@ public class JwtTokenProvider {
     Claims claims = getClaimsFromToken(token);
     return claims.get("roles", List.class);
   }
+
+  public Long getExpiration(String token) {
+    Claims claims = getClaimsFromToken(token);
+    Date expirationDate = claims.getExpiration();
+    return expirationDate.getTime();
+  }
 }
