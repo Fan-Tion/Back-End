@@ -45,6 +45,8 @@ import lombok.RequiredArgsConstructor;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -53,6 +55,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @RequiredArgsConstructor
+@EnableScheduling
 public class MemberServiceImpl implements MemberService {
 
   private static final Long REFRESH_TOKEN_EXPIRES_IN = 86400000L;
@@ -368,6 +371,24 @@ public class MemberServiceImpl implements MemberService {
     return CheckDto.builder()
         .success(true)
         .build();
+  }
+
+
+  @Scheduled(cron = "0 0 0 * * ?")
+  @Transactional
+  public void deleteWithdrawalMembers() {
+    LocalDateTime thirtyDaysAgo = LocalDateTime.now().minusDays(30);
+    List<Member> withdrawalMembers = memberRepository.findAllByWithdrawalDateBefore(thirtyDaysAgo);
+
+    try {
+      if (withdrawalMembers != null && !withdrawalMembers.isEmpty()) {
+        memberRepository.deleteAll(withdrawalMembers);
+      } else {
+        // 나중에 로그 처리
+      }
+    } catch (Exception e) {
+      // 나중에 로그 처리
+    }
   }
 
   public static String getCurrentEmail() {

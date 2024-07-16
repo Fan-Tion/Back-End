@@ -13,6 +13,9 @@ import com.fantion.backend.member.repository.MemberRepository;
 import com.fantion.backend.member.service.impl.MemberServiceImpl;
 import com.fantion.backend.type.MemberStatus;
 import jakarta.servlet.http.HttpServletRequest;
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -187,6 +190,25 @@ public class MemberServiceTest {
     // when / then
     assertThrows(InvalidPasswordException.class, () -> memberService.signin(signinDto));
     verify(memberRepository, times(1)).findByEmail(signinDto.getEmail());
+  }
+
+  @Test
+  public void testDeleteWithdrawalMembers() {
+
+    // given
+    Member oldMember = Member.builder()
+        .email("olduser@example.com")
+        .withdrawalDate(LocalDateTime.now().minusDays(31))
+        .build();
+    List<Member> withdrawalMembers = Arrays.asList(oldMember);
+    when(memberRepository.findAllByWithdrawalDateBefore(LocalDateTime.now().minusDays(30)))
+        .thenReturn(withdrawalMembers);
+
+    // when
+    memberService.deleteWithdrawalMembers();
+
+    // then
+    verify(memberRepository, times(1)).deleteAll(withdrawalMembers);
   }
 }
 
