@@ -40,13 +40,6 @@ public class AuctionController {
   public ResponseEntity<?> createAuction(
       @Valid @RequestPart("request") AuctionDto.Request request,
       @RequestPart("auctionImage") List<MultipartFile> auctionImage) {
-    memberRepository.save(
-        new Member(1L, "email",
-            "password", "nickname",
-            true, true, true,
-            "address", 0, 0, 0,
-            MemberStatus.ACTIVE, null, LocalDateTime.now()));
-
     return ResponseEntity.ok(auctionService.createAuction(request, auctionImage));
   }
 

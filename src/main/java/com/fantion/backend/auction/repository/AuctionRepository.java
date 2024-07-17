@@ -12,5 +12,6 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
   List<Auction> findByCurrentBidderAndStatus(String currentBidder,boolean status);
 
   List<Auction> findByStatus(boolean status);
+  List<Auction> findByAuctionTypeAndStatus(boolean auctionType,boolean status);
 
 }
