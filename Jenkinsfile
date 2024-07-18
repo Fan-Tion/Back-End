@@ -13,6 +13,6 @@ pipeline {
                   echo 'Repository clone success !'
                 }
             }
-	}
+	    }
 	}
 }
