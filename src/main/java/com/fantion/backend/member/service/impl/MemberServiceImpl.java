@@ -38,6 +38,8 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
@@ -176,7 +178,6 @@ public class MemberServiceImpl implements MemberService {
 
   @Override
   public Local signin(SigninDto signinDto) {
-
     Member member = memberRepository.findByEmail(signinDto.getEmail())
         .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
 

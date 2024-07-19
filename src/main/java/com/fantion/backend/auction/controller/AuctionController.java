@@ -1,25 +1,33 @@
 package com.fantion.backend.auction.controller;
 
 import com.fantion.backend.auction.dto.AuctionDto;
-import com.fantion.backend.auction.dto.SearchDto;
 import com.fantion.backend.auction.service.AuctionService;
-import com.fantion.backend.member.entity.Member;
-import com.fantion.backend.member.repository.MemberRepository;
-import com.fantion.backend.type.MemberStatus;
+import com.fantion.backend.type.CategoryType;
+import com.fantion.backend.type.SearchType;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.time.LocalDateTime;
-import java.util.List;
 
 @Slf4j
 @RestController
@@ -31,28 +39,15 @@ public class AuctionController {
   private final Path basePath = Paths.get("images/auction");
 
   private final AuctionService auctionService;
-  private final MemberRepository memberRepository;
 
-  /**
-   * 경매 생성
-   */
+
   @PostMapping("")
   public ResponseEntity<?> createAuction(
       @Valid @RequestPart("request") AuctionDto.Request request,
       @RequestPart("auctionImage") List<MultipartFile> auctionImage) {
-//    memberRepository.save(
-//        new Member(1L, "email",
-//            "password", "nickname",
-//            true, true, true,
-//            "address", 0, 0, 0,
-//            MemberStatus.ACTIVE, null, LocalDateTime.now()));
-
     return ResponseEntity.ok(auctionService.createAuction(request, auctionImage));
   }
 
-  /**
-   * 경매 수정
-   */
   @PutMapping("/{auctionId}")
   public ResponseEntity<?> updateAuction(
       @Valid @RequestPart("request") AuctionDto.Request request,
@@ -61,9 +56,6 @@ public class AuctionController {
     return ResponseEntity.ok(auctionService.updateAuction(request, auctionImage, auctionId));
   }
 
-  /**
-   * 경매 삭제
-   */
   @DeleteMapping("/{auctionId}")
   public ResponseEntity<?> deleteAuction(
       @PathVariable("auctionId") Long auctionId) {
@@ -71,8 +63,31 @@ public class AuctionController {
   }
 
   /**
-   * 경매 리스트
-   */
+   * 경매 종류 후 거래량 save or update
+   * */
+  @PostMapping("/end-auction")
+  public ResponseEntity<?> endAuctionSaveOrUpdate(@RequestParam("categoryName") String categoryName) {
+    auctionService.endAuctionSaveOrUpdate(categoryName);
+    return ResponseEntity.ok("save or update");
+  }
+
+  @GetMapping("/favorite-category")
+  public ResponseEntity<?> getFavoriteAuctionCategory() {
+    Map<String, Integer> map
+        = auctionService.getAuctionDateValue();
+
+    if (map == null) {
+      map = new HashMap<>();
+    }
+
+    return ResponseEntity.ok(auctionService.getFavoriteAuctionCategory(map));
+  }
+
+  @GetMapping("/category")
+  public ResponseEntity<?> getAllAuctionCategory() {
+    return ResponseEntity.ok(auctionService.getAllAuctionCategory());
+  }
+
   @GetMapping("/list")
   public ResponseEntity<?> getAllAuctions(
       @Valid @RequestParam(value = "page", defaultValue = "0") int page
@@ -80,13 +95,14 @@ public class AuctionController {
     return ResponseEntity.ok(auctionService.getList(page));
   }
 
-  /**
-   * 경매 검색
-   */
   @GetMapping("/search")
   public ResponseEntity<?> searchAuctions(
-      @Valid @RequestBody SearchDto searchDto) {
-    return ResponseEntity.ok(auctionService.getSearchList(searchDto));
+      @RequestParam("page") @Min(0) int page,
+      @RequestParam("searchOption") @NotNull SearchType searchOption,
+      @RequestParam(name = "categoryOption", defaultValue = "ALL") CategoryType categoryOption,
+      @RequestParam("keyword") String keyword) {
+    return ResponseEntity.ok(auctionService
+        .getSearchList(page, searchOption, categoryOption, keyword));
   }
 
   /**
@@ -111,5 +127,7 @@ public class AuctionController {
     return auctionService.findAuction(auctionId);
   }
 
-
+  public AuctionDto.Response findAuction(@PathVariable(name = "auctionId") Long auctionId){
+      return auctionService.findAuction(auctionId);
+  }
 }

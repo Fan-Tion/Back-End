@@ -2,9 +2,8 @@ package com.fantion.backend.auction.dto;
 
 import com.fantion.backend.auction.entity.Bid;
 import jakarta.validation.constraints.NotBlank;
-import lombok.*;
-
 import java.time.LocalDateTime;
+import lombok.*;
 
 
 public class BidDto {

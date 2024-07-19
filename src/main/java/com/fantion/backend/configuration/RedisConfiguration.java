@@ -14,6 +14,7 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 @Configuration
 public class RedisConfiguration {
+
   @Value("${spring.data.redis.host}")
   private String host;
   @Value("${spring.data.redis.port}")
@@ -41,7 +42,8 @@ public class RedisConfiguration {
    * redis pub/sub 메시지를 처리하는 listener 설정
    */
   @Bean
-  public RedisMessageListenerContainer redisMessageListener(MessageListenerAdapter listenerAdapter, ChannelTopic channelTopic) {
+  public RedisMessageListenerContainer redisMessageListener(MessageListenerAdapter listenerAdapter,
+      ChannelTopic channelTopic) {
     RedisMessageListenerContainer container = new RedisMessageListenerContainer();
     container.setConnectionFactory(redisConnectionFactory());
     container.addMessageListener(listenerAdapter, channelTopic);

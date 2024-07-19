@@ -24,7 +24,6 @@ import org.springframework.web.filter.OncePerRequestFilter;
 @Component
 @RequiredArgsConstructor
 public class JwtTokenFilter extends OncePerRequestFilter {
-
   private final JwtTokenProvider jwtTokenProvider;
   private final RedisTemplate<String, String> redisTemplate;
   private final AntPathMatcher pathMatcher = new AntPathMatcher();
@@ -34,7 +33,8 @@ public class JwtTokenFilter extends OncePerRequestFilter {
 
   static { // 필요한 엔드포인트를 추가
     publicEndpoints.put(HttpMethod.POST, Arrays.asList("/members/signin", "/members/signup", "/payments/request"));
-    publicEndpoints.put(HttpMethod.GET, Arrays.asList("/payments/success", "/payments/fail"));
+    publicEndpoints.put(HttpMethod.GET, Arrays.asList("/payments/success", "/payments/fail",
+        "/auction/category", "/auction/favorite-category", "/auction/search", "/auction/view/**"));
   }
 
   // 특정 요청에 대해 토큰이 필요하지 않은 경우를 체크하는 메서드
@@ -71,6 +71,7 @@ public class JwtTokenFilter extends OncePerRequestFilter {
     }
 
     String token = jwtTokenProvider.resolveToken(request);
+
     if (token != null && jwtTokenProvider.validateToken(token)) {
       // Redis에 해당 accessToken의 logout 여부 확인
       String isLogout = redisTemplate.opsForValue().get(token);
@@ -87,7 +88,6 @@ public class JwtTokenFilter extends OncePerRequestFilter {
     } else {
       throw new CustomException(ErrorCode.TOKEN_INVALID);
     }
-
     filterChain.doFilter(request, response);
   }
 }
