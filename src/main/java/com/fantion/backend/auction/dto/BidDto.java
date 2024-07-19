@@ -20,6 +20,7 @@ public class BidDto {
     private Long bidPrice;          // 입찰가
 
   }
+
   @Getter
   @Setter
   @Builder
@@ -31,7 +32,6 @@ public class BidDto {
     private Long bidPrice;              // 입찰가
     private String bidder;              // 입찰자
     private LocalDateTime createDate;   // 입찰한 시간
-
   }
 
   // Entity에서 Dto로 변환

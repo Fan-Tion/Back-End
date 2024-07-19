@@ -80,4 +80,10 @@ public class MemberController {
     CheckDto result = memberService.signout();
     return ResponseEntity.ok(result);
   }
+
+  @PostMapping("/withdrawal")
+  public ResponseEntity<CheckDto> withdrawal() {
+    CheckDto result = memberService.withdrawal();
+    return ResponseEntity.ok(result);
+  }
 }

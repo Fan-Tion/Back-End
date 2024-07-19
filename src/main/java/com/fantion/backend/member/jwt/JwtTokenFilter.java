@@ -33,8 +33,11 @@ public class JwtTokenFilter extends OncePerRequestFilter {
   private static final Map<HttpMethod, List<String>> publicEndpoints = new HashMap<>();
 
   static { // 필요한 엔드포인트를 추가
-    publicEndpoints.put(HttpMethod.POST, Arrays.asList("/members/signin", "/members/signup", "/payments/request"));
-    publicEndpoints.put(HttpMethod.GET, Arrays.asList("/payments/success", "/payments/fail"));
+    publicEndpoints.put(HttpMethod.POST,
+        Arrays.asList("/members/signin", "/members/signup", "/payments/request"));
+    publicEndpoints.put(HttpMethod.GET,
+        Arrays.asList("/payments/success", "/payments/fail", "/members/naver/request",
+            "/members/naver/signin"));
   }
 
   // 특정 요청에 대해 토큰이 필요하지 않은 경우를 체크하는 메서드
