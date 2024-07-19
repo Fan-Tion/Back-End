@@ -51,7 +51,7 @@ public class MemberController {
   }
 
   @PostMapping("/signin")
-  public ResponseEntity<TokenDto.Local> Signin(@Valid @RequestBody SigninDto signinDto) {
+  public ResponseEntity<TokenDto.Local> signin(@Valid @RequestBody SigninDto signinDto) {
     TokenDto.Local result = memberService.signin(signinDto);
     return ResponseEntity.ok(result);
   }
@@ -72,6 +72,12 @@ public class MemberController {
   public ResponseEntity<CheckDto> naverLink(
       @RequestParam(value = "linkEmail") @Email(message = "이메일 형식이 올바르지 않습니다.") @NotBlank(message = "이메일은 공백일 수 없습니다.") String linkEmail) {
     CheckDto result = memberService.naverLink(linkEmail);
+    return ResponseEntity.ok(result);
+  }
+
+  @PostMapping("/signout")
+  public ResponseEntity<CheckDto> signout() {
+    CheckDto result = memberService.signout();
     return ResponseEntity.ok(result);
   }
 }

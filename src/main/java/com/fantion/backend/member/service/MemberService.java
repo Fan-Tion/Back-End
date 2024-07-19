@@ -25,4 +25,6 @@ public interface MemberService {
   TokenDto.Local neverSignin(String code);
 
   CheckDto naverLink(String linkEmail);
+
+  CheckDto signout();
 }

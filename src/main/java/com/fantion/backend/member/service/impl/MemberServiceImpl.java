@@ -10,7 +10,6 @@ import com.fantion.backend.exception.impl.InvalidPasswordException;
 import com.fantion.backend.exception.impl.LinkedEmailException;
 import com.fantion.backend.exception.impl.NotFoundMemberException;
 import com.fantion.backend.exception.impl.OtherSnsLinkException;
-import com.fantion.backend.exception.impl.SnsNotLinkedException;
 import com.fantion.backend.exception.impl.SuspendedMemberException;
 import com.fantion.backend.exception.impl.UnsupportedImageTypeException;
 import com.fantion.backend.member.configuration.NaverConfiguration;
@@ -23,7 +22,6 @@ import com.fantion.backend.member.dto.SigninDto;
 import com.fantion.backend.member.dto.SignupDto;
 import com.fantion.backend.member.dto.SignupDto.Request;
 import com.fantion.backend.member.dto.SignupDto.Response;
-import com.fantion.backend.member.dto.TokenDto;
 import com.fantion.backend.member.dto.TokenDto.Local;
 import com.fantion.backend.member.dto.TokenDto.Naver;
 import com.fantion.backend.member.entity.Member;
@@ -31,11 +29,13 @@ import com.fantion.backend.member.jwt.JwtTokenProvider;
 import com.fantion.backend.member.repository.MemberRepository;
 import com.fantion.backend.member.service.MemberService;
 import com.fantion.backend.type.MemberStatus;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.transaction.Transactional;
 import java.io.File;
 import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
 import java.util.UUID;
@@ -45,15 +45,17 @@ import lombok.RequiredArgsConstructor;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @RequiredArgsConstructor
+@EnableScheduling
 public class MemberServiceImpl implements MemberService {
 
   private static final Long REFRESH_TOKEN_EXPIRES_IN = 86400000L;
@@ -62,12 +64,13 @@ public class MemberServiceImpl implements MemberService {
 
   private final MemberRepository memberRepository;
   private final JwtTokenProvider jwtTokenProvider;
-  private final RedisTemplate redisTemplate;
+  private final RedisTemplate<String, String> redisTemplate;
   private final NaverLoginClient naverLoginClient;
   private final NaverProfileClient naverProfileClient;
   private final NaverConfiguration naverConfiguration;
   private final EmailValidator emailValidator = EmailValidator.getInstance();
   private final Random random = new Random();
+  private final HttpServletRequest httpServletRequest;
 
   @Override
   public Response signup(Request request, MultipartFile file) {
@@ -79,13 +82,7 @@ public class MemberServiceImpl implements MemberService {
 
     // 중복가입 체크
     memberRepository.findByEmail(request.getEmail()).ifPresent(member -> {
-      // 탈퇴 상태가 아니면 중복가입 exception
-      if (!member.getStatus().equals(MemberStatus.WITHDRAWN)) {
-        throw new DuplicateEmailException();
-      }
-
-      // 탈퇴했던 회원이 재가입할 때 기존 데이터를 삭제하고 재가입 시킬지
-      // 기존 데이터를 업데이트 하는 식으로 가입 시킬지 회의 후 결정
+      throw new DuplicateEmailException();
     });
 
     // 연동 된 email인지 체크
@@ -171,7 +168,7 @@ public class MemberServiceImpl implements MemberService {
     }
 
     String redisKey = "Nickname: " + nickname;
-    String email = (String) redisTemplate.opsForValue().get(redisKey);
+    String email = redisTemplate.opsForValue().get(redisKey);
     Optional<Member> byNickname = memberRepository.findByNickname(nickname);
 
     // Redis나 DB에 저장되있는 닉네임일 경우 Exception
@@ -190,7 +187,6 @@ public class MemberServiceImpl implements MemberService {
 
   @Override
   public Local signin(SigninDto signinDto) {
-
     Member member = memberRepository.findByEmail(signinDto.getEmail())
         .orElseThrow(NotFoundMemberException::new);
 
@@ -241,7 +237,8 @@ public class MemberServiceImpl implements MemberService {
 
     // 연동 이메일 찾아오기
     Optional<Member> byEmail = memberRepository.findByLinkedEmail(profileDto.getEmail());
-    if (!byEmail.isPresent()) { // 비회원
+
+    if (byEmail.isEmpty()) { // 비회원
       String nickname = profileDto.getNickname();
       Optional<Member> byNickname = memberRepository.findByNickname(nickname);
       while (byNickname.isPresent()) {
@@ -288,11 +285,6 @@ public class MemberServiceImpl implements MemberService {
     Member member = byEmail.get();
     if (member.getStatus().equals(MemberStatus.SUSPENDED)) { // 정지된 회원
       throw new SuspendedMemberException();
-    } else if (member.getStatus().equals(MemberStatus.WITHDRAWN)) { // 탈퇴한 회원
-      // 탈퇴했던 회원이 재가입할 때 기존 데이터를 삭제하고 재가입 시킬지
-      // 기존 데이터를 업데이트 하는 식으로 가입 시킬지 회의 후 결정
-    } else if (!member.getIsNaver()) { // 연동안한 회원
-      throw new SnsNotLinkedException();
     } else if (member.getIsKakao()) { // 다른 소셜계정 연동 회원
       throw new OtherSnsLinkException();
     }
@@ -353,6 +345,49 @@ public class MemberServiceImpl implements MemberService {
     return CheckDto.builder()
         .success(true)
         .build();
+  }
+
+  @Override
+  @Transactional
+  public CheckDto signout() {
+
+    String email = getCurrentEmail();
+    String accessToken = jwtTokenProvider.resolveToken(httpServletRequest);
+
+    // Redis에 해당 유저의 email로 저장된 refreshToken이 있는지 확인 후 있으면 삭제
+    if (redisTemplate.opsForValue()
+        .get("RefreshToken: " + email) != null) {
+      redisTemplate.delete("RefreshToken: " + email);
+    }
+
+    // 해당 accessToken 유효시간을 가지고 와서 Redis에 BlackList로 추가
+    long expiration = jwtTokenProvider.getExpiration(accessToken);
+    long now = (new Date()).getTime();
+    long accessTokenExpiresIn = expiration - now;
+    redisTemplate.opsForValue()
+        .set(accessToken, "logout", accessTokenExpiresIn, TimeUnit.MILLISECONDS);
+
+    return CheckDto.builder()
+        .success(true)
+        .build();
+  }
+
+
+  @Scheduled(cron = "0 0 0 * * ?")
+  @Transactional
+  public void deleteWithdrawalMembers() {
+    LocalDateTime thirtyDaysAgo = LocalDateTime.now().minusDays(30);
+    List<Member> withdrawalMembers = memberRepository.findAllByWithdrawalDateBefore(thirtyDaysAgo);
+
+    try {
+      if (withdrawalMembers != null && !withdrawalMembers.isEmpty()) {
+        memberRepository.deleteAll(withdrawalMembers);
+      } else {
+        // 나중에 로그 처리
+      }
+    } catch (Exception e) {
+      // 나중에 로그 처리
+    }
   }
 
   public static String getCurrentEmail() {

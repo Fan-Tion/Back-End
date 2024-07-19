@@ -1,13 +1,14 @@
 package com.fantion.backend.type;
 
 public enum CategoryType {
-  ALBUM, // 활동중 상태
-  PHOTO_CARD, // 정지 상태
-  FIGURE,
+  ALL,
   ACCESSORIES,
+  ALBUM,
+  CLOTHES,
+  FIGURE,
+  GAME,
+  PHOTO_CARD,
   POSTER,
   SIGN,
-  CLOTHES,
-  GAME,
-  OTHER// 탈퇴 상태
+  OTHER
 }
