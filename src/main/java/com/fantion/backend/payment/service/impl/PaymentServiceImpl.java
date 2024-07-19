@@ -1,10 +1,8 @@
 package com.fantion.backend.payment.service.impl;
 
-import com.fantion.backend.exception.impl.NotFoundMemberException;
-import com.fantion.backend.exception.impl.NotFoundPaymentException;
-import com.fantion.backend.exception.impl.ParsingException;
+import com.fantion.backend.exception.ErrorCode;
+import com.fantion.backend.exception.impl.CustomException;
 import com.fantion.backend.exception.impl.TossApiException;
-import com.fantion.backend.exception.impl.ValidPaymentInfoException;
 import com.fantion.backend.member.entity.BalanceHistory;
 import com.fantion.backend.member.entity.Member;
 import com.fantion.backend.member.entity.Money;
@@ -62,7 +60,7 @@ public class PaymentServiceImpl implements PaymentService {
     String orderId = UUID.randomUUID().toString();
 
     Member member = memberRepository.findByEmail(request.getCustomerEmail())
-        .orElseThrow(NotFoundMemberException::new);
+        .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
 
     // 결제 요청 정보를 DB에 저장
     Payment payment = Payment.builder()
@@ -88,9 +86,9 @@ public class PaymentServiceImpl implements PaymentService {
 
     // DB에 저장되어있는 값과 Param으로 들어온 값이 같은지 검증
     Payment payment = paymentRepository.findByOrderId(orderId)
-        .orElseThrow(NotFoundPaymentException::new);
+        .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_PAYMENT_INFO));
     if (!payment.getAmount().equals(amount)) {
-      throw new ValidPaymentInfoException();
+      throw new CustomException(ErrorCode.VALID_PAYMENT_INFO);
     }
 
     // paymentKey와 성공여부를 true로 저장
@@ -113,7 +111,7 @@ public class PaymentServiceImpl implements PaymentService {
       // 해당 회원의 예치금 충전
       String email = payment.getMemberId().getEmail();
       Member member = memberRepository.findByEmail(email)
-          .orElseThrow(NotFoundMemberException::new);
+          .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
 
       Optional<Money> byMemberId = moneyRepository.findByMemberId(member.getMemberId());
       if (byMemberId.isEmpty()) { // 첫 예치금 충전 회원
@@ -153,7 +151,7 @@ public class PaymentServiceImpl implements PaymentService {
         throw new TossApiException(httpStatus, errorCode, errorMessage);
       } catch (IOException ioException) {
         // JSON 파싱 예외 처리
-        throw new ParsingException();
+        throw new CustomException(ErrorCode.PARSING_ERROR);
       }
     }
   }
