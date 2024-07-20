@@ -22,15 +22,13 @@ pipeline {
         stage('Build') {
             steps {
                 // 프로젝트 권한 변경
-                sh 'chmod +x ./fan-tion/gradlew'
+                sh 'chmod +x ./gradlew'
                 // YAML 파일 복사
                 withCredentials([file(credentialsId: 'YAML_FILE', variable: 'YAML_FILE_PATH')]) {
                     sh 'cp ${YAML_FILE_PATH} ./Back-End/src/main/resources/application.yml'
                 }
                 // 프로젝트 빌드
-                dir('fan-tion') {
                     sh './gradlew build'
-                }
             }
         }
         stage('Docker Hub Login') {
