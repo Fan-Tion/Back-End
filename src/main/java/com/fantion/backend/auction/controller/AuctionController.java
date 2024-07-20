@@ -6,7 +6,6 @@ import com.fantion.backend.auction.service.impl.ReturnServiceImpl;
 import com.fantion.backend.type.CategoryType;
 import com.fantion.backend.type.SearchType;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -138,9 +137,9 @@ public class AuctionController {
         .body(auctionService.getImage(imagePath, headers));
 
   }
-  
+
   @GetMapping("/view/{auctionId}")
-  public AuctionDto.Response findAuction(@PathVariable(name = "auctionId") Long auctionId){
+  public AuctionDto.Response findAuction(@PathVariable(name = "auctionId") Long auctionId) {
       return auctionService.findAuction(auctionId);
   }
 }

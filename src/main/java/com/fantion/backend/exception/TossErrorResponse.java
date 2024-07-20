@@ -4,12 +4,13 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.http.HttpStatus;
+
 @Getter
 @Setter
 @Builder
-public class FantionErrorResponse {
+public class TossErrorResponse {
 
-    private HttpStatus status;
-    private ErrorCode errorCode;
-    private String message;
+  private HttpStatus status;
+  private String errorCode;
+  private String message;
 }

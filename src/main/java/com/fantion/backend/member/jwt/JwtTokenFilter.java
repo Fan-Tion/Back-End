@@ -1,6 +1,7 @@
 package com.fantion.backend.member.jwt;
 
-import com.fantion.backend.exception.impl.InvalidTokenException;
+import com.fantion.backend.exception.ErrorCode;
+import com.fantion.backend.exception.impl.CustomException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -82,10 +83,10 @@ public class JwtTokenFilter extends OncePerRequestFilter {
           SecurityContextHolder.getContext().setAuthentication(authentication);
         }
       } else {
-        throw new InvalidTokenException();
+        throw new CustomException(ErrorCode.TOKEN_INVALID);
       }
     } else {
-      throw new InvalidTokenException();
+      throw new CustomException(ErrorCode.TOKEN_INVALID);
     }
     filterChain.doFilter(request, response);
   }

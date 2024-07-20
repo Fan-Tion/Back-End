@@ -1,8 +1,7 @@
 package com.fantion.backend.auction.repository;
 
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
-
 import java.util.Optional;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 public interface SseEmitterRepository {
 

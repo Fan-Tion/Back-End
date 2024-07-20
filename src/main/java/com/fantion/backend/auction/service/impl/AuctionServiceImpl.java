@@ -8,17 +8,8 @@ import com.fantion.backend.auction.entity.Auction;
 import com.fantion.backend.auction.repository.AuctionRepository;
 import com.fantion.backend.auction.service.AuctionService;
 import com.fantion.backend.exception.ErrorCode;
-import com.fantion.backend.exception.impl.AuctionHttpMessageNotReadableException;
 import com.fantion.backend.exception.impl.AuctionJsonProcessingException;
-import com.fantion.backend.exception.impl.AuctionNotFoundException;
-import com.fantion.backend.exception.impl.FantionException;
-import com.fantion.backend.exception.impl.ImageException;
-import com.fantion.backend.exception.impl.ImageIOException;
-import com.fantion.backend.exception.impl.ImageInternalServerException;
-import com.fantion.backend.exception.impl.ImageInvalidPathException;
-import com.fantion.backend.exception.impl.ImageMalformedURLException;
-import com.fantion.backend.exception.impl.ImageSecurityException;
-import com.fantion.backend.exception.impl.NotFoundMemberException;
+import com.fantion.backend.exception.impl.CustomException;
 import com.fantion.backend.member.repository.MemberRepository;
 import com.fantion.backend.type.CategoryType;
 import com.fantion.backend.type.SearchType;
@@ -95,7 +86,7 @@ public class AuctionServiceImpl implements AuctionService {
   public AuctionDto.Response findAuction(Long auctionId) {
     // 상세보기할 경매 조회
     Auction auction = auctionRepository.findById(auctionId)
-        .orElseThrow(() -> new FantionException(ErrorCode.NOT_FOUND_AUCTION));
+        .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_AUCTION));
 
     return toResponse(auction);
   }
@@ -167,7 +158,7 @@ public class AuctionServiceImpl implements AuctionService {
         }
       }
     } catch (Exception e) {
-      throw new AuctionHttpMessageNotReadableException();
+      throw new CustomException(ErrorCode.ENUM_INVALID_FORMAT);
     }
 
     return covertToResponseList(auctionPage);
@@ -182,9 +173,9 @@ public class AuctionServiceImpl implements AuctionService {
       Resource resource = new UrlResource(imagePath.toUri());
       return resource;
     } catch (MalformedURLException e) {
-      throw new ImageMalformedURLException();
+      throw new CustomException(ErrorCode.IMAGE_MALFORMED);
     } catch (InternalResourceException e) {
-      throw new ImageInternalServerException();
+      throw new CustomException(ErrorCode.IMAGE_INTERNAL_SERVER_ERROR);
     }
   }
 
@@ -283,10 +274,10 @@ public class AuctionServiceImpl implements AuctionService {
 
   private Auction updateValue(AuctionDto.Request request, Long auctionId) {
     Auction auction = auctionRepository.findById(auctionId)
-        .orElseThrow(AuctionNotFoundException::new);
+        .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_AUCTION));
 
-    auction.setMember(memberRepository.findByEmail(getLoginUserEmail())
-        .orElseThrow(NotFoundMemberException::new));
+    auction.setMember(memberRepository.findById(1L)
+        .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER)));
     auction.setTitle(request.getTitle());
     auction.setAuctionType(request.isAuctionType());
     auction.setCategory(request.getCategory());
@@ -305,8 +296,8 @@ public class AuctionServiceImpl implements AuctionService {
 
   private Auction toAuction(Long auctionId, AuctionDto.Request request) {
     return Auction.builder()
-        .member(memberRepository.findByEmail(getLoginUserEmail())
-            .orElseThrow(NotFoundMemberException::new))
+        .member(memberRepository.findById(1L)
+            .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER)))
         .title(request.getTitle())
         .category(request.getCategory())
         .auctionType(request.isAuctionType())
@@ -326,7 +317,8 @@ public class AuctionServiceImpl implements AuctionService {
     return AuctionDto.Response.builder()
         .auctionId(auction.getAuctionId())
         .title(auction.getTitle())
-        .auctionUserNickname(auction.getMember().getNickname())
+        .auctionUserNickname(memberRepository.findById(1L)
+            .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER)).getNickname())
         .category(auction.getCategory())
         .auctionType(auction.isAuctionType())
         .auctionImage(
@@ -370,7 +362,7 @@ public class AuctionServiceImpl implements AuctionService {
         Files.write(filePath, images.get(i).getBytes());
       }
     } catch (IOException e) {
-      throw new ImageIOException();
+      throw new CustomException(ErrorCode.IMAGE_IO_ERROR);
     }
   }
 
@@ -395,13 +387,13 @@ public class AuctionServiceImpl implements AuctionService {
       // 이미지 파일 경로를 콤마로 구분된 문자열로 변환
       return String.join(",", imagePaths);
     } catch (IOException e) {
-      throw new ImageIOException();
+      throw new CustomException(ErrorCode.IMAGE_IO_ERROR);
     } catch (SecurityException e) {
-      throw new ImageSecurityException();
+      throw new CustomException(ErrorCode.IMAGE_ACCESS_DENIED);
     } catch (InvalidPathException e) {
-      throw new ImageInvalidPathException();
+      throw new CustomException(ErrorCode.IMAGE_NOT_HAVE_PATH);
     } catch (Exception e) {
-      throw new ImageException();
+      throw new CustomException(ErrorCode.IMAGE_EXCEPTION);
     }
   }
 
@@ -426,7 +418,7 @@ public class AuctionServiceImpl implements AuctionService {
           deleteRecursively(entry);
         }
       } catch (IOException e) {
-        throw new ImageIOException();
+        throw new CustomException(ErrorCode.IMAGE_IO_ERROR);
       }
     }
   }

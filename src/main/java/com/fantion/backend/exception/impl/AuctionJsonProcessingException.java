@@ -1,6 +1,7 @@
 package com.fantion.backend.exception.impl;
 
 import com.fantion.backend.exception.AbstractException;
+import com.fantion.backend.exception.ErrorCode;
 import org.springframework.http.HttpStatus;
 
 public class AuctionJsonProcessingException extends AbstractException {
@@ -11,8 +12,8 @@ public class AuctionJsonProcessingException extends AbstractException {
   }
 
   @Override
-  public String getErrorCode() {
-    return "Json_Processing_Error";
+  public ErrorCode getErrorCode() {
+    return ErrorCode.IMAGE_INTERNAL_SERVER_ERROR;
   }
 
   @Override

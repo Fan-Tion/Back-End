@@ -1,4 +1,4 @@
-package com.fantion.backend.config;
+package com.fantion.backend.configuration;
 
 import jakarta.servlet.MultipartConfigElement;
 import org.springframework.boot.web.servlet.MultipartConfigFactory;
@@ -12,8 +12,8 @@ public class FileUploadConfig {
   @Bean
   public MultipartConfigElement multipartConfigElement() {
     MultipartConfigFactory factory = new MultipartConfigFactory();
-    factory.setMaxFileSize(DataSize.parse("10MB"));
-    factory.setMaxRequestSize(DataSize.parse("10MB"));
+    factory.setMaxFileSize(DataSize.parse("5MB"));
+    factory.setMaxRequestSize(DataSize.parse("5MB"));
     return factory.createMultipartConfig();
   }
 }
