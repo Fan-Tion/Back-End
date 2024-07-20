@@ -7,7 +7,8 @@ pipeline {
         stage('Git Clone') {
             steps {
                 git branch: 'main', credentialsId: 'GITHUB_TOKEN', url: 'https://github.com/Fan-Tion/Back-End.git'
-                sh 'ls -la'
+                sh 'pwd'  // 현재 작업 디렉토리 출력
+                sh 'ls -la'  // 현재 작업 디렉토리의 파일 및 디렉토리 나열
             }
             post {
                 failure {
