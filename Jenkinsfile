@@ -14,6 +14,9 @@ pipeline {
                 }
                 success {
                     echo 'Repository clone success!'
+                    // 디버그: 클론된 파일 구조 출력
+                    sh 'ls -la'
+                    sh 'ls -la Back-End'
                 }
             }
         }
