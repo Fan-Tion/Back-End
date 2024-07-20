@@ -8,7 +8,6 @@ import com.fantion.backend.auction.entity.Auction;
 import com.fantion.backend.auction.repository.AuctionRepository;
 import com.fantion.backend.auction.service.AuctionService;
 import com.fantion.backend.exception.ErrorCode;
-import com.fantion.backend.exception.impl.AuctionJsonProcessingException;
 import com.fantion.backend.exception.impl.CustomException;
 import com.fantion.backend.member.repository.MemberRepository;
 import com.fantion.backend.type.CategoryType;
@@ -204,7 +203,7 @@ public class AuctionServiceImpl implements AuctionService {
       String json = objectMapper.writeValueAsString(map);
       redisTemplate.opsForValue().set(LocalDate.now().toString(), json, Duration.ofDays(1));
     } catch (JsonProcessingException e) {
-      throw new AuctionJsonProcessingException();
+      throw new CustomException(ErrorCode.PARSING_ERROR);
     }
   }
 
@@ -219,7 +218,7 @@ public class AuctionServiceImpl implements AuctionService {
       try {
         return objectMapper.readValue(json, Map.class);
       } catch (JsonProcessingException e) {
-        throw new AuctionJsonProcessingException();
+        throw new CustomException(ErrorCode.PARSING_ERROR);
       }
     }
     return null;
@@ -432,6 +431,16 @@ public class AuctionServiceImpl implements AuctionService {
 
   private Path getImgPath(Long auctionId) {
     return Paths.get("images/auction/" + auctionId + "/");
+  }
+
+  private Long getLoginUserId() {
+    String email = getLoginUserEmail();
+    if (email != null) {
+      return memberRepository.findByEmail(email)
+          .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER))
+          .getMemberId();
+    }
+    throw new RuntimeException("User is not authenticated");
   }
 
   public String getLoginUserEmail() {

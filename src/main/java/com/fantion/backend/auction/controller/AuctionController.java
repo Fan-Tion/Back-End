@@ -140,6 +140,6 @@ public class AuctionController {
 
   @GetMapping("/view/{auctionId}")
   public AuctionDto.Response findAuction(@PathVariable(name = "auctionId") Long auctionId) {
-      return auctionService.findAuction(auctionId);
+    return auctionService.findAuction(auctionId);
   }
 }
