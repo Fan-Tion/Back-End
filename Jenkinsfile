@@ -39,8 +39,8 @@ pipeline {
 		stage('Docker Build and Push') {
 			steps {
 				withCredentials([usernamePassword(credentialsId: 'DOCKER_HUB', passwordVariable: 'DOCKER_PROJECT', usernameVariable: 'DOCKER_REPO')]) {
-                    sh 'cd ./fan-tion && docker build -f Dockerfile -t $DOCKER_REPO/$DOCKER_PROJECT .'
-				    sh 'cd ./fan-tion && docker push $DOCKER_REPO/$DOCKER_PROJECT'
+                    sh 'docker build -f Dockerfile -t $DOCKER_REPO/$DOCKER_PROJECT .'
+				    sh 'docker push $DOCKER_REPO/$DOCKER_PROJECT'
 				    echo 'docker push Success!!'
                 }
 				echo 'docker push Success!!'
