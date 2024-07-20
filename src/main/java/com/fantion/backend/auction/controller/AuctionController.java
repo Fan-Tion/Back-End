@@ -126,8 +126,4 @@ public class AuctionController {
   private AuctionDto.Response findAuction(@PathVariable(name = "auctionId") Long auctionId) {
     return auctionService.findAuction(auctionId);
   }
-
-  public AuctionDto.Response findAuction(@PathVariable(name = "auctionId") Long auctionId){
-      return auctionService.findAuction(auctionId);
-  }
 }
