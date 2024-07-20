@@ -1,17 +1,8 @@
 package com.fantion.backend.member.service.impl;
 
-import com.fantion.backend.exception.impl.DuplicateEmailException;
-import com.fantion.backend.exception.impl.DuplicateLinkException;
-import com.fantion.backend.exception.impl.DuplicateNicknameException;
-import com.fantion.backend.exception.impl.ImageSaveException;
-import com.fantion.backend.exception.impl.InvalidEmailException;
-import com.fantion.backend.exception.impl.InvalidNicknameException;
-import com.fantion.backend.exception.impl.InvalidPasswordException;
-import com.fantion.backend.exception.impl.LinkedEmailException;
-import com.fantion.backend.exception.impl.NotFoundMemberException;
-import com.fantion.backend.exception.impl.OtherSnsLinkException;
-import com.fantion.backend.exception.impl.SuspendedMemberException;
-import com.fantion.backend.exception.impl.UnsupportedImageTypeException;
+import com.fantion.backend.exception.ErrorCode;
+import com.fantion.backend.exception.impl.CustomException;
+import com.fantion.backend.member.auth.MemberAuthUtil;
 import com.fantion.backend.member.configuration.NaverConfiguration;
 import com.fantion.backend.member.configuration.NaverLoginClient;
 import com.fantion.backend.member.configuration.NaverProfileClient;
@@ -49,7 +40,6 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
@@ -78,19 +68,19 @@ public class MemberServiceImpl implements MemberService {
 
     // 이메일 체크
     if (!emailValidator.isValid(request.getEmail())) {
-      throw new InvalidEmailException();
+      throw new CustomException(ErrorCode.EMAIL_INVALID);
     }
 
     // 중복가입 체크
     memberRepository.findByEmail(request.getEmail()).ifPresent(member -> {
-      throw new DuplicateEmailException();
+      throw new CustomException(ErrorCode.EMAIL_DUPLICATE);
     });
 
     // 연동 된 email인지 체크
     memberRepository.findByLinkedEmail(request.getEmail()).ifPresent(member -> {
       // 탈퇴 상태가 아니면 중복 가입 exception
       if (!member.getStatus().equals(MemberStatus.WITHDRAWN)) {
-        throw new LinkedEmailException();
+        throw new CustomException(ErrorCode.LINKED_EMAIL_ERROR);
       }
     });
 
@@ -98,7 +88,7 @@ public class MemberServiceImpl implements MemberService {
     memberRepository.findByNickname(request.getNickname()).ifPresent(member -> {
       // 회원 상태가 활성 상태이면 중복 닉네임 exception
       if (member.getStatus().equals(MemberStatus.ACTIVE)) {
-        throw new DuplicateNicknameException();
+        throw new CustomException(ErrorCode.NICKNAME_DUPLICATE);
       }
     });
 
@@ -125,11 +115,11 @@ public class MemberServiceImpl implements MemberService {
         try {
           file.transferTo(saveFile);
         } catch (Exception e) {
-          throw new ImageSaveException();
+          throw new CustomException(ErrorCode.FAILED_IMAGE_SAVE);
         }
       } else {
         // 이미지 파일이 아닌 경우에 대한 처리
-        throw new UnsupportedImageTypeException();
+        throw new CustomException(ErrorCode.UN_SUPPORTED_IMAGE_TYPE);
       }
 
       member = SignupDto.signupInput(request, projectPath);
@@ -148,11 +138,11 @@ public class MemberServiceImpl implements MemberService {
 
     // 이메일 체크
     if (!emailValidator.isValid(email)) {
-      throw new InvalidEmailException();
+      throw new CustomException(ErrorCode.EMAIL_INVALID);
     }
 
     memberRepository.findByEmail(email).ifPresent(member -> {
-      throw new DuplicateEmailException();
+      throw new CustomException(ErrorCode.EMAIL_DUPLICATE);
     });
 
     return CheckDto.builder()
@@ -165,7 +155,7 @@ public class MemberServiceImpl implements MemberService {
 
     // 닉네임 생성 규칙에 맞는지 확인
     if (!NICKNAME_PATTERN.matcher(nickname).matches()) {
-      throw new InvalidNicknameException();
+      throw new CustomException(ErrorCode.NICKNAME_INVALID);
     }
 
     String redisKey = "Nickname: " + nickname;
@@ -174,7 +164,7 @@ public class MemberServiceImpl implements MemberService {
 
     // Redis나 DB에 저장되있는 닉네임일 경우 Exception
     if (email != null || byNickname.isPresent()) {
-      throw new DuplicateNicknameException();
+      throw new CustomException(ErrorCode.NICKNAME_DUPLICATE);
     }
 
     // Redis에 임시저장
@@ -188,20 +178,19 @@ public class MemberServiceImpl implements MemberService {
 
   @Override
   public Local signin(SigninDto signinDto) {
-
     Member member = memberRepository.findByEmail(signinDto.getEmail())
-        .orElseThrow(NotFoundMemberException::new);
+        .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
 
     // 회원 상태에 따른 exception
     if (member.getStatus().equals(MemberStatus.SUSPENDED)) {
-      throw new SuspendedMemberException();
+      throw new CustomException(ErrorCode.SUSPENDED_MEMBER);
     } else if (member.getStatus().equals(MemberStatus.WITHDRAWN)) {
-      throw new NotFoundMemberException();
+      throw new CustomException(ErrorCode.NOT_FOUND_MEMBER);
     }
 
     // 비밀번호 확인
     if (!member.getPassword().equals(signinDto.getPassword())) {
-      throw new InvalidPasswordException();
+      throw new CustomException(ErrorCode.PASSWORD_INVALID);
     }
 
     // 토큰 생성
@@ -286,9 +275,9 @@ public class MemberServiceImpl implements MemberService {
     // 회원인 경우 처리
     Member member = byEmail.get();
     if (member.getStatus().equals(MemberStatus.SUSPENDED)) { // 정지된 회원
-      throw new SuspendedMemberException();
+      throw new CustomException(ErrorCode.SUSPENDED_MEMBER);
     } else if (member.getIsKakao()) { // 다른 소셜계정 연동 회원
-      throw new OtherSnsLinkException();
+      throw new CustomException(ErrorCode.OTHER_SNS_LINKED_ERROR);
     }
 
     // 연동한 회원인 경우
@@ -310,31 +299,31 @@ public class MemberServiceImpl implements MemberService {
   public CheckDto naverLink(String linkEmail) {
 
     // 현재 토큰에 저장된 email 가져오기
-    String currentEmail = getCurrentEmail();
+    String currentEmail = MemberAuthUtil.getCurrentEmail();
     Member member = memberRepository.findByEmail(currentEmail)
-        .orElseThrow(NotFoundMemberException::new);
+        .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
 
     // 소셜 계정이 이미 가입한 email인지 확인
     memberRepository.findByEmail(linkEmail).ifPresent(snsMember -> {
       if (!snsMember.getStatus().equals(MemberStatus.WITHDRAWN)) { // 회원 상태가 탈퇴가 아닐 때
-        throw new DuplicateEmailException();
+        throw new CustomException(ErrorCode.EMAIL_DUPLICATE);
       }
     });
 
     // 다른 email에 연동이 된 소셜 계정인지 확인
     memberRepository.findByLinkedEmail(linkEmail).ifPresent(snsMember -> {
       if (!snsMember.getStatus().equals(MemberStatus.WITHDRAWN)) { // 회원 상태가 탈퇴가 아닐 때
-        throw new LinkedEmailException();
+        throw new CustomException(ErrorCode.LINKED_EMAIL_ERROR);
       }
     });
 
     // 카카오나 이미 연동한 회원일 경우 exception
     if (member.getIsKakao()) {
-      throw new OtherSnsLinkException();
+      throw new CustomException(ErrorCode.OTHER_SNS_LINKED_ERROR);
     }
 
     if (member.getIsNaver()) {
-      throw new DuplicateLinkException();
+      throw new CustomException(ErrorCode.DUPLICATE_LINKED_ERROR);
     }
 
     Member updateMember = member.toBuilder()
@@ -353,7 +342,7 @@ public class MemberServiceImpl implements MemberService {
   @Transactional
   public CheckDto signout() {
 
-    String email = getCurrentEmail();
+    String email = MemberAuthUtil.getCurrentEmail();
     String accessToken = jwtTokenProvider.resolveToken(httpServletRequest);
 
     // Redis에 해당 유저의 email로 저장된 refreshToken이 있는지 확인 후 있으면 삭제
@@ -390,14 +379,5 @@ public class MemberServiceImpl implements MemberService {
     } catch (Exception e) {
       // 나중에 로그 처리
     }
-  }
-
-  public static String getCurrentEmail() {
-    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
-    if (authentication.getName() != null) {
-      return authentication.getName();
-    }
-    return null;
   }
 }

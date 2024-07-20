@@ -3,7 +3,7 @@ package com.fantion.backend.exception.impl;
 import com.fantion.backend.exception.AbstractException;
 import org.springframework.http.HttpStatus;
 
-public class ImageMalformedURLException extends AbstractException {
+public class AuctionJsonProcessingException extends AbstractException {
 
   @Override
   public HttpStatus getHttpStatus() {
@@ -12,11 +12,11 @@ public class ImageMalformedURLException extends AbstractException {
 
   @Override
   public String getErrorCode() {
-    return "IMAGE_MALFORMED";
+    return "Json_Processing_Error";
   }
 
   @Override
   public String getMessage() {
-    return "잘못된 형식의 URL입니다.";
+    return "JSON 변환을 실패했습니다.";
   }
 }
