@@ -8,17 +8,7 @@ import com.fantion.backend.auction.entity.Auction;
 import com.fantion.backend.auction.repository.AuctionRepository;
 import com.fantion.backend.auction.service.AuctionService;
 import com.fantion.backend.exception.ErrorCode;
-import com.fantion.backend.exception.impl.AuctionHttpMessageNotReadableException;
-import com.fantion.backend.exception.impl.AuctionJsonProcessingException;
-import com.fantion.backend.exception.impl.AuctionNotFoundException;
-import com.fantion.backend.exception.impl.FantionException;
-import com.fantion.backend.exception.impl.ImageException;
-import com.fantion.backend.exception.impl.ImageIOException;
-import com.fantion.backend.exception.impl.ImageInternalServerException;
-import com.fantion.backend.exception.impl.ImageInvalidPathException;
-import com.fantion.backend.exception.impl.ImageMalformedURLException;
-import com.fantion.backend.exception.impl.ImageSecurityException;
-import com.fantion.backend.exception.impl.NotFoundMemberException;
+import com.fantion.backend.exception.impl.CustomException;
 import com.fantion.backend.member.repository.MemberRepository;
 import com.fantion.backend.type.CategoryType;
 import com.fantion.backend.type.SearchType;
@@ -60,16 +50,6 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-import java.io.File;
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.nio.file.*;
-import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
-
-import static org.springframework.util.FileSystemUtils.deleteRecursively;
 
 @Slf4j
 @Service
@@ -181,21 +161,6 @@ public class AuctionServiceImpl implements AuctionService {
   }
 
   /**
-   * 이미지 가져오기
-   */
-  @Override
-  public Resource getImage(Path imagePath, HttpHeaders headers) {
-    try {
-      Resource resource = new UrlResource(imagePath.toUri());
-      return resource;
-    } catch (MalformedURLException e) {
-      throw new ImageMalformedURLException();
-    } catch (InternalResourceException e) {
-      throw new ImageInternalServerException();
-    }
-  }
-
-  /**
    * 옥션 기간별 거래목록 생성 및 갱신
    */
   @Override
@@ -210,7 +175,7 @@ public class AuctionServiceImpl implements AuctionService {
       String json = objectMapper.writeValueAsString(map);
       redisTemplate.opsForValue().set(LocalDate.now().toString(), json, Duration.ofDays(1));
     } catch (JsonProcessingException e) {
-      throw new AuctionJsonProcessingException();
+      throw new CustomException(ErrorCode.PARSING_ERROR);
     }
   }
 
@@ -225,7 +190,7 @@ public class AuctionServiceImpl implements AuctionService {
       try {
         return objectMapper.readValue(json, Map.class);
       } catch (JsonProcessingException e) {
-        throw new AuctionJsonProcessingException();
+        throw new CustomException(ErrorCode.PARSING_ERROR);
       }
     }
     return null;
@@ -315,7 +280,7 @@ public class AuctionServiceImpl implements AuctionService {
   /**
    * request -> auction member쪽은 임시 데이터임
    */
-  private Auction toAuction(Request request) {
+  private Auction toAuction(AuctionDto.Request request) {
     return Auction.builder()
         .member(memberRepository.findById(1L)
             .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER)))
@@ -335,7 +300,7 @@ public class AuctionServiceImpl implements AuctionService {
   }
 
   private AuctionDto.Response toResponse(Auction auction) {
-    return Response.builder()
+    return AuctionDto.Response.builder()
         .title(auction.getTitle())
         .auctionUserNickname(memberRepository.findById(1L)
             .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER)).getNickname())
@@ -458,7 +423,7 @@ public class AuctionServiceImpl implements AuctionService {
     String email = getLoginUserEmail();
     if (email != null) {
       return memberRepository.findByEmail(email)
-          .orElseThrow(NotFoundMemberException::new)
+          .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER))
           .getMemberId();
     }
     throw new RuntimeException("User is not authenticated");
