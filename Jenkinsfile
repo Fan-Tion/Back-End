@@ -46,15 +46,15 @@ pipeline {
 				echo 'docker push Success!!'
 			}
 		}
-//         stage('Deploy') {
-//             steps {
-//                 sshagent(credentials: ['my-ssh-credentials']) {
-//                     withCredentials([string(credentialsId: 'EC2_SERVER_IP', variable: 'IP')]) {
-//                         sh 'ssh -o StrictHostKeyChecking=no ubuntu@$IP "sudo sh deploy.sh"'
-//                     }
-//                 }
-//             }
-//         }
+         stage('Deploy') {
+             steps {
+                 sshagent(credentials: ['my-ssh-credentials']) {
+                     withCredentials([string(credentialsId: 'EC2_SERVER_IP', variable: 'IP')]) {
+                         sh 'ssh -o StrictHostKeyChecking=no ubuntu@$IP "sudo sh deploy.sh"'
+                     }
+                 }
+             }
+         }
     }
 }
 
