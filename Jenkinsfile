@@ -25,7 +25,7 @@ pipeline {
                 sh 'chmod +x ./gradlew'
                 // YAML 파일 복사
                 withCredentials([file(credentialsId: 'YAML_FILE', variable: 'YAML_FILE_PATH')]) {
-                    sh 'cp ${YAML_FILE_PATH} ./Back-End/src/main/resources/application.yml'
+                    sh 'cp ${YAML_FILE_PATH} ./src/main/resources/application.yml'
                 }
                 // 프로젝트 빌드
                     sh './gradlew build'
