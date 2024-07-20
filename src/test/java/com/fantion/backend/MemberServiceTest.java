@@ -1,9 +1,7 @@
 package com.fantion.backend;
 
-import com.fantion.backend.exception.impl.InvalidEmailException;
-import com.fantion.backend.exception.impl.InvalidPasswordException;
-import com.fantion.backend.exception.impl.NotFoundMemberException;
-import com.fantion.backend.exception.impl.SuspendedMemberException;
+import com.fantion.backend.exception.ErrorCode;
+import com.fantion.backend.exception.impl.CustomException;
 import com.fantion.backend.member.dto.SigninDto;
 import com.fantion.backend.member.dto.SignupDto;
 import com.fantion.backend.member.dto.TokenDto;
@@ -92,7 +90,7 @@ public class MemberServiceTest {
         .build();
 
     // when, then
-    assertThrows(InvalidEmailException.class, () -> memberService.signup(request, null));
+    assertThrows(CustomException.class, () -> memberService.signup(request, null));
   }
 
   @Test
@@ -103,7 +101,7 @@ public class MemberServiceTest {
     when(memberRepository.findByEmail(signinDto.getEmail())).thenReturn(Optional.empty());
 
     // when / then
-    assertThrows(NotFoundMemberException.class, () -> memberService.signin(signinDto));
+    assertThrows(CustomException.class, () -> memberService.signin(signinDto));
     verify(memberRepository, times(1)).findByEmail(signinDto.getEmail());
   }
 
@@ -121,7 +119,7 @@ public class MemberServiceTest {
         Optional.of(suspendedMember));
 
     // when / then
-    assertThrows(SuspendedMemberException.class, () -> memberService.signin(signinDto));
+    assertThrows(CustomException.class, () -> memberService.signin(signinDto));
     verify(memberRepository, times(1)).findByEmail(signinDto.getEmail());
   }
 
@@ -139,7 +137,7 @@ public class MemberServiceTest {
         Optional.of(withdrawnMember));
 
     // when / then
-    assertThrows(NotFoundMemberException.class, () -> memberService.signin(signinDto));
+    assertThrows(CustomException.class, () -> memberService.signin(signinDto));
     verify(memberRepository, times(1)).findByEmail(signinDto.getEmail());
   }
 
@@ -188,7 +186,7 @@ public class MemberServiceTest {
     when(memberRepository.findByEmail(signinDto.getEmail())).thenReturn(Optional.of(activeMember));
 
     // when / then
-    assertThrows(InvalidPasswordException.class, () -> memberService.signin(signinDto));
+    assertThrows(CustomException.class, () -> memberService.signin(signinDto));
     verify(memberRepository, times(1)).findByEmail(signinDto.getEmail());
   }
 

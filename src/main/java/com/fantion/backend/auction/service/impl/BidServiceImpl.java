@@ -9,7 +9,7 @@ import com.fantion.backend.auction.service.BidService;
 import com.fantion.backend.auction.service.RedisMessageService;
 import com.fantion.backend.auction.service.SseEmitterService;
 import com.fantion.backend.exception.ErrorCode;
-import com.fantion.backend.exception.impl.FantionException;
+import com.fantion.backend.exception.impl.CustomException;
 import com.fantion.backend.member.auth.MemberAuthUtil;
 import com.fantion.backend.member.entity.BalanceHistory;
 import com.fantion.backend.member.entity.Member;
@@ -24,7 +24,6 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
-
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -54,7 +53,7 @@ public class BidServiceImpl implements BidService {
 
         // 경매 종료일이 지난 경우 입찰 불가능
         if (LocalDateTime.now().isAfter(endDate)) {
-            throw new FantionException(ErrorCode.TOO_OLD_AUCTION);
+            throw new CustomException(ErrorCode.TOO_OLD_AUCTION);
 
         }
 
@@ -63,14 +62,14 @@ public class BidServiceImpl implements BidService {
 
         // 사용자 조회
         Member member = memberRepository.findByEmail(loginEmail)
-                .orElseThrow(()-> new FantionException(ErrorCode.NOT_FOUND_MEMBER));
+                .orElseThrow(()-> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
 
         // 사용 가능한 예치금
         Long canUseBalance = balanceCheck(member).getCanUseBalance();
 
         // 사용 가능한 예치금이 입찰가보다 더 적을 경우
         if (canUseBalance < request.getBidPrice()) {
-            throw new FantionException(ErrorCode.NOT_ENOUGH_BALANCE);
+            throw new CustomException(ErrorCode.NOT_ENOUGH_BALANCE);
         }
 
         // 공개 입찰인 경우
@@ -106,7 +105,7 @@ public class BidServiceImpl implements BidService {
 
         // 사용자 조회
         Member member = memberRepository.findByEmail(loginEmail)
-                .orElseThrow(()-> new FantionException(ErrorCode.NOT_FOUND_MEMBER));
+                .orElseThrow(()-> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
 
         return balanceCheck(member);
     }
@@ -115,7 +114,7 @@ public class BidServiceImpl implements BidService {
     public BalanceCheckDto.Response balanceCheck(Member member) {
         // 사용자의 보유한 예치금 조회
         Money money = moneyRepository.findByMemberId(member.getMemberId())
-                .orElseThrow(()-> new FantionException(ErrorCode.NOT_FOUND_MONEY));
+                .orElseThrow(()-> new CustomException(ErrorCode.NOT_FOUND_MONEY));
         Long haveBalance = money.getBalance();
 
         // 공개 입찰 사용 가능한 예치금 계산
@@ -220,7 +219,7 @@ public class BidServiceImpl implements BidService {
 
                     // 입찰자를 통해 예치금 조회
                     Money money = moneyRepository.findByMemberId(bidder.getMemberId())
-                            .orElseThrow(()-> new FantionException(ErrorCode.NOT_FOUND_MONEY));
+                            .orElseThrow(()-> new CustomException(ErrorCode.NOT_FOUND_MONEY));
 
                     // 보유한 예치금에서 입찰한 금액만큼 차감
                     money.successBid(bid.getBidPrice());
@@ -249,15 +248,15 @@ public class BidServiceImpl implements BidService {
 
         // 사용자 조회
         Member member = memberRepository.findByEmail(loginEmail)
-                .orElseThrow(()-> new FantionException(ErrorCode.NOT_FOUND_MEMBER));
+                .orElseThrow(()-> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
 
         // 사용자가 보유한 예치금 조회
         Money money = moneyRepository.findByMemberId(member.getMemberId())
-                .orElseThrow(()-> new FantionException(ErrorCode.NOT_FOUND_MONEY));
+                .orElseThrow(()-> new CustomException(ErrorCode.NOT_FOUND_MONEY));
 
         // 즉시 구매하려는 경매 물품 조회
         Auction auction = auctionRepository.findById(request.getAuctionId())
-                .orElseThrow(()-> new FantionException(ErrorCode.NOT_FOUND_AUCTION));
+                .orElseThrow(()-> new CustomException(ErrorCode.NOT_FOUND_AUCTION));
 
         // 즉시 구매가
         Long buyNowPrice = auction.getBuyNowPrice();

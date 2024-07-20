@@ -121,8 +121,12 @@ public class AuctionController {
         .body(auctionService.getImage(imagePath, headers));
 
   }
-  
+
   @GetMapping("/view/{auctionId}")
+  private AuctionDto.Response findAuction(@PathVariable(name = "auctionId") Long auctionId) {
+    return auctionService.findAuction(auctionId);
+  }
+
   public AuctionDto.Response findAuction(@PathVariable(name = "auctionId") Long auctionId){
       return auctionService.findAuction(auctionId);
   }
