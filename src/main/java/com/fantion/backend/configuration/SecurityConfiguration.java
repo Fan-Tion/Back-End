@@ -24,7 +24,7 @@ public class SecurityConfiguration {
     return http.csrf(AbstractHttpConfigurer::disable)
         .authorizeHttpRequests(
             requests -> requests.requestMatchers("/payments/**", "/members/**"
-                ,"/auction/category", "/auction/favorite-category", "/auction/search", "/auction/view/**").permitAll()
+                ,"/auction/category", "/auction/favorite-category", "/auction/search", "/auction/view/**", "/auction/list").permitAll()
                 .anyRequest().authenticated())
         .sessionManagement(sessionManagement -> sessionManagement.sessionCreationPolicy(
             SessionCreationPolicy.STATELESS))

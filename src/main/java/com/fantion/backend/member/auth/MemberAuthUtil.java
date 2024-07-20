@@ -11,6 +11,5 @@ public class MemberAuthUtil {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String principal = (String) authentication.getPrincipal();
         return principal;
-
     }
 }
