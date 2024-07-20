@@ -271,13 +271,13 @@ public class BidServiceImpl implements BidService {
 
         // 경매 종료일이 지난 경우 즉시구매 불가능
         if (LocalDateTime.now().isAfter(endDate)) {
-            throw new FantionException(ErrorCode.TOO_OLD_AUCTION);
+            throw new CustomException(ErrorCode.TOO_OLD_AUCTION);
 
         }
 
         // 사용 가능한 예치금 보다 즉시 구매가가 더 클 경우
         if (canUseBalance < buyNowPrice) {
-            throw new FantionException(ErrorCode.NOT_ENOUGH_BALANCE);
+            throw new CustomException(ErrorCode.NOT_ENOUGH_BALANCE);
         }
 
         // 즉시 구매
@@ -312,21 +312,21 @@ public class BidServiceImpl implements BidService {
     public BidCancelDto.Response cancelBid(BidDto.Request request) {
         // 입찰 취소하려는 입찰 조회
         Bid cancelBid = bidRepository.findById(request.getBidId())
-                .orElseThrow(()-> new FantionException(ErrorCode.NOT_FOUND_BID));
+                .orElseThrow(()-> new CustomException(ErrorCode.NOT_FOUND_BID));
 
         // 입찰 취소하려는 경매 물품 조회
         Auction cancelAuction = auctionRepository.findById(cancelBid.getAuctionId().getAuctionId())
-                .orElseThrow(()-> new FantionException(ErrorCode.NOT_FOUND_AUCTION));
+                .orElseThrow(()-> new CustomException(ErrorCode.NOT_FOUND_AUCTION));
 
         // 비공개 입찰만 입찰 취소 가능
         if (cancelAuction.isAuctionType()) {
-            throw new FantionException(NOT_PRIVATE_BID_CANCEL);
+            throw new CustomException(NOT_PRIVATE_BID_CANCEL);
 
         }
 
         // 경매 종료일이 지난 경우 입찰취소 불가능
         if (LocalDateTime.now().isAfter(cancelAuction.getEndDate())) {
-            throw new FantionException(ErrorCode.TOO_OLD_AUCTION);
+            throw new CustomException(ErrorCode.TOO_OLD_AUCTION);
 
         }
 
@@ -335,11 +335,11 @@ public class BidServiceImpl implements BidService {
 
         // 사용자 조회
         Member member = memberRepository.findByEmail(loginEmail)
-                .orElseThrow(()-> new FantionException(ErrorCode.NOT_FOUND_MEMBER));
+                .orElseThrow(()-> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
 
         // 사용자가 보유한 예치금 조회
         Money money = moneyRepository.findByMemberId(member.getMemberId())
-                .orElseThrow(()-> new FantionException(ErrorCode.NOT_FOUND_MONEY));
+                .orElseThrow(()-> new CustomException(ErrorCode.NOT_FOUND_MONEY));
 
         // 입찰 취소
         bidRepository.delete(cancelBid);
