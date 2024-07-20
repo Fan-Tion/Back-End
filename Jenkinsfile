@@ -7,6 +7,7 @@ pipeline {
         stage('Git Clone') {
             steps {
                 git branch: 'main', credentialsId: 'GITHUB_TOKEN', url: 'https://github.com/Fan-Tion/Back-End.git'
+                sh 'ls -la'
             }
             post {
                 failure {
@@ -14,22 +15,21 @@ pipeline {
                 }
                 success {
                     echo 'Repository clone success!'
-                    // 디버그: 클론된 파일 구조 출력
-                    sh 'ls -la'
-                    sh 'ls -la Back-End'
                 }
             }
         }
         stage('Build') {
             steps {
                 // 프로젝트 권한 변경
-                sh 'chmod +x ./gradlew'
+                sh 'chmod +x ./Back-End/gradlew'
                 // YAML 파일 복사
                 withCredentials([file(credentialsId: 'YAML_FILE', variable: 'YAML_FILE_PATH')]) {
                     sh 'cp ${YAML_FILE_PATH} ./Back-End/src/main/resources/application.yml'
                 }
                 // 프로젝트 빌드
+                dir('Back-End') {
                     sh './gradlew build'
+                }
             }
         }
         stage('Docker Hub Login') {
