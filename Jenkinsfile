@@ -7,8 +7,6 @@ pipeline {
         stage('Git Clone') {
             steps {
                 git branch: 'main', credentialsId: 'GITHUB_TOKEN', url: 'https://github.com/Fan-Tion/Back-End.git'
-                sh 'pwd'  // 현재 작업 디렉토리 출력
-                sh 'ls -la'  // 현재 작업 디렉토리의 파일 및 디렉토리 나열
             }
             post {
                 failure {
@@ -38,27 +36,25 @@ pipeline {
                 }
             }
         }
-        stage('Docker Build and Push') {
-            steps {
-                withCredentials([usernamePassword(credentialsId: 'DOCKER_PROJECT', passwordVariable: 'DOCKER_PROJECT_PASSWORD', usernameVariable: 'DOCKER_PROJECT_NAME')]) {
-                    sh '''
-                        cd ./Back-End
-                        docker build -f Dockerfile -t $DOCKER_PROJECT_NAME/$DOCKER_PROJECT_PASSWORD .
-                        docker push $DOCKER_PROJECT_NAME/$DOCKER_PROJECT_PASSWORD
-                    '''
+		stage('Docker Build and Push') {
+			steps {
+				withCredentials([usernamePassword(credentialsId: 'DOCKER_HUB', passwordVariable: 'DOCKER_PROJECT', usernameVariable: 'DOCKER_REPO')]) {
+                    sh 'docker build -f Dockerfile -t $DOCKER_REPO/$DOCKER_PROJECT .'
+				    sh 'docker push $DOCKER_REPO/$DOCKER_PROJECT'
+				    echo 'docker push Success!!'
                 }
-                echo 'docker push Success!!'
-            }
-        }
-//         stage('Deploy') {
-//             steps {
-//                 sshagent(credentials: ['my-ssh-credentials']) {
-//                     withCredentials([string(credentialsId: 'EC2_SERVER_IP', variable: 'IP')]) {
-//                         sh 'ssh -o StrictHostKeyChecking=no ubuntu@$IP "sudo sh deploy.sh"'
-//                     }
-//                 }
-//             }
-//         }
+				echo 'docker push Success!!'
+			}
+		}
+         stage('Deploy') {
+             steps {
+                 sshagent(credentials: ['my-ssh-credentials']) {
+                     withCredentials([string(credentialsId: 'EC2_SERVER_IP', variable: 'IP')]) {
+                         sh 'ssh -o StrictHostKeyChecking=no ubuntu@$IP "sudo sh deploy.sh"'
+                     }
+                 }
+             }
+         }
     }
 }
 

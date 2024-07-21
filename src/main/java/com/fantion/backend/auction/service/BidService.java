@@ -1,9 +1,6 @@
 package com.fantion.backend.auction.service;
 
-import com.fantion.backend.auction.dto.BalanceCheckDto;
-import com.fantion.backend.auction.dto.BidDto;
-import com.fantion.backend.auction.dto.BidSubscribeDto;
-import com.fantion.backend.auction.dto.BuyNowDto;
+import com.fantion.backend.auction.dto.*;
 import com.fantion.backend.auction.entity.Auction;
 import com.fantion.backend.member.entity.Member;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -28,4 +25,6 @@ public interface BidService {
     // 즉시 구매
     BuyNowDto.Response buyNow(BuyNowDto.Request request);
 
+    // 입찰 취소
+    BidCancelDto.Response cancelBid(BidDto.Request request);
 }
