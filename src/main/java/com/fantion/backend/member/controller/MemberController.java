@@ -32,7 +32,6 @@ public class MemberController {
   public ResponseEntity<SignupDto.Response> signup(
       @Valid @RequestPart(value = "request") SignupDto.Request request,
       @RequestPart(value = "file", required = false) MultipartFile file) {
-
     Response result = memberService.signup(request, file);
     return ResponseEntity.ok(result);
   }
@@ -52,7 +51,7 @@ public class MemberController {
   }
 
   @PostMapping("/signin")
-  public ResponseEntity<TokenDto.Local> Signin(@Valid @RequestBody SigninDto signinDto) {
+  public ResponseEntity<TokenDto.Local> signin(@Valid @RequestBody SigninDto signinDto) {
     TokenDto.Local result = memberService.signin(signinDto);
     return ResponseEntity.ok(result);
   }

@@ -64,45 +64,99 @@ class BidServiceImplTest {
         // 예치금
         Money ysgMoney = Money.builder()
                 .member(ysg)
-                .balance(17000L)
+                .balance(50000L)
                 .build();
 
         // 경매 물품
         Auction album = Auction.builder()
                 .auctionId(1L)
                 .title("album")
+                .auctionType(true)
                 .currentBidPrice(5000L)
                 .currentBidder(ysg.getNickname())
+                .status(true)
                 .build();
 
         Auction photoCard = Auction.builder()
                 .auctionId(2L)
                 .title("photoCard")
-                .currentBidPrice(6000L)
+                .auctionType(true)
+                .currentBidPrice(5000L)
                 .currentBidder(ysg.getNickname())
+                .status(true)
                 .build();
+
+        Auction figure = Auction.builder()
+                .auctionId(3L)
+                .title("figure")
+                .auctionType(false)
+                .currentBidPrice(7000L)
+                .status(true)
+                .build();
+
+        Auction poster = Auction.builder()
+                .auctionId(2L)
+                .title("poster")
+                .auctionType(false)
+                .currentBidPrice(8000L)
+                .status(true)
+                .build();
+
+
+        // 비공개 입찰
+        Bid ysgBidFigure = Bid.builder()
+                .bidId(1L)
+                .auctionId(figure)
+                .bidPrice(10000L)
+                .bidder(ysg)
+                .build();
+
+        Bid ysgBidPoster = Bid.builder()
+                .bidId(1L)
+                .auctionId(poster)
+                .bidPrice(10000L)
+                .bidder(ysg)
+                .build();
+
 
         List<Auction> auctionList = new ArrayList<>();
         auctionList.add(album);
         auctionList.add(photoCard);
 
+        List<Auction> privateAuctionList = new ArrayList<>();
+        privateAuctionList.add(figure);
+        privateAuctionList.add(poster);
+
+
         //given
         // 예치금
-        // 총 1만 7천원 보유
+        // 총 50000원 보유
         given(moneyRepository.findByMemberId(ysg.getMemberId()))
                 .willReturn(Optional.ofNullable(ysgMoney));
 
-        // 입찰내역
-        // 앨범에 5000원, 포토카드에 6000원으로 상위 입찰되어있는 상태 (총 11000원이 입찰에 사용중)
+        // 공개 입찰내역
+        // 앨범과 포토카드에 각각 5000원으로 상위 입찰되어있는 상태 (총 10000원이 공개 입찰에 사용중)
         given(auctionRepository.findByCurrentBidderAndStatus(ysg.getNickname(),true))
                 .willReturn(auctionList);
+
+
+        // 비공개 입찰내역
+        given(auctionRepository.findByAuctionTypeAndStatus(false,true))
+                .willReturn(privateAuctionList);
+
+        // 피규어와 포스터에 각각 10000원 입찰 (총 20000원이 비공개 입찰에 사용중)
+        given(bidRepository.findByAuctionIdAndBidder(figure,ysg))
+                .willReturn(Optional.ofNullable(ysgBidFigure));
+
+        given(bidRepository.findByAuctionIdAndBidder(poster,ysg))
+                .willReturn(Optional.ofNullable(ysgBidPoster));
 
         //when
         Long canUseBalance = bidService.balanceCheck(ysg).getCanUseBalance();
 
         //then
-        // 보유한 예치금은 17000원이고 입찰에 11000원이 사용중이므로 사용 가능한 예치금은 6000원임을 예상
-        assertEquals(canUseBalance,6000L);
+        // 보유한 예치금은 50000원이고 입찰에 총 30000원이 사용중이므로 사용 가능한 예치금은 20000원임을 예상
+        assertEquals(canUseBalance,20000L);
 
     }
 

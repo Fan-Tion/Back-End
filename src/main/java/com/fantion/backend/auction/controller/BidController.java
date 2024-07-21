@@ -1,9 +1,6 @@
 package com.fantion.backend.auction.controller;
 
-import com.fantion.backend.auction.dto.BalanceCheckDto;
-import com.fantion.backend.auction.dto.BidDto;
-import com.fantion.backend.auction.dto.BidSubscribeDto;
-import com.fantion.backend.auction.dto.BuyNowDto;
+import com.fantion.backend.auction.dto.*;
 import com.fantion.backend.auction.service.BidService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,13 +24,19 @@ public class BidController {
     @PostMapping
     private BidDto.Response createBid(@RequestBody BidDto.Request request){
         log.info("[Controller] createBid");
-        return  bidService.createBid(request);
+        return bidService.createBid(request);
     }
 
     @PutMapping
     private BuyNowDto.Response buyNow(@RequestBody BuyNowDto.Request request){
         log.info("[Controller] buyNow");
-        return  bidService.buyNow(request);
+        return bidService.buyNow(request);
+    }
+
+    @DeleteMapping
+    private BidCancelDto.Response cancelBid(@RequestBody BidDto.Request request){
+        log.info("[Controller] cancelBid");
+        return bidService.cancelBid(request);
     }
 
     @GetMapping("/balance")
