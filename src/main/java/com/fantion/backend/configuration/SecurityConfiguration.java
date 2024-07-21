@@ -1,5 +1,6 @@
 package com.fantion.backend.configuration;
 
+import com.fantion.backend.member.jwt.JwtTokenFilter;
 import java.util.Arrays;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -10,6 +11,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -18,7 +20,9 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 @EnableWebSecurity
 @RequiredArgsConstructor
 public class SecurityConfiguration {
-  
+
+  private final JwtTokenFilter jwtTokenFilter;
+
   @Bean
   public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
@@ -30,13 +34,14 @@ public class SecurityConfiguration {
                     .anyRequest().authenticated())
         .sessionManagement(sessionManagement -> sessionManagement.sessionCreationPolicy(
             SessionCreationPolicy.STATELESS))
+        .addFilterBefore(jwtTokenFilter, UsernamePasswordAuthenticationFilter.class)
         .build();
   }
 
   @Bean
   public CorsConfigurationSource corsConfigurationSource() {
     CorsConfiguration configuration = new CorsConfiguration();
-    configuration.addAllowedOriginPattern("*"); // 모든 출처를 허용합니다.
+    configuration.addAllowedOriginPattern("*");
     configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS")); // 허용할 HTTP 메서드를 설정합니다.
     configuration.setAllowedHeaders(Arrays.asList("*")); // 모든 헤더를 허용합니다.
     configuration.setAllowCredentials(true); // 쿠키 인증을 허용합니다.
