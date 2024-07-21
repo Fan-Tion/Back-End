@@ -13,8 +13,11 @@ public class BidDto {
   @AllArgsConstructor
   @NoArgsConstructor
   public static class Request{
+    private Long bidId;             // 입찰 식별자
+
     @NotBlank(message = "경매 식별자는 필수 항목입니다.")
-    private Long auctionId;          // 경매 식별자
+    private Long auctionId;         // 경매 식별자
+
     @NotBlank(message = "입찰가는 필수 항목입니다.")
     private Long bidPrice;          // 입찰가
 
