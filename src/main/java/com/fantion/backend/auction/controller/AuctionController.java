@@ -46,9 +46,8 @@ public class AuctionController {
   public ResponseEntity<?> createAuction(
       @Valid @RequestPart("request") AuctionDto.Request request,
       @RequestPart("auctionImage") List<MultipartFile> auctionImage) {
-    return ResponseEntity.ok(
-        returnService.createAuctionReturn(
-            auctionService.createAuction(request, auctionImage)));
+
+    return ResponseEntity.ok(auctionService.createAuction(request, auctionImage));
   }
 
   @PutMapping("/{auctionId}")

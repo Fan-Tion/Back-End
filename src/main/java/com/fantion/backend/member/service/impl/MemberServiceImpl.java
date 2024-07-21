@@ -1,5 +1,6 @@
 package com.fantion.backend.member.service.impl;
 
+import com.fantion.backend.configuration.S3Uploader;
 import com.fantion.backend.exception.ErrorCode;
 import com.fantion.backend.exception.impl.CustomException;
 import com.fantion.backend.member.auth.MemberAuthUtil;
@@ -62,6 +63,7 @@ public class MemberServiceImpl implements MemberService {
   private final EmailValidator emailValidator = EmailValidator.getInstance();
   private final Random random = new Random();
   private final HttpServletRequest httpServletRequest;
+  private final S3Uploader s3Uploader;
 
   @Override
   public Response signup(Request request, MultipartFile file) {
@@ -98,22 +100,17 @@ public class MemberServiceImpl implements MemberService {
       member = SignupDto.signupInput(request, null);
       memberRepository.save(member);
     } else { // 이미지 파일이 있을 때
-      // 이미지 파일을 저장하고 경로를 가져오기
-      String uuid = UUID.randomUUID().toString();
-      String projectPath = System.getProperty("user.home") + "\\Desktop\\images\\";
-      String fileName = uuid + "_" + file.getOriginalFilename();
-
       // 파일 이름에서 확장자 추출
-      String fileExtension = StringUtils.getFilenameExtension(fileName);
+      String fileExtension = StringUtils.getFilenameExtension(file.getOriginalFilename());
 
       // 지원하는 이미지 파일 확장자 목록
       List<String> allowedExtensions = Arrays.asList("jpg", "jpeg", "png", "gif");
 
+      String imageUrl;
       // 확장자가 이미지 파일인지 확인
       if (fileExtension != null && allowedExtensions.contains(fileExtension.toLowerCase())) {
-        File saveFile = new File(projectPath, fileName);
         try {
-          file.transferTo(saveFile);
+          imageUrl = s3Uploader.upload(file, "profile-images");
         } catch (Exception e) {
           throw new CustomException(ErrorCode.FAILED_IMAGE_SAVE);
         }
@@ -122,7 +119,7 @@ public class MemberServiceImpl implements MemberService {
         throw new CustomException(ErrorCode.UN_SUPPORTED_IMAGE_TYPE);
       }
 
-      member = SignupDto.signupInput(request, projectPath);
+      member = SignupDto.signupInput(request, imageUrl);
       memberRepository.save(member);
     }
 

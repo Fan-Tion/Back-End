@@ -19,39 +19,6 @@ public class JwtTokenFilter extends OncePerRequestFilter {
 
   private final JwtTokenProvider jwtTokenProvider;
   private final RedisTemplate<String, String> redisTemplate;
-  private final AntPathMatcher pathMatcher = new AntPathMatcher();
-
-  // 공개 엔드포인트 설정
-  private static final Map<HttpMethod, List<String>> publicEndpoints = new HashMap<>();
-
-  static { // 필요한 엔드포인트를 추가
-    publicEndpoints.put(HttpMethod.POST, Arrays.asList("/members/signin", "/members/signup", "/payments/request"));
-    publicEndpoints.put(HttpMethod.GET, Arrays.asList("/payments/success", "/payments/success",
-        "/auction/category", "/auction/favorite-category", "/auction/search", "/auction/view/**", "/auction/list"));
-  }
-
-  // 특정 요청에 대해 토큰이 필요하지 않은 경우를 체크하는 메서드
-  private boolean isPublicEndpoint(HttpServletRequest request) {
-    String contextPath = request.getContextPath();
-    String requestURI = request.getRequestURI();
-
-    // 컨텍스트 패스를 제거한 URI를 구성
-    String endpoint = requestURI.substring(contextPath.length());
-
-    // 요청 메서드 가져오기
-    String method = request.getMethod();
-    if (method != null) {
-      HttpMethod httpMethod = HttpMethod.valueOf(method.toUpperCase());
-
-      List<String> endpoints = publicEndpoints.get(httpMethod);
-      if (endpoints != null) {
-        // 패턴 매칭
-        return endpoints.stream().anyMatch(pattern -> pathMatcher.match(pattern, endpoint));
-      }
-    }
-
-    return false;
-  }
 
   @Override
   protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,

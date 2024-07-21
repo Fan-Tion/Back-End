@@ -30,7 +30,7 @@ public class SecurityConfiguration {
         .cors(Customizer.withDefaults())
         .csrf(AbstractHttpConfigurer::disable)
         .authorizeHttpRequests(
-            requests -> requests.requestMatchers("/payments/**", "/members/**", "auction/**").permitAll()
+            requests -> requests.requestMatchers("/payments/**", "/members/**", "/auction/**").permitAll()
                     .anyRequest().authenticated())
         .sessionManagement(sessionManagement -> sessionManagement.sessionCreationPolicy(
             SessionCreationPolicy.STATELESS))
