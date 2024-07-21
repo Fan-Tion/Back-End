@@ -10,7 +10,6 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
-import org.springframework.util.AntPathMatcher;
 import org.springframework.util.ObjectUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -20,12 +19,11 @@ public class JwtTokenFilter extends OncePerRequestFilter {
 
   private final JwtTokenProvider jwtTokenProvider;
   private final RedisTemplate<String, String> redisTemplate;
-  private final AntPathMatcher pathMatcher = new AntPathMatcher();
-  
+
   @Override
   protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
       FilterChain filterChain) throws ServletException, IOException {
-    
+
     String token = jwtTokenProvider.resolveToken(request);
     if (token != null && jwtTokenProvider.validateToken(token)) {
       // Redis에 해당 accessToken의 logout 여부 확인
@@ -37,9 +35,9 @@ public class JwtTokenFilter extends OncePerRequestFilter {
         if (authentication != null) {
           SecurityContextHolder.getContext().setAuthentication(authentication);
         }
-      } 
-    } 
-    
+      }
+    }
+
     filterChain.doFilter(request, response);
   }
 }
