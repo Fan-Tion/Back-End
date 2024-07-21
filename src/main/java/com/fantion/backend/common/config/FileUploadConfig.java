@@ -1,4 +1,4 @@
-package com.fantion.backend.configuration;
+package com.fantion.backend.common.config;
 
 import jakarta.servlet.MultipartConfigElement;
 import org.springframework.boot.web.servlet.MultipartConfigFactory;
