@@ -2,10 +2,10 @@ package com.fantion.backend.auction.controller;
 
 import com.fantion.backend.auction.dto.AuctionDto;
 import com.fantion.backend.auction.service.AuctionService;
+import com.fantion.backend.auction.service.impl.ReturnServiceImpl;
 import com.fantion.backend.type.CategoryType;
 import com.fantion.backend.type.SearchType;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -39,13 +39,16 @@ public class AuctionController {
   private final Path basePath = Paths.get("images/auction");
 
   private final AuctionService auctionService;
+  private final ReturnServiceImpl returnService;
 
 
   @PostMapping("")
   public ResponseEntity<?> createAuction(
       @Valid @RequestPart("request") AuctionDto.Request request,
       @RequestPart("auctionImage") List<MultipartFile> auctionImage) {
-    return ResponseEntity.ok(auctionService.createAuction(request, auctionImage));
+    return ResponseEntity.ok(
+        returnService.createAuctionReturn(
+            auctionService.createAuction(request, auctionImage)));
   }
 
   @PutMapping("/{auctionId}")
@@ -53,23 +56,27 @@ public class AuctionController {
       @Valid @RequestPart("request") AuctionDto.Request request,
       @RequestPart("auctionImage") List<MultipartFile> auctionImage,
       @PathVariable("auctionId") Long auctionId) {
-    return ResponseEntity.ok(auctionService.updateAuction(request, auctionImage, auctionId));
+    return ResponseEntity.ok(
+        returnService.updateAuctionReturn(
+            auctionService.updateAuction(request, auctionImage, auctionId)));
   }
 
   @DeleteMapping("/{auctionId}")
   public ResponseEntity<?> deleteAuction(
       @PathVariable("auctionId") Long auctionId) {
-    return ResponseEntity.ok(auctionService.deleteAuction(auctionId));
+    return ResponseEntity.ok(
+        returnService.deleteAuctionReturn(
+            auctionService.deleteAuction(auctionId)));
   }
 
   /**
    * 경매 종류 후 거래량 save or update
    * */
-  @PostMapping("/end-auction")
-  public ResponseEntity<?> endAuctionSaveOrUpdate(@RequestParam("categoryName") String categoryName) {
-    auctionService.endAuctionSaveOrUpdate(categoryName);
-    return ResponseEntity.ok("save or update");
-  }
+//  @PostMapping("/end-auction")
+//  public ResponseEntity<?> endAuctionSaveOrUpdate(@RequestParam("categoryName") String categoryName) {
+//    auctionService.endAuctionSaveOrUpdate(categoryName);
+//    return ResponseEntity.ok("save or update");
+//  }
 
   @GetMapping("/favorite-category")
   public ResponseEntity<?> getFavoriteAuctionCategory() {
@@ -80,29 +87,38 @@ public class AuctionController {
       map = new HashMap<>();
     }
 
-    return ResponseEntity.ok(auctionService.getFavoriteAuctionCategory(map));
+    return ResponseEntity.ok(returnService.categoryReturn(
+        "FAVORITE", auctionService.getFavoriteAuctionCategory(map)));
   }
 
   @GetMapping("/category")
   public ResponseEntity<?> getAllAuctionCategory() {
-    return ResponseEntity.ok(auctionService.getAllAuctionCategory());
+    return ResponseEntity.ok(
+        returnService.categoryReturn(
+            "ALL", auctionService.getAllAuctionCategory()));
   }
 
   @GetMapping("/list")
   public ResponseEntity<?> getAllAuctions(
       @Valid @RequestParam(value = "page", defaultValue = "0") int page
   ) {
-    return ResponseEntity.ok(auctionService.getList(page));
+
+    return ResponseEntity.ok(
+        returnService.getAuctionListReturn(
+            "ALL", auctionService.getList(page)));
   }
 
   @GetMapping("/search")
   public ResponseEntity<?> searchAuctions(
-      @RequestParam("page") @Min(0) int page,
+      @RequestParam(name = "page", defaultValue = "0")int page,
       @RequestParam("searchOption") @NotNull SearchType searchOption,
       @RequestParam(name = "categoryOption", defaultValue = "ALL") CategoryType categoryOption,
-      @RequestParam("keyword") String keyword) {
-    return ResponseEntity.ok(auctionService
-        .getSearchList(page, searchOption, categoryOption, keyword));
+      @RequestParam(name = "keyword", defaultValue = "") String keyword) {
+    System.out.println(page + " " + searchOption + " " + categoryOption + " " + keyword);
+
+    return ResponseEntity.ok(
+        returnService.getAuctionListReturn(
+            "SEARCH", auctionService.getSearchList(page, searchOption, categoryOption, keyword)));
   }
 
   /**
@@ -123,7 +139,7 @@ public class AuctionController {
   }
 
   @GetMapping("/view/{auctionId}")
-  private AuctionDto.Response findAuction(@PathVariable(name = "auctionId") Long auctionId) {
+  public AuctionDto.Response findAuction(@PathVariable(name = "auctionId") Long auctionId) {
     return auctionService.findAuction(auctionId);
   }
 }

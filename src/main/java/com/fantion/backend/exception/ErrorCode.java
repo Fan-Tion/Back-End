@@ -4,8 +4,6 @@ import lombok.Getter;
 import org.springframework.http.HttpStatus;
 @Getter
 public enum ErrorCode {
-
-
     // Member
     NOT_FOUND_MEMBER("존재하지 않는 회원입니다.", HttpStatus.NOT_FOUND),
     EMAIL_INVALID("유효하지 않는 이메일 입니다.", HttpStatus.BAD_REQUEST),
