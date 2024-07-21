@@ -1,9 +1,6 @@
 package com.fantion.backend.auction.service.impl;
 
-import com.fantion.backend.auction.dto.BalanceCheckDto;
-import com.fantion.backend.auction.dto.BidDto;
-import com.fantion.backend.auction.dto.BidSubscribeDto;
-import com.fantion.backend.auction.dto.BuyNowDto;
+import com.fantion.backend.auction.dto.*;
 import com.fantion.backend.auction.entity.Auction;
 import com.fantion.backend.auction.entity.Bid;
 import com.fantion.backend.auction.repository.AuctionRepository;
@@ -30,6 +27,8 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+
+import static com.fantion.backend.exception.ErrorCode.NOT_PRIVATE_BID_CANCEL;
 
 @Slf4j
 @Service
@@ -73,8 +72,11 @@ public class BidServiceImpl implements BidService {
             throw new CustomException(ErrorCode.NOT_ENOUGH_BALANCE);
         }
 
-        // 상위 입찰 설정
-        auction.topBid(request.getBidPrice(),member.getNickname());
+        // 공개 입찰인 경우
+        if (auction.isAuctionType()) {
+            // 상위 입찰 설정
+            auction.topBid(request.getBidPrice(),member.getNickname());
+        }
 
         // 입찰 생성
         Bid bid = Bid.builder()
@@ -83,6 +85,11 @@ public class BidServiceImpl implements BidService {
                 .bidder(member)
                 .createDate(LocalDateTime.now())
                 .build();
+
+        // 기존 입찰 수정
+        if (request.getBidId() != null) {
+            bid.setBidId(request.getBidId());
+        }
 
         BidDto.Response response = BidDto.Response(bidRepository.save(bid));
         publishBid(response);
@@ -110,10 +117,11 @@ public class BidServiceImpl implements BidService {
                 .orElseThrow(()-> new CustomException(ErrorCode.NOT_FOUND_MONEY));
         Long haveBalance = money.getBalance();
 
+        // 공개 입찰 사용 가능한 예치금 계산
         // 해당 사용자가 상위 입찰인 진행중인 경매 물품 조회
         List<Auction> topBidAuctionList = auctionRepository.findByCurrentBidderAndStatus(member.getNickname(), true);
 
-        // 입찰내역들의 입찰가 합산 금액
+        // 공개 입찰내역들의 입찰가 합산 금액
         Long totalBidPrice = 0L;
 
         for (int i = 0; i < topBidAuctionList.size(); i++) {
@@ -121,11 +129,26 @@ public class BidServiceImpl implements BidService {
             totalBidPrice += topBidAuction.getCurrentBidPrice();
         }
 
-        BalanceCheckDto.Response balanceCheckResponse = BalanceCheckDto.Response.builder()
-                .totalBidPrice(totalBidPrice)
-                .canUseBalance(haveBalance - totalBidPrice)
-                .build();
+        // 비공개 입찰 사용 가능한 예치금 계산
+        // 진행중인 비공개 입찰 경매 조회
+        Long totalPrivateBidPrice = 0L;
+        List<Auction> privateAuctionList = auctionRepository.findByAuctionTypeAndStatus(false, true);
+        for (int i = 0; i < privateAuctionList.size(); i++) {
+            Auction privateAuction = privateAuctionList.get(i);
 
+            // 해당 사용자가 진행중인 비공개 입찰 조회
+            Optional<Bid> privateAuctionBidder = bidRepository.findByAuctionIdAndBidder(privateAuction,member);
+
+            // 입찰이 있을경우 합산
+            if (privateAuctionBidder.isPresent()) {
+                totalPrivateBidPrice += privateAuctionBidder.get().getBidPrice();
+            }
+        }
+
+        BalanceCheckDto.Response balanceCheckResponse = BalanceCheckDto.Response.builder()
+                .totalBidPrice(totalBidPrice + totalPrivateBidPrice)
+                .canUseBalance(haveBalance - totalBidPrice - totalPrivateBidPrice)
+                .build();
 
         return balanceCheckResponse;
     }
@@ -191,6 +214,9 @@ public class BidServiceImpl implements BidService {
                     // 경매 마감 설정
                     auction.setStatus(false);
 
+                    // 상위 입찰 설정
+                    auction.topBid(bid.getBidPrice(), bidder.getNickname());
+
                     // 입찰자를 통해 예치금 조회
                     Money money = moneyRepository.findByMemberId(bidder.getMemberId())
                             .orElseThrow(()-> new CustomException(ErrorCode.NOT_FOUND_MONEY));
@@ -232,8 +258,27 @@ public class BidServiceImpl implements BidService {
         Auction auction = auctionRepository.findById(request.getAuctionId())
                 .orElseThrow(()-> new CustomException(ErrorCode.NOT_FOUND_AUCTION));
 
+        // 즉시 구매가
         Long buyNowPrice = auction.getBuyNowPrice();
+
+        // 총 보유한 예치금
         Long balance = money.getBalance();
+
+        // 사용 가능한 예치금
+        Long canUseBalance = balanceCheck(member).getCanUseBalance();
+
+        LocalDateTime endDate = auction.getEndDate();
+
+        // 경매 종료일이 지난 경우 즉시구매 불가능
+        if (LocalDateTime.now().isAfter(endDate)) {
+            throw new CustomException(ErrorCode.TOO_OLD_AUCTION);
+
+        }
+
+        // 사용 가능한 예치금 보다 즉시 구매가가 더 클 경우
+        if (canUseBalance < buyNowPrice) {
+            throw new CustomException(ErrorCode.NOT_ENOUGH_BALANCE);
+        }
 
         // 즉시 구매
         money.successBid(buyNowPrice);
@@ -262,13 +307,50 @@ public class BidServiceImpl implements BidService {
 
         return response;
     }
+    @Transactional
+    @Override
+    public BidCancelDto.Response cancelBid(BidDto.Request request) {
+        // 입찰 취소하려는 입찰 조회
+        Bid cancelBid = bidRepository.findById(request.getBidId())
+                .orElseThrow(()-> new CustomException(ErrorCode.NOT_FOUND_BID));
 
+        // 입찰 취소하려는 경매 물품 조회
+        Auction cancelAuction = auctionRepository.findById(cancelBid.getAuctionId().getAuctionId())
+                .orElseThrow(()-> new CustomException(ErrorCode.NOT_FOUND_AUCTION));
 
+        // 비공개 입찰만 입찰 취소 가능
+        if (cancelAuction.isAuctionType()) {
+            throw new CustomException(NOT_PRIVATE_BID_CANCEL);
 
+        }
 
+        // 경매 종료일이 지난 경우 입찰취소 불가능
+        if (LocalDateTime.now().isAfter(cancelAuction.getEndDate())) {
+            throw new CustomException(ErrorCode.TOO_OLD_AUCTION);
 
+        }
 
+        // 로그인한 사용자 가져오기
+        String loginEmail = MemberAuthUtil.getLoginUserId();
 
+        // 사용자 조회
+        Member member = memberRepository.findByEmail(loginEmail)
+                .orElseThrow(()-> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
+
+        // 사용자가 보유한 예치금 조회
+        Money money = moneyRepository.findByMemberId(member.getMemberId())
+                .orElseThrow(()-> new CustomException(ErrorCode.NOT_FOUND_MONEY));
+
+        // 입찰 취소
+        bidRepository.delete(cancelBid);
+
+        BidCancelDto.Response response = BidCancelDto.Response.builder()
+                .auctionId(cancelAuction.getAuctionId())
+                .cancelPrice(cancelBid.getBidPrice())
+                .build();
+
+        return response;
+    }
 
 
 }

@@ -32,6 +32,8 @@ public enum ErrorCode {
     AUCTION_NOT_FOUND("경매가 존재하지 않습니다.", HttpStatus.NOT_FOUND),
 
     // Bid
+    NOT_FOUND_BID("존재하지 않는 입찰입니다.",HttpStatus.BAD_REQUEST),
+    NOT_PRIVATE_BID_CANCEL("비공개 입찰만 입찰 취소가 가능합니다.",HttpStatus.BAD_REQUEST),
     NOT_ENOUGH_BALANCE("예치금이 부족합니다.",HttpStatus.BAD_REQUEST),
 
     // Common
