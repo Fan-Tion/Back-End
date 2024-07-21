@@ -31,7 +31,7 @@ public class MemberController {
   @PostMapping("/signup")
   public ResponseEntity<SignupDto.Response> signup(
       @Valid @RequestPart(value = "request") SignupDto.Request request,
-      @RequestPart(value = "file") MultipartFile file) {
+      @RequestPart(value = "file", required = false) MultipartFile file) {
     Response result = memberService.signup(request, file);
     return ResponseEntity.ok(result);
   }
