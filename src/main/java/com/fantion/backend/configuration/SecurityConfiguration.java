@@ -30,9 +30,8 @@ public class SecurityConfiguration {
         .cors(Customizer.withDefaults())
         .csrf(AbstractHttpConfigurer::disable)
         .authorizeHttpRequests(
-            requests -> requests.requestMatchers("/payments/**", "/members/**"
-                ,"/auction/category", "/auction/favorite-category", "/auction/search", "/auction/view/**", "/auction/list").permitAll()
-                .anyRequest().authenticated())
+            requests -> requests.requestMatchers("/payments/**", "/members/**", "auction/**").permitAll()
+                    .anyRequest().authenticated())
         .sessionManagement(sessionManagement -> sessionManagement.sessionCreationPolicy(
             SessionCreationPolicy.STATELESS))
         .addFilterBefore(jwtTokenFilter, UsernamePasswordAuthenticationFilter.class)
