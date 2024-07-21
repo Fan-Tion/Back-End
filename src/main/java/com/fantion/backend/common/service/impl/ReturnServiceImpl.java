@@ -74,9 +74,9 @@ public class ReturnServiceImpl implements ReturnService {
   }
 
   private static ReturnDto getReturnDto(String message, Map<String, Object> data) {
-    ReturnDto returnDto = new ReturnDto();
-    returnDto.setMessage(message);
-    returnDto.setData(data);
-    return returnDto;
+    return ReturnDto.builder()
+        .message(message)
+        .data(data)
+        .build();
   }
 }
