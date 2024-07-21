@@ -21,11 +21,12 @@ public class SecurityConfiguration {
   @Bean
   public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
-    return http.csrf(AbstractHttpConfigurer::disable)
+    return http
+        .cors(Customizer.withDefaults())
+        .csrf(AbstractHttpConfigurer::disable)
         .authorizeHttpRequests(
-            requests -> requests.requestMatchers("/payments/**", "/members/**"
-                ,"/auction/category", "/auction/favorite-category", "/auction/search", "/auction/view/**").permitAll()
-                .anyRequest().authenticated())
+            requests -> requests.requestMatchers("/payments/**", "/members/**").permitAll()
+                    .anyRequest().authenticated())
         .sessionManagement(sessionManagement -> sessionManagement.sessionCreationPolicy(
             SessionCreationPolicy.STATELESS))
         .addFilterBefore(jwtTokenFilter, UsernamePasswordAuthenticationFilter.class)
