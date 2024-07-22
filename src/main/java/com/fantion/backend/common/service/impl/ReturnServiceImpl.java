@@ -1,9 +1,9 @@
-package com.fantion.backend.auction.service.impl;
+package com.fantion.backend.common.service.impl;
 
 import com.fantion.backend.auction.dto.AuctionDto.Response;
 import com.fantion.backend.auction.dto.CategoryDto;
-import com.fantion.backend.auction.dto.ReturnDto;
-import com.fantion.backend.auction.service.ReturnService;
+import com.fantion.backend.common.dto.ReturnDto;
+import com.fantion.backend.common.service.ReturnService;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -74,9 +74,9 @@ public class ReturnServiceImpl implements ReturnService {
   }
 
   private static ReturnDto getReturnDto(String message, Map<String, Object> data) {
-    ReturnDto returnDto = new ReturnDto();
-    returnDto.setMessage(message);
-    returnDto.setData(data);
-    return returnDto;
+    return ReturnDto.builder()
+        .message(message)
+        .data(data)
+        .build();
   }
 }

@@ -2,7 +2,7 @@ package com.fantion.backend.auction.controller;
 
 import com.fantion.backend.auction.dto.AuctionDto;
 import com.fantion.backend.auction.service.AuctionService;
-import com.fantion.backend.auction.service.impl.ReturnServiceImpl;
+import com.fantion.backend.common.service.impl.ReturnServiceImpl;
 import com.fantion.backend.type.CategoryType;
 import com.fantion.backend.type.SearchType;
 import jakarta.validation.Valid;
@@ -67,15 +67,6 @@ public class AuctionController {
         returnService.deleteAuctionReturn(
             auctionService.deleteAuction(auctionId)));
   }
-
-  /**
-   * 경매 종류 후 거래량 save or update
-   * */
-//  @PostMapping("/end-auction")
-//  public ResponseEntity<?> endAuctionSaveOrUpdate(@RequestParam("categoryName") String categoryName) {
-//    auctionService.endAuctionSaveOrUpdate(categoryName);
-//    return ResponseEntity.ok("save or update");
-//  }
 
   @GetMapping("/favorite-category")
   public ResponseEntity<?> getFavoriteAuctionCategory() {
