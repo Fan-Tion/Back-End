@@ -1,4 +1,4 @@
-package com.fantion.backend.configuration;
+package com.fantion.backend.common.config;
 
 import com.fantion.backend.auction.dto.BidDto;
 import com.fantion.backend.auction.service.SseEmitterService;

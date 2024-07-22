@@ -1,6 +1,6 @@
 package com.fantion.backend.member.service.impl;
 
-import com.fantion.backend.configuration.S3Uploader;
+import com.fantion.backend.common.config.S3Uploader;
 import com.fantion.backend.exception.ErrorCode;
 import com.fantion.backend.exception.impl.CustomException;
 import com.fantion.backend.member.auth.MemberAuthUtil;
@@ -23,7 +23,6 @@ import com.fantion.backend.member.service.MemberService;
 import com.fantion.backend.type.MemberStatus;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
-import java.io.File;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Date;
@@ -39,8 +38,6 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
@@ -397,7 +394,6 @@ public class MemberServiceImpl implements MemberService {
 
     // 연동 SNS가 있는지 확인
     if (member.getIsNaver()) { // 네이버 연동 해제
-
       String naverAccessToken = redisTemplate.opsForValue()
           .get("naverAcessTokenEmail: " + member.getEmail());
       ResponseEntity<NaverLinkDto> delete = naverLoginClient.unLink(
@@ -419,7 +415,6 @@ public class MemberServiceImpl implements MemberService {
         .success(true)
         .build();
   }
-
 
   @Scheduled(cron = "0 0 0 * * ?")
   @Transactional

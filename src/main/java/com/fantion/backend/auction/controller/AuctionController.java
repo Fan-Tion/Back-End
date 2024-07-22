@@ -1,20 +1,21 @@
 package com.fantion.backend.auction.controller;
 
 import com.fantion.backend.auction.dto.AuctionDto;
+import com.fantion.backend.auction.dto.CategoryDto;
 import com.fantion.backend.auction.service.AuctionService;
-import com.fantion.backend.common.service.impl.ReturnServiceImpl;
+import com.fantion.backend.common.dto.ResultDTO;
 import com.fantion.backend.type.CategoryType;
 import com.fantion.backend.type.SearchType;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import javax.xml.transform.Result;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -39,7 +40,6 @@ public class AuctionController {
   private final Path basePath = Paths.get("images/auction");
 
   private final AuctionService auctionService;
-  private final ReturnServiceImpl returnService;
 
 
   @PostMapping("")
@@ -47,7 +47,9 @@ public class AuctionController {
       @Valid @RequestPart("request") AuctionDto.Request request,
       @RequestPart("auctionImage") List<MultipartFile> auctionImage) {
 
-    return ResponseEntity.ok(auctionService.createAuction(request, auctionImage));
+    Long result = auctionService.createAuction(request, auctionImage);
+    ResultDTO<String> data = ResultDTO.of("경매 생성에 성공했습니다.", "auctionId: " + result);
+    return ResponseEntity.ok(data);
   }
 
   @PutMapping("/{auctionId}")
@@ -55,47 +57,38 @@ public class AuctionController {
       @Valid @RequestPart("request") AuctionDto.Request request,
       @RequestPart("auctionImage") List<MultipartFile> auctionImage,
       @PathVariable("auctionId") Long auctionId) {
-    return ResponseEntity.ok(
-        returnService.updateAuctionReturn(
-            auctionService.updateAuction(request, auctionImage, auctionId)));
+    AuctionDto.Response result = auctionService.updateAuction(request, auctionImage, auctionId);
+    ResultDTO<AuctionDto.Response> data = ResultDTO.of("경매 업데이트 성공했습니다.", result);
+    return ResponseEntity.ok(data);
   }
 
   @DeleteMapping("/{auctionId}")
   public ResponseEntity<?> deleteAuction(
       @PathVariable("auctionId") Long auctionId) {
-    return ResponseEntity.ok(
-        returnService.deleteAuctionReturn(
-            auctionService.deleteAuction(auctionId)));
+    Boolean result = auctionService.deleteAuction(auctionId);
+    ResultDTO<Boolean> data = ResultDTO.of("경매 삭제 성공했습니다.", result);
+    return ResponseEntity.ok(data);
   }
 
   @GetMapping("/favorite-category")
   public ResponseEntity<?> getFavoriteAuctionCategory() {
-    Map<String, Integer> map
-        = auctionService.getAuctionDateValue();
-
-    if (map == null) {
-      map = new HashMap<>();
-    }
-
-    return ResponseEntity.ok(returnService.categoryReturn(
-        "FAVORITE", auctionService.getFavoriteAuctionCategory(map)));
+    List<CategoryDto> result = auctionService.getFavoriteAuctionCategory();
+    ResultDTO<List<CategoryDto>> data = ResultDTO.of("인기 카테고리를 불러오는데 성공했습니다.", result);
+    return ResponseEntity.ok(data);
   }
 
   @GetMapping("/category")
   public ResponseEntity<?> getAllAuctionCategory() {
-    return ResponseEntity.ok(
-        returnService.categoryReturn(
-            "ALL", auctionService.getAllAuctionCategory()));
+    List<CategoryDto> result = auctionService.getAllAuctionCategory();
+    ResultDTO<List<CategoryDto>> data = ResultDTO.of("전체 카테고리를 불러오는데 성공했습니다.", result);
+    return ResponseEntity.ok(data);
   }
 
   @GetMapping("/list")
-  public ResponseEntity<?> getAllAuctions(
-      @Valid @RequestParam(value = "page", defaultValue = "0") int page
-  ) {
-
-    return ResponseEntity.ok(
-        returnService.getAuctionListReturn(
-            "ALL", auctionService.getList(page)));
+  public ResponseEntity<?> getAllAuctions(@Valid @RequestParam(value = "page", defaultValue = "0") int page) {
+    Page<AuctionDto.Response> result = auctionService.getList(page);
+    ResultDTO<Page<AuctionDto.Response>> data = ResultDTO.of("경매 전체 페이지를 불러오는데 성공했습니다.", result);
+    return ResponseEntity.ok(data);
   }
 
   @GetMapping("/search")
@@ -106,9 +99,10 @@ public class AuctionController {
       @RequestParam(name = "keyword", defaultValue = "") String keyword) {
     System.out.println(page + " " + searchOption + " " + categoryOption + " " + keyword);
 
-    return ResponseEntity.ok(
-        returnService.getAuctionListReturn(
-            "SEARCH", auctionService.getSearchList(page, searchOption, categoryOption, keyword)));
+    Page<AuctionDto.Response> result = auctionService.getSearchList(page, searchOption, categoryOption,
+        keyword);
+    ResultDTO<Page<AuctionDto.Response>> data = ResultDTO.of("경매 검색을 완료했습니다", result);
+    return ResponseEntity.ok(data);
   }
 
   /**
@@ -125,7 +119,6 @@ public class AuctionController {
     return ResponseEntity.ok()
         .headers(headers)
         .body(auctionService.getImage(imagePath, headers));
-
   }
 
   @GetMapping("/view/{auctionId}")
