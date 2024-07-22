@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.view.RedirectView;
 
 @RestController
 @RequiredArgsConstructor
@@ -57,9 +58,9 @@ public class MemberController {
   }
 
   @GetMapping("/naver/request")
-  public ResponseEntity<String> naverRequest() {
-    String result = memberService.naverRequest();
-    return ResponseEntity.ok(result);
+  public RedirectView naverRequest() {
+    RedirectView  result = memberService.naverRequest();
+    return result;
   }
 
   @GetMapping("/naver/signin")
