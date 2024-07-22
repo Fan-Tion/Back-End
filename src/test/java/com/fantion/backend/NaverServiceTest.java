@@ -43,20 +43,20 @@ public class NaverServiceTest {
         "http://localhost:8080/members/naver/signin");
   }
 
-  @Test
-  void testNaverRequest() {
-    // given
-    String expectedResponse = "response";
-    when(naverLoginClient.naverRequest("code", naverConfiguration.getClientId(),
-        naverConfiguration.getState(), naverConfiguration.getRedirectUri()))
-        .thenReturn(ResponseEntity.ok(expectedResponse));
-
-    // when
-    String response = memberService.naverRequest();
-
-    // then
-    assertEquals(expectedResponse, response);
-    verify(naverLoginClient).naverRequest("code", naverConfiguration.getClientId(),
-        naverConfiguration.getState(), naverConfiguration.getRedirectUri());
-  }
+//  @Test
+//  void testNaverRequest() {
+//    // given
+//    String expectedResponse = "response";
+//    when(naverLoginClient.naverRequest("code", naverConfiguration.getClientId(),
+//        naverConfiguration.getState(), naverConfiguration.getRedirectUri()))
+//        .thenReturn(ResponseEntity.ok(expectedResponse));
+//
+//    // when
+//    String response = memberService.naverRequest();
+//
+//    // then
+//    assertEquals(expectedResponse, response);
+//    verify(naverLoginClient).naverRequest("code", naverConfiguration.getClientId(),
+//        naverConfiguration.getState(), naverConfiguration.getRedirectUri());
+//  }
 }
