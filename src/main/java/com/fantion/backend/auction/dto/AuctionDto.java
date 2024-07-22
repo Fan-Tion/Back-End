@@ -42,7 +42,7 @@ public class AuctionDto {
   @AllArgsConstructor
   @Builder
   public static class Response {
-
+    private Long auctionId;
     private String title;
     private String auctionUserNickname;
     private CategoryType category;

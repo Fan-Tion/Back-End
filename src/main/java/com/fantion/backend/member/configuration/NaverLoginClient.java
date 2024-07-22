@@ -1,5 +1,6 @@
 package com.fantion.backend.member.configuration;
 
+import com.fantion.backend.member.dto.NaverLinkDto;
 import com.fantion.backend.member.dto.TokenDto;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.http.ResponseEntity;
@@ -24,5 +25,13 @@ public interface NaverLoginClient {
       @RequestParam("client_secret") String clientSecret,
       @RequestParam("code") String code,
       @RequestParam("state") String state
+  );
+
+  @GetMapping(value = "${naver.token-endpoint}")
+  ResponseEntity<NaverLinkDto> unLink(
+      @RequestParam("client_id") String clientId,
+      @RequestParam("client_secret") String clientSecret,
+      @RequestParam("access_token") String naverAccessToken,
+      @RequestParam("grant_type") String grantType
   );
 }

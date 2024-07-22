@@ -10,8 +10,6 @@ import lombok.Setter;
 @Setter
 @AllArgsConstructor
 public class CategoryDto {
-//  List<String> titleList;
-//  List<String> categoryList;
   String title;
   String category;
 }

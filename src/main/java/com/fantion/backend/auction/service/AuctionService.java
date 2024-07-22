@@ -14,7 +14,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.web.multipart.MultipartFile;
 
 public interface AuctionService {
-  String createAuction(
+  Long createAuction(
       AuctionDto.Request request,
       List<MultipartFile> auctionImage);
 
@@ -34,7 +34,7 @@ public interface AuctionService {
 
   Resource getImage(Path imagePath, HttpHeaders headers);
 
-  void endAuctionSaveOrUpdate(String value);
+  void endAuctionSaveOrUpdate();
 
   Map<String, Integer> getAuctionDateValue();
 

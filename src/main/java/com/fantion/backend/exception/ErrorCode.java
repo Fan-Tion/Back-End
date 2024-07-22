@@ -4,8 +4,6 @@ import lombok.Getter;
 import org.springframework.http.HttpStatus;
 @Getter
 public enum ErrorCode {
-
-
     // Member
     NOT_FOUND_MEMBER("존재하지 않는 회원입니다.", HttpStatus.NOT_FOUND),
     EMAIL_INVALID("유효하지 않는 이메일 입니다.", HttpStatus.BAD_REQUEST),
@@ -18,6 +16,7 @@ public enum ErrorCode {
     OTHER_SNS_LINKED_ERROR("이미 다른 소셜계정으로 연동 하셨습니다.", HttpStatus.BAD_REQUEST),
     DUPLICATE_LINKED_ERROR("이미 해당 소셜계정과 연동하셨습니다.", HttpStatus.BAD_REQUEST),
     TOKEN_INVALID("유효하지 않은 토큰입니다.", HttpStatus.FORBIDDEN),
+    UN_LINKED_ERROR("연동해제 중 에러가 발생했습니다.", HttpStatus.INTERNAL_SERVER_ERROR),
 
     // Payment
     NOT_FOUND_MONEY("예치금이 존재하지 않습니다.", HttpStatus.NOT_FOUND),

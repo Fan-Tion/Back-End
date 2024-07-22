@@ -27,4 +27,6 @@ public interface MemberService {
   CheckDto naverLink(String linkEmail);
 
   CheckDto signout();
+
+  CheckDto withdrawal();
 }
