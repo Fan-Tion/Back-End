@@ -26,6 +26,7 @@ import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -66,16 +67,17 @@ public class AuctionServiceImpl implements AuctionService {
 
   @Override
   @Transactional
-  public String createAuction(@Valid AuctionDto.Request request,
+  public Long createAuction(@Valid AuctionDto.Request request,
       List<MultipartFile> auctionImage) {
-    saveImages(auctionImage);
-
-    Auction auction = toAuction(request);
     Long auctionIdx = auctionRepository.count() + 1;
+
+    saveImages(auctionIdx, auctionImage);
+
+    Auction auction = toAuction(auctionIdx, request);
 
     auctionRepository.save(auction);
 
-    return serverUrl + "view/" + auctionIdx;
+    return auctionIdx;
   }
 
   // 경매 상세보기
@@ -99,8 +101,8 @@ public class AuctionServiceImpl implements AuctionService {
       Long auctionId) {
     Auction auction = updateValue(request, auctionId);
 
-    emptyDirectory(getImgPath());
-    saveImages(auctionImage);
+    emptyDirectory(getImgPath(auctionId));
+    saveImages(auctionId, auctionImage);
 
     return toResponse(auction);
   }
@@ -114,7 +116,7 @@ public class AuctionServiceImpl implements AuctionService {
   public boolean deleteAuction(Long auctionId) {
     auctionRepository.deleteById(auctionId);
 
-    emptyDirectory(getImgPath());
+    emptyDirectory(getImgPath(auctionId));
 
     return true;
   }
@@ -146,6 +148,7 @@ public class AuctionServiceImpl implements AuctionService {
       } else if (searchOption == SearchType.CATEGORY) {
         if (categoryType == CategoryType.ALL) {
           auctionPage = auctionRepository.findAll(pageable);
+          System.out.println("0");
         } else if (keyword == null) {
           auctionPage = auctionRepository.findByCategory(categoryType, pageable);
         } else {
@@ -161,15 +164,40 @@ public class AuctionServiceImpl implements AuctionService {
   }
 
   /**
+   * 이미지 가져오기
+   */
+  @Override
+  public Resource getImage(Path imagePath, HttpHeaders headers) {
+    try {
+      Resource resource = new UrlResource(imagePath.toUri());
+      return resource;
+    } catch (MalformedURLException e) {
+      throw new CustomException(ErrorCode.IMAGE_MALFORMED);
+    } catch (InternalResourceException e) {
+      throw new CustomException(ErrorCode.IMAGE_INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  /**
    * 옥션 기간별 거래목록 생성 및 갱신
    */
   @Override
-  public void endAuctionSaveOrUpdate(String categoryName) {
+  public void endAuctionSaveOrUpdate() {
+    List<Auction> endAuctionCategoryList
+        = auctionRepository.findByEndDateBetweenAndStatus(
+        LocalDateTime.now().with(LocalTime.MIN),
+        LocalDateTime.now().with(LocalTime.MAX),
+        false);
+
+    List<String> categoryList = convertAuctionToCategory(endAuctionCategoryList);
+
     Map<String, Integer> map = getAuctionDateValue();
     if (map == null) {
       map = new HashMap<>();
     }
-    map.put(categoryName, map.getOrDefault(categoryName, 0) + 1);
+    for(String categoryName : categoryList) {
+      map.put(categoryName, map.getOrDefault(categoryName, 0) + 1);
+    }
 
     try {
       String json = objectMapper.writeValueAsString(map);
@@ -252,7 +280,7 @@ public class AuctionServiceImpl implements AuctionService {
     auction.setTitle(request.getTitle());
     auction.setAuctionType(request.isAuctionType());
     auction.setCategory(request.getCategory());
-    auction.setAuctionImage(setImageUrl());
+    auction.setAuctionImage(setImageUrl(auctionId));
     auction.setDescription(request.getDescription());
     auction.setCurrentBidPrice(request.getCurrentBidPrice());
     auction.setCurrentBidder(null);
@@ -265,29 +293,14 @@ public class AuctionServiceImpl implements AuctionService {
     return auction;
   }
 
-  @Override
-  public Resource getImage(Path imagePath, HttpHeaders headers) {
-    try {
-      Resource resource = new UrlResource(imagePath.toUri());
-      return resource;
-    } catch (MalformedURLException e) {
-      throw new CustomException(ErrorCode.IMAGE_MALFORMED);
-    } catch (InternalResourceException e) {
-      throw new CustomException(ErrorCode.IMAGE_INTERNAL_SERVER_ERROR);
-    }
-  }
-
-  /**
-   * request -> auction member쪽은 임시 데이터임
-   */
-  private Auction toAuction(AuctionDto.Request request) {
+  private Auction toAuction(Long auctionId, AuctionDto.Request request) {
     return Auction.builder()
         .member(memberRepository.findById(1L)
             .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER)))
         .title(request.getTitle())
         .category(request.getCategory())
         .auctionType(request.isAuctionType())
-        .auctionImage(setImageUrl())
+        .auctionImage(setImageUrl(auctionId))
         .description(request.getDescription())
         .currentBidPrice(request.getCurrentBidPrice())
         .currentBidder(null)
@@ -301,6 +314,7 @@ public class AuctionServiceImpl implements AuctionService {
 
   private AuctionDto.Response toResponse(Auction auction) {
     return AuctionDto.Response.builder()
+        .auctionId(auction.getAuctionId())
         .title(auction.getTitle())
         .auctionUserNickname(memberRepository.findById(1L)
             .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER)).getNickname())
@@ -332,9 +346,9 @@ public class AuctionServiceImpl implements AuctionService {
   /**
    * 이미지 저장
    */
-  public void saveImages(List<MultipartFile> images) {
+  public void saveImages(Long auctionId, List<MultipartFile> images) {
     try {
-      Path imgPath = getImgPath();
+      Path imgPath = getImgPath(auctionId);
 
       if (!Files.exists(imgPath)) {
         Files.createDirectories(imgPath);
@@ -354,12 +368,12 @@ public class AuctionServiceImpl implements AuctionService {
   /**
    * 이미지 url세팅
    */
-  private String setImageUrl() {
+  private String setImageUrl(Long auctionId) {
     try {
       List<String> imageExtensions = Arrays.asList("jpg", "jpeg", "png", "gif", "bmp");
 
       // 폴더 내의 모든 파일 경로를 필터링하여 이미지 파일 경로만 수집
-      List<String> imagePaths = Files.walk(getImgPath())
+      List<String> imagePaths = Files.walk(getImgPath(auctionId))
           .filter(Files::isRegularFile)
           .map(Path::toString)
           .filter(x -> {
@@ -415,8 +429,8 @@ public class AuctionServiceImpl implements AuctionService {
     return PageRequest.of(page, 10);
   }
 
-  private Path getImgPath() {
-    return Paths.get("images/auction/" + getLoginUserId() + "/");
+  private Path getImgPath(Long auctionId) {
+    return Paths.get("images/auction/" + auctionId + "/");
   }
 
   private Long getLoginUserId() {
@@ -446,5 +460,9 @@ public class AuctionServiceImpl implements AuctionService {
     return categoryList.stream().noneMatch(dto -> dto.getTitle().equals(categoryTypeStr))
         && !categoryTypeStr.equals(CategoryType.ALL.name())
         && !categoryTypeStr.equals(CategoryType.OTHER.name());
+  }
+
+  private List<String> convertAuctionToCategory(List<Auction> endAuctionCategoryList) {
+    return endAuctionCategoryList.stream().map(x -> x.getCategory().name()).toList();
   }
 }

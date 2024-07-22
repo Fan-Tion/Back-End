@@ -36,25 +36,25 @@ pipeline {
                 }
             }
         }
-        stage('Docker Build and Push') {
-            steps {
-                withCredentials([usernamePassword(credentialsId: 'DOCKER_HUB', passwordVariable: 'DOCKER_PROJECT', usernameVariable: 'DOCKER_REPO')]) {
+		stage('Docker Build and Push') {
+			steps {
+				withCredentials([usernamePassword(credentialsId: 'DOCKER_HUB', passwordVariable: 'DOCKER_PROJECT', usernameVariable: 'DOCKER_REPO')]) {
                     sh 'docker build -f Dockerfile -t $DOCKER_REPO/$DOCKER_PROJECT .'
-                    sh 'docker push $DOCKER_REPO/$DOCKER_PROJECT'
-                    echo 'docker push Success!!'
+				    sh 'docker push $DOCKER_REPO/$DOCKER_PROJECT'
+				    echo 'docker push Success!!'
                 }
-                echo 'docker push Success!!'
-            }
-        }
-        stage('Deploy') {
-            steps {
-                sshagent(credentials: ['my-ssh-credentials']) {
-                    withCredentials([string(credentialsId: 'EC2_SERVER_IP', variable: 'IP')]) {
-                        sh 'ssh -o StrictHostKeyChecking=no ubuntu@$IP "sudo sh deploy.sh"'
-                    }
-                }
-            }
-        }
+				echo 'docker push Success!!'
+			}
+		}
+         stage('Deploy') {
+             steps {
+                 sshagent(credentials: ['my-ssh-credentials']) {
+                     withCredentials([string(credentialsId: 'EC2_SERVER_IP', variable: 'IP')]) {
+                         sh 'ssh -o StrictHostKeyChecking=no ubuntu@$IP "sudo sh deploy.sh"'
+                     }
+                 }
+             }
+         }
     }
 }
 
