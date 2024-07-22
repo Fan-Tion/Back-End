@@ -34,9 +34,19 @@ public class BidController {
     }
 
     @DeleteMapping
-    private BidCancelDto.Response cancelBid(@RequestBody BidDto.Request request){
+    private BidCancelDto.Response cancelBid(@RequestBody BidCancelDto.Request request){
         log.info("[Controller] cancelBid");
         return bidService.cancelBid(request);
+    }
+
+    @PostMapping("/auction")
+    private HandOverDto.Response receiveChk(@RequestBody HandOverDto.Request request){
+        return bidService.receiveChk(request);
+    }
+
+    @PutMapping("/auction")
+    private HandOverDto.Response sendChk(@RequestBody HandOverDto.Request request){
+        return bidService.sendChk(request);
     }
 
     @GetMapping("/balance")

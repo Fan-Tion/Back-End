@@ -1,4 +1,4 @@
-package com.fantion.backend.configuration;
+package com.fantion.backend.common.config;
 
 import com.fantion.backend.member.jwt.JwtTokenFilter;
 import java.util.Arrays;

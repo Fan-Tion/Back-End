@@ -1,9 +1,8 @@
-package com.fantion.backend.auction.service;
+package com.fantion.backend.common.service;
 
-import com.fantion.backend.auction.dto.AuctionDto;
 import com.fantion.backend.auction.dto.AuctionDto.Response;
 import com.fantion.backend.auction.dto.CategoryDto;
-import com.fantion.backend.auction.dto.ReturnDto;
+import com.fantion.backend.common.dto.ReturnDto;
 import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;

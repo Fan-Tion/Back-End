@@ -38,5 +38,10 @@ public class Money {
     balance -= bidPrice;
   }
 
+  // 판매
+  public void successSellBid(Long bidPrice){
+    balance += bidPrice;
+  }
+
 
 }

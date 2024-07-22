@@ -26,7 +26,7 @@ pipeline {
                     sh 'cp ${YAML_FILE_PATH} ./src/main/resources/application.yml'
                 }
                 // 프로젝트 빌드
-                    sh './gradlew build'
+                sh './gradlew build'
             }
         }
         stage('Docker Hub Login') {

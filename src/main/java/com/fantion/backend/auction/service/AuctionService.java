@@ -40,5 +40,5 @@ public interface AuctionService {
 
   List<CategoryDto> getAllAuctionCategory();
 
-  List<CategoryDto> getFavoriteAuctionCategory(Map<String, Integer> map);
+  List<CategoryDto> getFavoriteAuctionCategory();
 }
