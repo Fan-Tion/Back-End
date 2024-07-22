@@ -28,11 +28,17 @@ public enum ErrorCode {
     TOO_OLD_AUCTION("종료일이 지난 경매입니다.", HttpStatus.BAD_REQUEST),
     ENUM_INVALID_FORMAT("경매 카테고리가 존재하지 않습니다.", HttpStatus.BAD_REQUEST),
     AUCTION_NOT_FOUND("경매가 존재하지 않습니다.", HttpStatus.NOT_FOUND),
+    NOT_AUCTION_SELLER("판매자가 아닙니다.",HttpStatus.BAD_REQUEST),
+    NOT_AUCTION_BUYER("구매자가 아닙니다.",HttpStatus.BAD_REQUEST),
+    NOT_FINISH_AUCTION("종료된 경매가 아닙니다.",HttpStatus.BAD_REQUEST),
 
     // Bid
     NOT_FOUND_BID("존재하지 않는 입찰입니다.",HttpStatus.BAD_REQUEST),
     NOT_PRIVATE_BID_CANCEL("비공개 입찰만 입찰 취소가 가능합니다.",HttpStatus.BAD_REQUEST),
     NOT_ENOUGH_BALANCE("예치금이 부족합니다.",HttpStatus.BAD_REQUEST),
+    NOT_SEND_CHKING("인계 확인이 되어있지 않습니다.",HttpStatus.BAD_REQUEST),
+    ALREADY_SEND_CHK("이미 인계확인이 되어있습니다.",HttpStatus.BAD_REQUEST),
+    ALREADY_RECEIVE_CHK("이미 인수확인이 되어있습니다.",HttpStatus.BAD_REQUEST),
 
     // Common
     PARSING_ERROR("파싱 오류가 발생했습니다.", HttpStatus.BAD_REQUEST),

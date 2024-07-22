@@ -15,6 +15,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Table(name = "balance_history")
 @Getter
@@ -25,14 +27,16 @@ public class BalanceHistory {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
-  private Long balanceHistoryId;
+  private Long balanceHistoryId;      // 예치금 내역 식별자
 
   @ManyToOne
   @JoinColumn(name = "member_id")
-  private Member memberId;
+  private Member memberId;            // 회원 식별자
 
-  private Long balance;
+  private Long balance;               // 예치금
 
   @Enumerated(EnumType.STRING)
-  private BalanceType type;
+  private BalanceType type;           // 예치금 타입 (충전,사용,출금)
+
+  private LocalDateTime createDate;   // 생성일
 }
