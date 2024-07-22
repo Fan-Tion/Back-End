@@ -31,6 +31,7 @@ public enum ErrorCode {
     NOT_AUCTION_SELLER("판매자가 아닙니다.",HttpStatus.BAD_REQUEST),
     NOT_AUCTION_BUYER("구매자가 아닙니다.",HttpStatus.BAD_REQUEST),
     NOT_FINISH_AUCTION("종료된 경매가 아닙니다.",HttpStatus.BAD_REQUEST),
+    NOT_FOUND_LINKED_EMAIL("연동한 이메일이 없습니다.", HttpStatus.NOT_FOUND),
 
     // Bid
     NOT_FOUND_BID("존재하지 않는 입찰입니다.",HttpStatus.BAD_REQUEST),
