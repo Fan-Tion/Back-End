@@ -426,11 +426,13 @@ public class MemberServiceImpl implements MemberService {
   }
 
   @Override
+  @Transactional
   public ResultDTO<CheckDto> withdrawal() {
 
     String email = MemberAuthUtil.getCurrentEmail();
     Member member = memberRepository.findByEmail(email)
         .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
+
     if (!member.getStatus().equals(MemberStatus.ACTIVE)) {
       throw new CustomException(ErrorCode.NOT_FOUND_MEMBER);
     }
@@ -456,6 +458,11 @@ public class MemberServiceImpl implements MemberService {
         .withdrawalDate(LocalDateTime.now())
         .build();
     memberRepository.save(updateMember);
+
+    // 예치금 삭제
+    Money money = moneyRepository.findByMemberId(member.getMemberId())
+        .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MONEY));
+    moneyRepository.delete(money);
 
     return ResultDTO.of("회원탈퇴에 성공했습니다.", CheckDto.builder().success(true).build());
   }
