@@ -53,11 +53,7 @@ public class NaverServiceTest {
 //        .thenReturn(ResponseEntity.ok(expectedResponse));
 //
 //    // when
-<<<<<<< HEAD
-//    RedirectView response = memberService.naverRequest();
-=======
 //    String response = memberService.naverRequest();
->>>>>>> 91c84afb228248d1d22de377c186384c11b71530
 //
 //    // then
 //    assertEquals(expectedResponse, response);
