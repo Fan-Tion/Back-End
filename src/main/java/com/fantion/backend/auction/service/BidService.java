@@ -26,5 +26,11 @@ public interface BidService {
     BuyNowDto.Response buyNow(BuyNowDto.Request request);
 
     // 입찰 취소
-    BidCancelDto.Response cancelBid(BidDto.Request request);
+    BidCancelDto.Response cancelBid(BidCancelDto.Request request);
+
+    // 인계 확인
+    HandOverDto.Response sendChk(HandOverDto.Request request);
+
+    // 인수 확인
+    HandOverDto.Response receiveChk(HandOverDto.Request request);
 }

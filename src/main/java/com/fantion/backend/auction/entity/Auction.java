@@ -10,6 +10,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.ColumnDefault;
 
 @Entity
 @Table(name = "auction")
@@ -64,6 +65,14 @@ public class Auction {
   @Column(name = "status")
   private boolean status;               // 경매 상태 (true - 경매중, false - 경매마감)
 
+  @Column(name = "send_chk")
+  @ColumnDefault("false")
+  private boolean sendChk;              // 인계 확인
+
+  @Column(name = "receive_chk")
+  @ColumnDefault("false")
+  private boolean receiveChk;           // 인수 확인
+
 
   // 상위 입찰 설정
   public void topBid(Long bidPrice,String bidder) {
@@ -71,4 +80,13 @@ public class Auction {
     this.currentBidder = bidder;
   }
 
+  // 인계 확인
+  public void sendChking(boolean sendChk) {
+    this.sendChk = sendChk;
+  }
+
+  // 인수 확인
+  public void receiveChking(boolean receiveChk) {
+    this.receiveChk = receiveChk;
+  }
 }

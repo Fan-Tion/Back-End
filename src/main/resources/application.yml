@@ -1,1 +1,40 @@
+spring:
+  datasource:
+    url: jdbc:mysql://127.0.0.1:3306/fantion?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    username: fantion
+    password: 1234qwer!
+    driver-class-name: com.mysql.cj.jdbc.Driver
 
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    database: mysql
+
+    properties:
+      hibernate:
+        format_sql: true
+
+sse:
+  timeout: 6000
+
+payment:
+  base-url: test.com
+  success-url: test.com
+  fail-url: test.com
+jwt:
+  header: Authorization
+  prefix: Bearer
+  secret: cGxheWdyb3VuZC1zcHJpbmctYm9vdC10ZWFtcHJvamVjdC1sb2dpbi1qd3Qtc2VjcmV0LWtleQo=
+
+logging:
+  level:
+    org.hibernate.orm.jdbc.bind: trace # 파라미터 값 출력
+naver:
+  login-base-uri: test.com
+  profile-base-url: test.com
