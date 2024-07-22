@@ -1,4 +1,4 @@
-package com.fantion.backend.configuration;
+package com.fantion.backend.common.config;
 
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.CannedAccessControlList;

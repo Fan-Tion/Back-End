@@ -241,7 +241,13 @@ public class AuctionServiceImpl implements AuctionService {
   }
 
   @Override
-  public List<CategoryDto> getFavoriteAuctionCategory(Map<String, Integer> map) {
+  public List<CategoryDto> getFavoriteAuctionCategory() {
+
+    Map<String, Integer> map = getAuctionDateValue();
+    if (map == null) {
+      map = new HashMap<>();
+    }
+
     List<CategoryDto> categoryList = map.entrySet()
         .stream()
         .sorted(Map.Entry.<String, Integer>comparingByValue().reversed())

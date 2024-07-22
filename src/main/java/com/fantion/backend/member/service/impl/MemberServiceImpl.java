@@ -1,6 +1,6 @@
 package com.fantion.backend.member.service.impl;
 
-import com.fantion.backend.configuration.S3Uploader;
+import com.fantion.backend.common.config.S3Uploader;
 import com.fantion.backend.exception.ErrorCode;
 import com.fantion.backend.exception.impl.CustomException;
 import com.fantion.backend.member.auth.MemberAuthUtil;
@@ -23,7 +23,6 @@ import com.fantion.backend.member.service.MemberService;
 import com.fantion.backend.type.MemberStatus;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
-import jakarta.validation.Valid;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Date;

@@ -1,8 +1,7 @@
-package com.fantion.backend.configuration;
+package com.fantion.backend.common.config;
 
 import com.fantion.backend.auction.service.AuctionService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
