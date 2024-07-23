@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -209,7 +210,8 @@ public class PaymentServiceImpl implements PaymentService {
       }
 
       idempotencyKey = paymentComponent.createIdempotencyKey();
-      redisTemplate.opsForValue().set("orderId: " + payment.getOrderId(), idempotencyKey);
+      // Toss에서 공시한 멱등키 유효기간은 15일
+      redisTemplate.opsForValue().set("orderId: " + payment.getOrderId(), idempotencyKey, 15, TimeUnit.DAYS);
 
       PaymentResponseDto.Success response = paymentClient.cancelPayment(authorizationHeader, idempotencyKey, paymentKey,
           cancelDto).getBody();
