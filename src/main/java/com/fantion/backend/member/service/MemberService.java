@@ -1,9 +1,9 @@
 package com.fantion.backend.member.service;
 
+import com.fantion.backend.common.dto.ResultDTO;
 import com.fantion.backend.member.dto.CheckDto;
 import com.fantion.backend.member.dto.SigninDto;
 import com.fantion.backend.member.dto.SignupDto;
-import com.fantion.backend.member.dto.SignupDto.Request;
 import com.fantion.backend.member.dto.TokenDto;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -12,21 +12,23 @@ import org.springframework.web.servlet.view.RedirectView;
 @Service
 public interface MemberService {
 
-  SignupDto.Response signup(Request request, MultipartFile file);
+  ResultDTO<SignupDto.Response> signup(SignupDto.Request request, MultipartFile file);
 
-  CheckDto checkEmail(String email);
+  ResultDTO<CheckDto> checkEmail(String email);
 
-  CheckDto checkNickname(String nickname);
+  ResultDTO<CheckDto> checkNickname(String nickname);
 
-  TokenDto.Local signin(SigninDto signinDto);
+  ResultDTO<TokenDto.Local> signin(SigninDto signinDto);
 
   RedirectView naverRequest();
 
-  TokenDto.Local neverSignin(String code);
+  ResultDTO<TokenDto.Local> neverSignin(String code);
 
-  CheckDto naverLink(String linkEmail);
+  ResultDTO<CheckDto> naverLink(String linkEmail);
 
-  CheckDto signout();
+  ResultDTO<CheckDto> naverUnlink();
 
-  CheckDto withdrawal();
+  ResultDTO<CheckDto> signout();
+
+  ResultDTO<CheckDto> withdrawal();
 }
