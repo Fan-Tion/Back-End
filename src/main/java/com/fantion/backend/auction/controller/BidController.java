@@ -39,6 +39,11 @@ public class BidController {
         return bidService.cancelBid(request);
     }
 
+    @GetMapping("/auction")
+    private SuccessBidListDto.Response successBidAuctionList(){
+        return bidService.successBidAuctionList();
+    }
+
     @PostMapping("/auction")
     private HandOverDto.Response receiveChk(@RequestBody HandOverDto.Request request){
         return bidService.receiveChk(request);

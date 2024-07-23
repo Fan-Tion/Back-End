@@ -28,9 +28,13 @@ public interface BidService {
     // 입찰 취소
     BidCancelDto.Response cancelBid(BidCancelDto.Request request);
 
+    // 거래중인 경매 물품 조회
+    SuccessBidListDto.Response successBidAuctionList();
     // 인계 확인
     HandOverDto.Response sendChk(HandOverDto.Request request);
 
     // 인수 확인
     HandOverDto.Response receiveChk(HandOverDto.Request request);
+
+
 }
