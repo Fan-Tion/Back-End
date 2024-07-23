@@ -48,6 +48,7 @@ public class JwtTokenProvider {
     Date refreshTokenExpiresIn = new Date(now + 86400000);
 
     String accessToken = Jwts.builder()
+        .setHeaderParam("type", "JWT")
         .setClaims(accessTokenClaims)
         .setIssuedAt(new Date(now))
         .setExpiration(accessTokenExpiresIn)
@@ -55,6 +56,7 @@ public class JwtTokenProvider {
         .compact();
 
     String refreshToken = Jwts.builder()
+        .setHeaderParam("type", "JWT")
         .setClaims(refreshTokenClaims)
         .setIssuedAt(new Date(now))
         .setExpiration(refreshTokenExpiresIn)

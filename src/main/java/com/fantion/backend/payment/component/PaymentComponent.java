@@ -2,6 +2,7 @@ package com.fantion.backend.payment.component;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.UUID;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
@@ -23,6 +24,11 @@ public class PaymentComponent {
     String auth = secretKey + BASIC_DELIMITER;
     byte[] encodedAuth = encoder.encode(auth.getBytes(StandardCharsets.UTF_8));
     return AUTH_HEADER_PREFIX + new String(encodedAuth);
+  }
+
+  public String createIdempotencyKey() {
+    UUID uuid = UUID.randomUUID();
+    return uuid.toString();
   }
 }
 

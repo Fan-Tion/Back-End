@@ -1,8 +1,10 @@
 package com.fantion.backend.payment.service.impl;
 
+import com.fantion.backend.common.dto.ResultDTO;
 import com.fantion.backend.exception.ErrorCode;
 import com.fantion.backend.exception.impl.CustomException;
 import com.fantion.backend.exception.impl.TossApiException;
+import com.fantion.backend.member.auth.MemberAuthUtil;
 import com.fantion.backend.member.entity.BalanceHistory;
 import com.fantion.backend.member.entity.Member;
 import com.fantion.backend.member.entity.Money;
@@ -11,11 +13,10 @@ import com.fantion.backend.member.repository.MemberRepository;
 import com.fantion.backend.member.repository.MoneyRepository;
 import com.fantion.backend.payment.component.PaymentClient;
 import com.fantion.backend.payment.component.PaymentComponent;
+import com.fantion.backend.payment.dto.CancelDto;
 import com.fantion.backend.payment.dto.ConfirmDto;
 import com.fantion.backend.payment.dto.PaymentDto;
-import com.fantion.backend.payment.dto.PaymentDto.Request;
-import com.fantion.backend.payment.dto.ResponseDto;
-import com.fantion.backend.payment.dto.ResponseDto.fail;
+import com.fantion.backend.payment.dto.PaymentResponseDto;
 import com.fantion.backend.payment.entity.Payment;
 import com.fantion.backend.payment.repository.PaymentRepository;
 import com.fantion.backend.payment.service.PaymentService;
@@ -30,6 +31,7 @@ import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -44,6 +46,7 @@ public class PaymentServiceImpl implements PaymentService {
   private final PaymentComponent paymentComponent;
   private final PaymentClient paymentClient;
   private final ObjectMapper objectMapper;
+  private final RedisTemplate<String, String> redisTemplate;
 
   @Value("${payment.success-url}")
   private String successUrl;
@@ -53,10 +56,10 @@ public class PaymentServiceImpl implements PaymentService {
 
   @Override
   @Transactional
-  public PaymentDto.Response requestPayment(Request request) {
+  public ResultDTO<PaymentDto.Response> requestPayment(PaymentDto.Request request) {
 
-    // MemberService가 추가되면 accessToken을 이용한 유저정보 저장 및 반환 수정
-    // 지금은 프론트 코드에서 그냥 던져주는 중
+    // accessToken을 이용한 유저정보 저장 및 반환 수정
+    // 지금은 프론트에서 유저 정보를 그냥 던져주는 중
     String orderId = UUID.randomUUID().toString();
 
     Member member = memberRepository.findByEmail(request.getCustomerEmail())
@@ -72,23 +75,26 @@ public class PaymentServiceImpl implements PaymentService {
         .successYn(false)
         .paymentKey(null)
         .cancelYn(false)
+        .cancelReason(null)
         .paymentDate(LocalDateTime.now())
+        .cancelDate(null)
         .build();
     paymentRepository.save(payment);
 
     // 결제 정보 Response를 반환
-    return PaymentDto.of(payment, successUrl, failUrl);
+    return ResultDTO.of("결제를 요청했습니다.", PaymentDto.of(payment, successUrl, failUrl));
   }
 
   @Override
   @Transactional
-  public ResponseDto.Success successPayment(String orderId, String paymentKey, Long amount) {
+  public ResultDTO<PaymentResponseDto.Success> successPayment(String orderId, String paymentKey,
+      Long amount) {
 
     // DB에 저장되어있는 값과 Param으로 들어온 값이 같은지 검증
     Payment payment = paymentRepository.findByOrderId(orderId)
         .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_PAYMENT_INFO));
     if (!payment.getAmount().equals(amount)) {
-      throw new CustomException(ErrorCode.VALID_PAYMENT_INFO);
+      throw new CustomException(ErrorCode.INVALID_PAYMENT_INFO);
     }
 
     // paymentKey와 성공여부를 true로 저장
@@ -133,36 +139,129 @@ public class PaymentServiceImpl implements PaymentService {
           .memberId(member)
           .balance(amount)
           .type(BalanceType.CHARGING)
+          .createDate(LocalDateTime.now())
           .build();
       balanceHistoryRepository.save(balanceHistory);
 
-      return paymentClient.confirmPayment(header, confirmDto).getBody();
+      return ResultDTO.of("결제를 성공했습니다.",
+          paymentClient.confirmPayment(header, confirmDto).getBody());
     } catch (FeignException fe) {
-      // HTTP 상태 코드 가져오기
-      HttpStatus httpStatus = HttpStatus.valueOf(fe.status());
-      // 에러 응답 본문 가져오기
-      String responseBody = fe.contentUTF8();
-      // JSON 응답을 파싱하여 원하는 정보 추출
-      try {
-        JsonNode jsonNode = objectMapper.readTree(responseBody);
-        String errorCode = jsonNode.path("code").asText();
-        String errorMessage = jsonNode.path("message").asText();
-
-        throw new TossApiException(httpStatus, errorCode, errorMessage);
-      } catch (IOException ioException) {
-        // JSON 파싱 예외 처리
-        throw new CustomException(ErrorCode.PARSING_ERROR);
-      }
+      return handleFeignException(fe);
     }
   }
 
   @Override
-  public ResponseDto.fail failPayment(String code, String message, String orderId) {
+  public ResultDTO<PaymentResponseDto.fail> failPayment(String code, String message,
+      String orderId) {
 
-    return fail.builder()
+    PaymentResponseDto.fail failDto = PaymentResponseDto.fail.builder()
         .errorCode(code)
         .message(message)
         .orderId(orderId)
         .build();
+    return ResultDTO.of("결제를 실패했습니다.", failDto);
+  }
+
+  @Override
+  @Transactional
+  public ResultDTO<PaymentResponseDto.Success> cancelPayment(CancelDto cancelDto) {
+
+    // 나중에 결제 취소 규정을 정하고 그에 맞는 Valid 추가하기
+    // 현재는 결제 취소 금액이 현재 가지고 있는 예치금보다 적은지만 와
+    // 토스 결제 조회 API를 통해 결제 정보가 정말 있는지만 체크
+
+    String email = MemberAuthUtil.getCurrentEmail();
+    Member member = memberRepository.findByEmail(email)
+        .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
+
+    Payment payment = paymentRepository.findById(cancelDto.getPaymentId())
+        .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_PAYMENT_INFO));
+    String paymentKey = payment.getPaymentKey();
+    String orderId = payment.getOrderId();
+
+    // payment의 유저정보와 accessToken의 유저 정보가 틀릴경우
+    if (payment.getMemberId() != member || !payment.getMemberId().equals(member)) {
+      throw new CustomException(ErrorCode.INVALID_PAYMENT_INFO);
+    }
+
+    String authorizationHeader = paymentComponent.createAuthorizationHeader();
+
+    Money money = moneyRepository.findByMemberId(member.getMemberId())
+        .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MONEY));
+    Long balance = money.getBalance();
+
+    try {
+      // 토스 결제 조회
+      paymentClient.getPayment(authorizationHeader, orderId).getBody();
+
+      // 취소금액이 현재 예치금보다 많을 경우
+      if (balance < payment.getAmount()) {
+        throw new CustomException(ErrorCode.NOT_ENOUGH_BALANCE);
+      }
+
+      // 멱등키 찾아오기
+      String idempotencyKey = redisTemplate.opsForValue().get("orderId: " + payment.getOrderId());
+
+      if (idempotencyKey != null && !idempotencyKey.isEmpty()) {
+        PaymentResponseDto.Success response = paymentClient.cancelPayment(authorizationHeader, idempotencyKey, paymentKey,
+            cancelDto).getBody();
+        return ResultDTO.of("중복 결제 취소 요청입니다.", response);
+      }
+
+      idempotencyKey = paymentComponent.createIdempotencyKey();
+      redisTemplate.opsForValue().set("orderId: " + payment.getOrderId(), idempotencyKey);
+
+      PaymentResponseDto.Success response = paymentClient.cancelPayment(authorizationHeader, idempotencyKey, paymentKey,
+          cancelDto).getBody();
+
+      MoneyAndBalanceHistoryAndPaymentUpdate(payment.getAmount(), balance, money, member, payment, cancelDto.getCancelReason());
+
+      return ResultDTO.of("결제 취소를 성공했습니다.", response);
+    } catch (FeignException fe) {
+      return handleFeignException(fe);
+    }
+  }
+
+  private void MoneyAndBalanceHistoryAndPaymentUpdate(Long cancelAmount, Long balance, Money money, Member member,
+      Payment payment, String cancelReason) {
+    
+    balance -= cancelAmount;
+    Money updateMoney = money.toBuilder()
+        .balance(balance)
+        .build();
+    moneyRepository.save(updateMoney);
+
+    BalanceHistory balanceHistory = BalanceHistory.builder()
+        .memberId(member)
+        .balance(cancelAmount)
+        .type(BalanceType.CANCEL)
+        .createDate(LocalDateTime.now())
+        .build();
+    balanceHistoryRepository.save(balanceHistory);
+
+    Payment updatePayment = payment.toBuilder()
+        .cancelYn(true)
+        .cancelReason(cancelReason)
+        .cancelDate(LocalDateTime.now())
+        .build();
+    paymentRepository.save(updatePayment);
+  }
+
+  private ResultDTO<PaymentResponseDto.Success> handleFeignException(FeignException fe) {
+    // HTTP 상태 코드 가져오기
+    HttpStatus httpStatus = HttpStatus.valueOf(fe.status());
+    // 에러 응답 본문 가져오기
+    String responseBody = fe.contentUTF8();
+    // JSON 응답을 파싱하여 원하는 정보 추출
+    try {
+      JsonNode jsonNode = objectMapper.readTree(responseBody);
+      String errorCode = jsonNode.path("code").asText();
+      String errorMessage = jsonNode.path("message").asText();
+
+      throw new TossApiException(httpStatus, errorCode, errorMessage);
+    } catch (IOException ioException) {
+      // JSON 파싱 예외 처리
+      throw new CustomException(ErrorCode.PARSING_ERROR);
+    }
   }
 }
