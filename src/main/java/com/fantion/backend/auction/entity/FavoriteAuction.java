@@ -1,13 +1,7 @@
 package com.fantion.backend.auction.entity;
 
 import com.fantion.backend.member.entity.Member;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -25,11 +19,13 @@ public class FavoriteAuction {
   @Id
   @Column(name = "favorite_auction_id")
   @GeneratedValue(strategy = GenerationType.IDENTITY)
-  private Long favoriteAuctionId;
+  private Long favoriteAuctionId;   // 찜 경매 식별자
 
   @ManyToOne
-  Auction auction;
+  @JoinColumn(name = "auction_id")
+  private Auction auction;          // 경매 식별자
 
   @ManyToOne
-  Member member;
+  @JoinColumn(name = "member_id")
+  private Member member;            // 회원 식별자
 }

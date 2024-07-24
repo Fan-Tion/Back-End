@@ -1,6 +1,7 @@
 package com.fantion.backend.auction.controller;
 
 import com.fantion.backend.auction.dto.AuctionDto;
+import com.fantion.backend.auction.dto.AuctionFavoriteDto;
 import com.fantion.backend.auction.dto.CategoryDto;
 import com.fantion.backend.auction.service.AuctionService;
 import com.fantion.backend.common.dto.ResultDTO;
@@ -123,5 +124,13 @@ public class AuctionController {
   @GetMapping("/view/{auctionId}")
   public AuctionDto.Response findAuction(@PathVariable(name = "auctionId") Long auctionId) {
     return auctionService.findAuction(auctionId);
+  }
+  @GetMapping("/favorite/{auctionId}")
+  public AuctionFavoriteDto.Response favoriteChk(@PathVariable(name = "auctionId") Long auctionId) {
+    return auctionService.favoriteChk(auctionId);
+  }
+  @PostMapping("/favorite/{auctionId}")
+  public AuctionFavoriteDto.Response favoriteAuction(@PathVariable(name = "auctionId") Long auctionId) {
+    return auctionService.favoriteAuction(auctionId);
   }
 }
