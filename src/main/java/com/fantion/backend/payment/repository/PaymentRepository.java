@@ -1,5 +1,6 @@
 package com.fantion.backend.payment.repository;
 
+import com.fantion.backend.member.entity.Member;
 import com.fantion.backend.payment.entity.Payment;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
