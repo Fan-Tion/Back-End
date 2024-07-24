@@ -3,6 +3,7 @@ package com.fantion.backend.auction.dto;
 import com.fantion.backend.type.CategoryType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.AllArgsConstructor;
@@ -33,7 +34,7 @@ public class AuctionDto {
     @NotNull(message = "즉시 구매가는 꼭 입력해야 합니다.")
     private Long buyNowPrice;
     @NotNull(message = "종료일은 꼭 입력해야 합니다.")
-    private LocalDateTime endDate;
+    private LocalDate endDate;
   }
 
   @Getter
@@ -53,8 +54,8 @@ public class AuctionDto {
     private String currentBidder;
     private Long buyNowPrice;
     private Long favoritePrice;
-    private LocalDateTime createDate;
-    private LocalDateTime endDate;
+    private LocalDate createDate;
+    private LocalDate endDate;
     private boolean status;
     private List<BidDto.Response> bidList;
   }

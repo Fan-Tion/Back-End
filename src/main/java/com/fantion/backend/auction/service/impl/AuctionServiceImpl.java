@@ -7,6 +7,7 @@ import com.fantion.backend.auction.dto.CategoryDto;
 import com.fantion.backend.auction.entity.Auction;
 import com.fantion.backend.auction.repository.AuctionRepository;
 import com.fantion.backend.auction.service.AuctionService;
+import com.fantion.backend.common.dto.ResultDTO;
 import com.fantion.backend.exception.ErrorCode;
 import com.fantion.backend.exception.impl.CustomException;
 import com.fantion.backend.member.repository.MemberRepository;
@@ -67,7 +68,7 @@ public class AuctionServiceImpl implements AuctionService {
 
   @Override
   @Transactional
-  public Long createAuction(@Valid AuctionDto.Request request,
+  public ResultDTO<String> createAuction(@Valid AuctionDto.Request request,
       List<MultipartFile> auctionImage) {
     Long auctionIdx = auctionRepository.count() + 1;
 
@@ -77,17 +78,17 @@ public class AuctionServiceImpl implements AuctionService {
 
     auctionRepository.save(auction);
 
-    return auctionIdx;
+    return ResultDTO.of("경매 생성에 성공했습니다.", " auctionId: " + auctionIdx);
   }
 
   // 경매 상세보기
   @Override
-  public AuctionDto.Response findAuction(Long auctionId) {
+  public ResultDTO<AuctionDto.Response> findAuction(Long auctionId) {
     // 상세보기할 경매 조회
     Auction auction = auctionRepository.findById(auctionId)
         .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_AUCTION));
 
-    return toResponse(auction);
+    return ResultDTO.of("경매 업데이트 성공했습니다.", toResponse(auction));
   }
 
   /**
@@ -95,7 +96,7 @@ public class AuctionServiceImpl implements AuctionService {
    */
   @Override
   @Transactional
-  public AuctionDto.Response updateAuction(
+  public ResultDTO<AuctionDto.Response> updateAuction(
       @Valid AuctionDto.Request request,
       List<MultipartFile> auctionImage,
       Long auctionId) {
@@ -104,7 +105,7 @@ public class AuctionServiceImpl implements AuctionService {
     emptyDirectory(getImgPath(auctionId));
     saveImages(auctionId, auctionImage);
 
-    return toResponse(auction);
+    return ResultDTO.of("성공적으로 경매를 변경했습니다.", toResponse(auction));
   }
 
 
@@ -113,28 +114,29 @@ public class AuctionServiceImpl implements AuctionService {
    */
   @Override
   @Transactional
-  public boolean deleteAuction(Long auctionId) {
+  public ResultDTO<Boolean> deleteAuction(Long auctionId) {
     auctionRepository.deleteById(auctionId);
 
     emptyDirectory(getImgPath(auctionId));
 
-    return true;
+    return ResultDTO.of("경매 삭제 성공했습니다.", true);
   }
 
   /**
    * 경매 리스트
    */
   @Override
-  public Page<AuctionDto.Response> getList(int page) {
+  public ResultDTO<Page<AuctionDto.Response>> getList(int page) {
     Pageable pageable = getPageable(page);
-    return covertToResponseList(auctionRepository.findAll(pageable));
+    return ResultDTO.of("경매 전체 페이지를 불러오는데 성공했습니다.",
+        covertToResponseList(auctionRepository.findAll(pageable)));
   }
 
   /**
    * 경매 검색
    */
   @Override
-  public Page<AuctionDto.Response> getSearchList(
+  public ResultDTO<Page<AuctionDto.Response>> getSearchList(
       int page,
       SearchType searchOption,
       CategoryType categoryType,
@@ -160,7 +162,7 @@ public class AuctionServiceImpl implements AuctionService {
       throw new CustomException(ErrorCode.ENUM_INVALID_FORMAT);
     }
 
-    return covertToResponseList(auctionPage);
+    return ResultDTO.of("경매 검색을 완료했습니다", covertToResponseList(auctionPage));
   }
 
   /**
@@ -226,7 +228,7 @@ public class AuctionServiceImpl implements AuctionService {
 
 
   @Override
-  public List<CategoryDto> getAllAuctionCategory() {
+  public ResultDTO<List<CategoryDto>> getAllAuctionCategory() {
     CategoryType[] categoryArray = CategoryType.values();
     List<CategoryDto> categoryList = new ArrayList<>();
 
@@ -237,11 +239,11 @@ public class AuctionServiceImpl implements AuctionService {
               + categoryArray[i].name() + "&keyword=&page=0"));
     }
 
-    return categoryList;
+    return ResultDTO.of("전체 카테고리를 불러오는데 성공했습니다.", categoryList);
   }
 
   @Override
-  public List<CategoryDto> getFavoriteAuctionCategory() {
+  public ResultDTO<List<CategoryDto>> getFavoriteAuctionCategory() {
 
     Map<String, Integer> map = getAuctionDateValue();
     if (map == null) {
@@ -273,7 +275,7 @@ public class AuctionServiceImpl implements AuctionService {
       }
     }
 
-    return categoryList;
+    return ResultDTO.of("인기 카테고리를 불러오는데 성공했습니다.", categoryList);
   }
 
 
@@ -292,7 +294,7 @@ public class AuctionServiceImpl implements AuctionService {
     auction.setCurrentBidder(null);
     auction.setBuyNowPrice(request.getBuyNowPrice());
     auction.setFavoriteCnt(0L);
-    auction.setCreateDate(LocalDateTime.now());
+    auction.setCreateDate(LocalDate.now());
     auction.setEndDate(request.getEndDate());
     auction.setStatus(true);
 
@@ -312,7 +314,7 @@ public class AuctionServiceImpl implements AuctionService {
         .currentBidder(null)
         .buyNowPrice(request.getBuyNowPrice())
         .favoriteCnt(0L)
-        .createDate(LocalDateTime.now())
+        .createDate(LocalDate.now())
         .endDate(request.getEndDate())
         .status(true)
         .build();

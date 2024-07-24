@@ -18,6 +18,7 @@ import com.fantion.backend.member.repository.BalanceHistoryRepository;
 import com.fantion.backend.member.repository.MemberRepository;
 import com.fantion.backend.member.repository.MoneyRepository;
 import com.fantion.backend.type.BalanceType;
+import java.time.LocalDate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -49,10 +50,10 @@ public class BidServiceImpl implements BidService {
     public BidDto.Response createBid(BidDto.Request request) {
         // 입찰하려는 경매 조회
         Auction auction = auctionRepository.getReferenceById(request.getAuctionId());
-        LocalDateTime endDate = auction.getEndDate();
+        LocalDate endDate = auction.getEndDate();
 
         // 경매 종료일이 지난 경우 입찰 불가능
-        if (LocalDateTime.now().isAfter(endDate)) {
+        if (LocalDate.now().isAfter(endDate)) {
             throw new CustomException(ErrorCode.TOO_OLD_AUCTION);
 
         }
@@ -196,10 +197,10 @@ public class BidServiceImpl implements BidService {
         List<Auction> auctionList = auctionRepository.findByStatus(true);
         for (int i = 0; i < auctionList.size(); i++) {
             Auction auction = auctionList.get(i);
-            LocalDateTime endDate = auction.getEndDate();
+            LocalDate endDate = auction.getEndDate();
 
             // 종료일이 지난 경매 물품인 경우
-            if (LocalDateTime.now().isAfter(endDate)) {
+            if (LocalDate.now().isAfter(endDate)) {
                 // 해당 경매 물품의 가장 높은 입찰내역 조회
                 Optional<Bid> OptionalBid = bidRepository.findByAuctionIdOrderByBidPriceDesc(auction);
 
@@ -242,7 +243,7 @@ public class BidServiceImpl implements BidService {
                 .orElseThrow(()-> new CustomException(ErrorCode.NOT_FOUND_AUCTION));
 
         // 경매 종료일
-        LocalDateTime endDate = auction.getEndDate();
+        LocalDate endDate = auction.getEndDate();
 
         // 구매자의 보유한 예치금
         Long balance = money.getBalance();
@@ -254,7 +255,7 @@ public class BidServiceImpl implements BidService {
         Long buyNowPrice = auction.getBuyNowPrice();
 
         // 경매 종료일이 지난 경우 즉시구매 불가능
-        if (LocalDateTime.now().isAfter(endDate)) {
+        if (LocalDate.now().isAfter(endDate)) {
             throw new CustomException(ErrorCode.TOO_OLD_AUCTION);
 
         }
@@ -296,7 +297,7 @@ public class BidServiceImpl implements BidService {
         }
 
         // 경매 종료일이 지난 경우 입찰취소 불가능
-        if (LocalDateTime.now().isAfter(cancelAuction.getEndDate())) {
+        if (LocalDate.now().isAfter(cancelAuction.getEndDate())) {
             throw new CustomException(ErrorCode.TOO_OLD_AUCTION);
 
         }
