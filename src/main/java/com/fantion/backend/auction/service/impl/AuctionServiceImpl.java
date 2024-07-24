@@ -336,7 +336,7 @@ public class AuctionServiceImpl implements AuctionService {
         .buyNowPrice(auction.getBuyNowPrice())
         .favoritePrice(auction.getFavoriteCnt())
         .createDate(auction.getCreateDate())
-        .endDate(auction.getEndDate())
+        .endDate(LocalDateTime.of(auction.getEndDate(), LocalTime.of(23, 59,59)))
         .status(auction.isStatus())
         .build();
   }
