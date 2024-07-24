@@ -1,14 +1,21 @@
 package com.fantion.backend.auction.service.impl;
 
+import static com.fantion.backend.exception.ErrorCode.NOT_FOUND_AUCTION;
+import static com.fantion.backend.exception.ErrorCode.NOT_FOUND_MEMBER;
 import static org.springframework.util.FileSystemUtils.deleteRecursively;
 
 import com.fantion.backend.auction.dto.AuctionDto;
+import com.fantion.backend.auction.dto.AuctionFavoriteDto;
 import com.fantion.backend.auction.dto.CategoryDto;
 import com.fantion.backend.auction.entity.Auction;
+import com.fantion.backend.auction.entity.FavoriteAuction;
 import com.fantion.backend.auction.repository.AuctionRepository;
+import com.fantion.backend.auction.repository.FavoriteAuctionRepository;
 import com.fantion.backend.auction.service.AuctionService;
 import com.fantion.backend.exception.ErrorCode;
 import com.fantion.backend.exception.impl.CustomException;
+import com.fantion.backend.member.auth.MemberAuthUtil;
+import com.fantion.backend.member.entity.Member;
 import com.fantion.backend.member.repository.MemberRepository;
 import com.fantion.backend.type.CategoryType;
 import com.fantion.backend.type.SearchType;
@@ -27,12 +34,7 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -59,6 +61,7 @@ public class AuctionServiceImpl implements AuctionService {
 
   private final AuctionRepository auctionRepository;
   private final MemberRepository memberRepository;
+  private final FavoriteAuctionRepository favoriteAuctionRepository;
 
   private final RedisTemplate<String, Object> redisTemplate;
 
@@ -274,6 +277,76 @@ public class AuctionServiceImpl implements AuctionService {
     }
 
     return categoryList;
+  }
+  @Transactional
+  @Override
+  public AuctionFavoriteDto.Response favoriteChk(Long auctionId) {
+    // 찜 여부 확인할 경매 조회
+    Auction favoriteChkAuction = auctionRepository.findById(auctionId)
+            .orElseThrow(()-> new CustomException(NOT_FOUND_AUCTION));
+
+    // 로그인한 사용자 가져오기
+    String loginEmail = MemberAuthUtil.getLoginUserId();
+
+    // 사용자 조회
+    Member member = memberRepository.findByEmail(loginEmail)
+            .orElseThrow(()-> new CustomException(NOT_FOUND_MEMBER));
+
+    // 찜 조회
+    Optional<FavoriteAuction> favoriteAuction = favoriteAuctionRepository
+            .findByAuctionAndMember(favoriteChkAuction, member);
+
+    AuctionFavoriteDto.Response response = AuctionFavoriteDto.Response.builder()
+            .favoriteChk(true)
+            .title(favoriteChkAuction.getTitle())
+            .build();
+
+    // 찜이 되어있지 않는 경우
+    if (favoriteAuction.isEmpty()) {
+      response.setFavoriteChk(false);
+    }
+
+    return response;
+  }
+  @Transactional
+  @Override
+  public AuctionFavoriteDto.Response favoriteAuction(Long auctionId) {
+    // 찜하거나 찜 취소할 경매 조회
+    Auction favoriteChkAuction = auctionRepository.findById(auctionId)
+            .orElseThrow(()-> new CustomException(NOT_FOUND_AUCTION));
+
+    // 로그인한 사용자 가져오기
+    String loginEmail = MemberAuthUtil.getLoginUserId();
+
+    // 사용자 조회
+    Member member = memberRepository.findByEmail(loginEmail)
+            .orElseThrow(()-> new CustomException(NOT_FOUND_MEMBER));
+
+    // 찜 조회
+    Optional<FavoriteAuction> favoriteAuction = favoriteAuctionRepository
+            .findByAuctionAndMember(favoriteChkAuction, member);
+
+    AuctionFavoriteDto.Response response = AuctionFavoriteDto.Response.builder()
+            .favoriteChk(true)
+            .title(favoriteChkAuction.getTitle())
+            .build();
+
+    // 찜이 되어있지 않는 경우 찜 하기
+    if (favoriteAuction.isEmpty()) {
+      FavoriteAuction favorite = FavoriteAuction.builder()
+              .auction(favoriteChkAuction)
+              .member(member)
+              .build();
+      favoriteAuctionRepository.save(favorite);
+
+    } else {
+      // 찜이 되어 있는 경우 찜 취소
+      favoriteAuctionRepository.delete(favoriteAuction.get());
+      response.setFavoriteChk(false);
+
+    }
+
+    return response;
   }
 
 

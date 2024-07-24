@@ -36,7 +36,7 @@ public class BalanceHistory {
   private Long balance;               // 예치금
 
   @Enumerated(EnumType.STRING)
-  private BalanceType type;           // 예치금 타입 (충전,사용,출금)
+  private BalanceType type;           // 예치금 타입 (충전,사용,출금,취소)
 
   private LocalDateTime createDate;   // 생성일
 }
