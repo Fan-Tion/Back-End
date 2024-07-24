@@ -40,7 +40,7 @@ public class BidController {
     }
 
     @GetMapping("/auction")
-    private SuccessBidListDto.Response successBidAuctionList(){
+    private BidSuccessListDto.Response successBidAuctionList(){
         return bidService.successBidAuctionList();
     }
 

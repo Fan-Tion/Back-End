@@ -1,8 +1,6 @@
 package com.fantion.backend.auction.service;
 
 import com.fantion.backend.auction.dto.*;
-import com.fantion.backend.auction.entity.Auction;
-import com.fantion.backend.member.entity.Member;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 public interface BidService {
@@ -29,7 +27,7 @@ public interface BidService {
     BidCancelDto.Response cancelBid(BidCancelDto.Request request);
 
     // 거래중인 경매 물품 조회
-    SuccessBidListDto.Response successBidAuctionList();
+    BidSuccessListDto.Response successBidAuctionList();
     // 인계 확인
     HandOverDto.Response sendChk(HandOverDto.Request request);
 

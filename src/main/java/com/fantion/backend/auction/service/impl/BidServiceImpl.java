@@ -313,7 +313,7 @@ public class BidServiceImpl implements BidService {
     }
 
     @Override
-    public SuccessBidListDto.Response successBidAuctionList() {
+    public BidSuccessListDto.Response successBidAuctionList() {
         // 로그인한 사용자 가져오기
         String loginEmail = MemberAuthUtil.getLoginUserId();
 
@@ -330,7 +330,7 @@ public class BidServiceImpl implements BidService {
         List<Auction> sellList = auctionRepository
                 .findByStatusAndReceiveChkAndMember(false, false,member);
 
-        SuccessBidListDto.Response response = SuccessBidListDto.Response.builder()
+        BidSuccessListDto.Response response = BidSuccessListDto.Response.builder()
                 .buyList(buyList)
                 .sellList(sellList)
                 .build();
