@@ -2,7 +2,6 @@ package com.fantion.backend.auction.controller;
 
 import com.fantion.backend.auction.dto.AuctionDto;
 import com.fantion.backend.auction.dto.AuctionFavoriteDto;
-import com.fantion.backend.auction.dto.CategoryDto;
 import com.fantion.backend.auction.service.AuctionService;
 import com.fantion.backend.common.dto.ResultDTO;
 import com.fantion.backend.type.CategoryType;
@@ -15,7 +14,6 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
-import org.springframework.data.domain.Page;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
