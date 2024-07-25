@@ -7,6 +7,7 @@ import com.fantion.backend.auction.dto.CategoryDto;
 import com.fantion.backend.auction.entity.Auction;
 import com.fantion.backend.auction.repository.AuctionRepository;
 import com.fantion.backend.auction.service.AuctionService;
+import com.fantion.backend.common.config.S3Uploader;
 import com.fantion.backend.common.dto.ResultDTO;
 import com.fantion.backend.exception.ErrorCode;
 import com.fantion.backend.exception.impl.CustomException;
@@ -60,11 +61,11 @@ public class AuctionServiceImpl implements AuctionService {
 
   private final AuctionRepository auctionRepository;
   private final MemberRepository memberRepository;
-
   private final RedisTemplate<String, Object> redisTemplate;
 
+  private final S3Uploader s3Uploader;
   private final ObjectMapper objectMapper = new ObjectMapper();
-  private String serverUrl = "http://localhost:8080/auction/";
+  private String serverUrl = "https://fantion-bucket.s3.ap-northeast-2.amazonaws.com/auction-images/";
 
   @Override
   @Transactional
@@ -72,9 +73,7 @@ public class AuctionServiceImpl implements AuctionService {
       List<MultipartFile> auctionImage) {
     Long auctionIdx = auctionRepository.count() + 1;
 
-    saveImages(auctionIdx, auctionImage);
-
-    Auction auction = toAuction(auctionIdx, request);
+    Auction auction = toAuction(auctionIdx, request, saveImages(auctionIdx, auctionImage));
 
     auctionRepository.save(auction);
 
@@ -100,10 +99,9 @@ public class AuctionServiceImpl implements AuctionService {
       @Valid AuctionDto.Request request,
       List<MultipartFile> auctionImage,
       Long auctionId) {
-    Auction auction = updateValue(request, auctionId);
+    s3Uploader.deleteFolder(auctionId);
 
-    emptyDirectory(getImgPath(auctionId));
-    saveImages(auctionId, auctionImage);
+    Auction auction = updateValue(request, auctionId, saveImages(auctionId, auctionImage));
 
     return ResultDTO.of("성공적으로 경매를 변경했습니다.", toResponse(auction));
   }
@@ -116,8 +114,7 @@ public class AuctionServiceImpl implements AuctionService {
   @Transactional
   public ResultDTO<Boolean> deleteAuction(Long auctionId) {
     auctionRepository.deleteById(auctionId);
-
-    emptyDirectory(getImgPath(auctionId));
+    s3Uploader.deleteFolder(auctionId);
 
     return ResultDTO.of("경매 삭제 성공했습니다.", true);
   }
@@ -279,36 +276,36 @@ public class AuctionServiceImpl implements AuctionService {
   }
 
 
-  private Auction updateValue(AuctionDto.Request request, Long auctionId) {
+  private Auction updateValue(AuctionDto.Request request, Long auctionId, List<String> auctionImgList) {
     Auction auction = auctionRepository.findById(auctionId)
         .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_AUCTION));
 
-    auction.setMember(memberRepository.findById(1L)
+    auction.setMember(memberRepository.findById(auctionId)
         .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER)));
     auction.setTitle(request.getTitle());
     auction.setAuctionType(request.isAuctionType());
     auction.setCategory(request.getCategory());
-    auction.setAuctionImage(setImageUrl(auctionId));
+    auction.setAuctionImage(setImageUrl(auctionImgList));
     auction.setDescription(request.getDescription());
     auction.setCurrentBidPrice(request.getCurrentBidPrice());
-    auction.setCurrentBidder(null);
+    auction.setCurrentBidder(auction.getCurrentBidder());
     auction.setBuyNowPrice(request.getBuyNowPrice());
-    auction.setFavoriteCnt(0L);
+    auction.setFavoriteCnt(auction.getFavoriteCnt());
     auction.setCreateDate(LocalDate.now());
     auction.setEndDate(request.getEndDate());
-    auction.setStatus(true);
+    auction.setStatus(auction.isStatus());
 
     return auction;
   }
 
-  private Auction toAuction(Long auctionId, AuctionDto.Request request) {
+  private Auction toAuction(Long auctionId, AuctionDto.Request request, List<String> auctionImageList) {
     return Auction.builder()
         .member(memberRepository.findById(1L)
             .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER)))
         .title(request.getTitle())
         .category(request.getCategory())
         .auctionType(request.isAuctionType())
-        .auctionImage(setImageUrl(auctionId))
+        .auctionImage(setImageUrl(auctionImageList))
         .description(request.getDescription())
         .currentBidPrice(request.getCurrentBidPrice())
         .currentBidder(null)
@@ -354,20 +351,19 @@ public class AuctionServiceImpl implements AuctionService {
   /**
    * 이미지 저장
    */
-  public void saveImages(Long auctionId, List<MultipartFile> images) {
+  public List<String> saveImages(Long auctionId, List<MultipartFile> images) {
     try {
-      Path imgPath = getImgPath(auctionId);
-
-      if (!Files.exists(imgPath)) {
-        Files.createDirectories(imgPath);
+      List<String> imageUrls = new ArrayList<>();
+      for (MultipartFile image : images) {
+        if (image != null && !image.isEmpty()) {
+          String imageUrl = s3Uploader.upload(image, "auction-images/" + auctionId);
+          imageUrls.add(imageUrl.replace(serverUrl, ""));
+        } else {
+          throw new CustomException(ErrorCode.IMAGE_EXCEPTION);
+        }
       }
 
-      for (int i = 0; i < images.size(); i++) {
-        String filename = (i + 1) + ".jpg";
-        Path filePath = imgPath.resolve(filename);
-
-        Files.write(filePath, images.get(i).getBytes());
-      }
+      return imageUrls;
     } catch (IOException e) {
       throw new CustomException(ErrorCode.IMAGE_IO_ERROR);
     }
@@ -376,25 +372,12 @@ public class AuctionServiceImpl implements AuctionService {
   /**
    * 이미지 url세팅
    */
-  private String setImageUrl(Long auctionId) {
+  private String setImageUrl(List<String> auctionImgList) {
     try {
-      List<String> imageExtensions = Arrays.asList("jpg", "jpeg", "png", "gif", "bmp");
-
-      // 폴더 내의 모든 파일 경로를 필터링하여 이미지 파일 경로만 수집
-      List<String> imagePaths = Files.walk(getImgPath(auctionId))
-          .filter(Files::isRegularFile)
-          .map(Path::toString)
-          .filter(x -> {
-            String fileExtension = getFileExtension(x);
-            return imageExtensions.contains(fileExtension);
-          })
-          .map(x -> serverUrl + x.replace("\\", "/"))
-          .collect(Collectors.toList());
-
-      // 이미지 파일 경로를 콤마로 구분된 문자열로 변환
-      return String.join(",", imagePaths);
-    } catch (IOException e) {
-      throw new CustomException(ErrorCode.IMAGE_IO_ERROR);
+      String collect = auctionImgList.stream()
+          .map(x -> serverUrl + x).collect(Collectors.joining(","));
+      System.out.println(collect);
+      return collect;
     } catch (SecurityException e) {
       throw new CustomException(ErrorCode.IMAGE_ACCESS_DENIED);
     } catch (InvalidPathException e) {
@@ -435,10 +418,6 @@ public class AuctionServiceImpl implements AuctionService {
    */
   private static PageRequest getPageable(int page) {
     return PageRequest.of(page, 10);
-  }
-
-  private Path getImgPath(Long auctionId) {
-    return Paths.get("images/auction/" + auctionId + "/");
   }
 
   private Long getLoginUserId() {
