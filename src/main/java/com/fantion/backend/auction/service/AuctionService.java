@@ -43,8 +43,6 @@ public interface AuctionService {
   ResultDTO<List<CategoryDto>> getAllAuctionCategory();
 
   ResultDTO<List<CategoryDto>> getFavoriteAuctionCategory();
-  
-  List<CategoryDto> getFavoriteAuctionCategory();
 
   // 찜 확인
   AuctionFavoriteDto.Response favoriteChk(Long auctionId);
