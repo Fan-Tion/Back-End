@@ -42,4 +42,6 @@ public class Payment {
   private Boolean successYn;
   private String paymentKey;
   private Boolean cancelYn;
+  private String cancelReason;
+  private LocalDateTime cancelDate;
 }

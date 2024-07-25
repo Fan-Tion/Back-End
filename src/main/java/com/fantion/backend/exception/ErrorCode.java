@@ -21,7 +21,8 @@ public enum ErrorCode {
     // Payment
     NOT_FOUND_MONEY("예치금이 존재하지 않습니다.", HttpStatus.NOT_FOUND),
     NOT_FOUND_PAYMENT_INFO("거래정보를 서버에서 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
-    VALID_PAYMENT_INFO("클라이언트와 서버의 거래정보가 다릅니다.", HttpStatus.BAD_REQUEST),
+    INVALID_PAYMENT_INFO("클라이언트와 서버의 거래정보가 다릅니다.", HttpStatus.BAD_REQUEST),
+    INVALID_CANCEL_AMOUNT("취소금액이 잘못되었습니다.", HttpStatus.BAD_REQUEST),
 
     // Auction
     NOT_FOUND_AUCTION("존재하지 않는 경매입니다", HttpStatus.BAD_REQUEST),
@@ -31,6 +32,7 @@ public enum ErrorCode {
     NOT_AUCTION_SELLER("판매자가 아닙니다.",HttpStatus.BAD_REQUEST),
     NOT_AUCTION_BUYER("구매자가 아닙니다.",HttpStatus.BAD_REQUEST),
     NOT_FINISH_AUCTION("종료된 경매가 아닙니다.",HttpStatus.BAD_REQUEST),
+    NOT_FOUND_LINKED_EMAIL("연동한 이메일이 없습니다.", HttpStatus.NOT_FOUND),
 
     // Bid
     NOT_FOUND_BID("존재하지 않는 입찰입니다.",HttpStatus.BAD_REQUEST),

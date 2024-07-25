@@ -2,6 +2,7 @@ package com.fantion.backend.auction.service;
 
 
 import com.fantion.backend.auction.dto.AuctionDto;
+import com.fantion.backend.auction.dto.AuctionFavoriteDto;
 import com.fantion.backend.auction.dto.CategoryDto;
 import com.fantion.backend.common.dto.ResultDTO;
 import com.fantion.backend.type.CategoryType;
@@ -42,4 +43,12 @@ public interface AuctionService {
   ResultDTO<List<CategoryDto>> getAllAuctionCategory();
 
   ResultDTO<List<CategoryDto>> getFavoriteAuctionCategory();
+  
+  List<CategoryDto> getFavoriteAuctionCategory();
+
+  // 찜 확인
+  AuctionFavoriteDto.Response favoriteChk(Long auctionId);
+
+  // 찜 & 찜 취소
+  AuctionFavoriteDto.Response favoriteAuction(Long auctionId);
 }

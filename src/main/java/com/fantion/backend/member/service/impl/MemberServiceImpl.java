@@ -1,6 +1,7 @@
 package com.fantion.backend.member.service.impl;
 
 import com.fantion.backend.common.config.S3Uploader;
+import com.fantion.backend.common.dto.ResultDTO;
 import com.fantion.backend.exception.ErrorCode;
 import com.fantion.backend.exception.impl.CustomException;
 import com.fantion.backend.member.auth.MemberAuthUtil;
@@ -13,12 +14,13 @@ import com.fantion.backend.member.dto.NaverMemberDto;
 import com.fantion.backend.member.dto.NaverMemberDto.NaverMemberDetail;
 import com.fantion.backend.member.dto.SigninDto;
 import com.fantion.backend.member.dto.SignupDto;
-import com.fantion.backend.member.dto.SignupDto.Request;
 import com.fantion.backend.member.dto.SignupDto.Response;
 import com.fantion.backend.member.dto.TokenDto;
 import com.fantion.backend.member.entity.Member;
+import com.fantion.backend.member.entity.Money;
 import com.fantion.backend.member.jwt.JwtTokenProvider;
 import com.fantion.backend.member.repository.MemberRepository;
+import com.fantion.backend.member.repository.MoneyRepository;
 import com.fantion.backend.member.service.MemberService;
 import com.fantion.backend.type.MemberStatus;
 import jakarta.servlet.http.HttpServletRequest;
@@ -62,9 +64,11 @@ public class MemberServiceImpl implements MemberService {
   private final Random random = new Random();
   private final HttpServletRequest httpServletRequest;
   private final S3Uploader s3Uploader;
+  private final MoneyRepository moneyRepository;
 
   @Override
-  public Response signup(Request request, MultipartFile file) {
+  @Transactional
+  public ResultDTO<SignupDto.Response> signup(SignupDto.Request request, MultipartFile file) {
 
     // 이메일 체크
     if (!emailValidator.isValid(request.getEmail())) {
@@ -121,15 +125,23 @@ public class MemberServiceImpl implements MemberService {
       memberRepository.save(member);
     }
 
-    return Response.builder()
+    // 회원가입시 회원 예치금 생성
+    Money money = Money.builder()
+        .member(member)
+        .balance(0L)
+        .build();
+    moneyRepository.save(money);
+
+    SignupDto.Response response = Response.builder()
         .email(member.getEmail())
         .success(true)
         .build();
+
+    return ResultDTO.of("회원가입에 성공했습니다.", response);
   }
 
-
   @Override
-  public CheckDto checkEmail(String email) {
+  public ResultDTO<CheckDto> checkEmail(String email) {
 
     // 이메일 체크
     if (!emailValidator.isValid(email)) {
@@ -140,13 +152,11 @@ public class MemberServiceImpl implements MemberService {
       throw new CustomException(ErrorCode.EMAIL_DUPLICATE);
     });
 
-    return CheckDto.builder()
-        .success(true)
-        .build();
+    return ResultDTO.of("사용가능한 이메일 입니다.", CheckDto.builder().success(true).build());
   }
 
   @Override
-  public CheckDto checkNickname(String nickname) {
+  public ResultDTO<CheckDto> checkNickname(String nickname) {
 
     // 닉네임 생성 규칙에 맞는지 확인
     if (!NICKNAME_PATTERN.matcher(nickname).matches()) {
@@ -166,13 +176,12 @@ public class MemberServiceImpl implements MemberService {
     redisTemplate.opsForValue()
         .set("Nickname: " + nickname, nickname, NICKNAME_EXPIRES_IN, TimeUnit.MILLISECONDS);
 
-    return CheckDto.builder()
-        .success(true)
-        .build();
+    return ResultDTO.of("사용가능한 닉네임 입니다.", CheckDto.builder().success(true).build());
   }
 
   @Override
-  public TokenDto.Local signin(SigninDto signinDto) {
+  public ResultDTO<TokenDto.Local> signin(SigninDto signinDto) {
+
     Member member = memberRepository.findByEmail(signinDto.getEmail())
         .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
 
@@ -198,10 +207,11 @@ public class MemberServiceImpl implements MemberService {
         .set("RefreshToken: " + member.getEmail(), refreshToken, REFRESH_TOKEN_EXPIRES_IN,
             TimeUnit.MILLISECONDS);
 
-    return tokens;
+    return ResultDTO.of("로그인에 성공했습니다.", tokens);
   }
 
   @Override
+  @Transactional
   public RedirectView naverRequest() {
     String redirectUrl = "https://nid.naver.com/oauth2.0/authorize";
     String responseType = "code";
@@ -219,7 +229,7 @@ public class MemberServiceImpl implements MemberService {
   }
 
   @Override
-  public TokenDto.Local neverSignin(String code) {
+  public ResultDTO<TokenDto.Local> neverSignin(String code) {
     // 네이버 토큰 가져오기
     ResponseEntity<TokenDto.Naver> naverTokens = naverLoginClient.getToken("authorization_code",
         naverConfiguration.getClientId(),
@@ -264,6 +274,13 @@ public class MemberServiceImpl implements MemberService {
           .build();
       memberRepository.save(member);
 
+      // 회원가입시 회원 예치금 생성
+      Money money = Money.builder()
+          .member(member)
+          .balance(0L)
+          .build();
+      moneyRepository.save(money);
+
       TokenDto.Local tokens = jwtTokenProvider.createTokens(member.getEmail(), member.getMemberId(),
           member.getNickname());
 
@@ -280,7 +297,7 @@ public class MemberServiceImpl implements MemberService {
           .set("naverAcessTokenEmail: " + member.getEmail(), naverAccessToken, naverExpiresIn,
               TimeUnit.SECONDS);
 
-      return tokens;
+      return ResultDTO.of("네이버 로그인에 성공했습니다.", tokens);
     }
 
     // 회원인 경우 처리
@@ -309,11 +326,12 @@ public class MemberServiceImpl implements MemberService {
         .set("naverAcessTokenEmail: " + member.getEmail(), naverAccessToken, naverExpiresIn,
             TimeUnit.SECONDS);
 
-    return tokens;
+    return ResultDTO.of("네이버 로그인에 성공했습니다.", tokens);
   }
 
+
   @Override
-  public CheckDto naverLink(String linkEmail) {
+  public ResultDTO<CheckDto> naverLink(String linkEmail) {
 
     // 현재 토큰에 저장된 email 가져오기
     String currentEmail = MemberAuthUtil.getCurrentEmail();
@@ -350,14 +368,43 @@ public class MemberServiceImpl implements MemberService {
         .build();
     memberRepository.save(updateMember);
 
-    return CheckDto.builder()
-        .success(true)
+    return ResultDTO.of("네이버 연동에 성공했습니다.", CheckDto.builder().success(true).build());
+  }
+
+  @Override
+  public ResultDTO<CheckDto> naverUnlink() {
+
+    String currentEmail = MemberAuthUtil.getCurrentEmail();
+    Member member = memberRepository.findByEmail(currentEmail)
+        .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
+
+    if (member.getLinkedEmail() != null || member.getLinkedEmail().isEmpty()) {
+      throw new CustomException(ErrorCode.NOT_FOUND_LINKED_EMAIL);
+    }
+
+    Member updateMember = member.toBuilder()
+        .auth(false)
+        .isNaver(false)
+        .linkedEmail(null)
         .build();
+    memberRepository.save(updateMember);
+
+    String naverAccessToken = redisTemplate.opsForValue()
+        .get("naverAcessTokenEmail: " + member.getEmail());
+    ResponseEntity<NaverLinkDto> delete = naverLoginClient.unLink(
+        naverConfiguration.getClientId(),
+        naverConfiguration.getClientSecret(), naverAccessToken, "delete");
+
+    if (!delete.getBody().getResult().equals("success")) {
+      throw new CustomException(ErrorCode.UN_LINKED_ERROR);
+    }
+
+    return ResultDTO.of("네이버 연동해제에 성공했습니다.", CheckDto.builder().success(true).build());
   }
 
   @Override
   @Transactional
-  public CheckDto signout() {
+  public ResultDTO<CheckDto> signout() {
 
     String email = MemberAuthUtil.getCurrentEmail();
     String accessToken = jwtTokenProvider.resolveToken(httpServletRequest);
@@ -375,17 +422,17 @@ public class MemberServiceImpl implements MemberService {
     redisTemplate.opsForValue()
         .set(accessToken, "logout", accessTokenExpiresIn, TimeUnit.MILLISECONDS);
 
-    return CheckDto.builder()
-        .success(true)
-        .build();
+    return ResultDTO.of("로그아웃에 성공했습니다.", CheckDto.builder().success(true).build());
   }
 
   @Override
-  public CheckDto withdrawal() {
+  @Transactional
+  public ResultDTO<CheckDto> withdrawal() {
 
     String email = MemberAuthUtil.getCurrentEmail();
     Member member = memberRepository.findByEmail(email)
         .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
+
     if (!member.getStatus().equals(MemberStatus.ACTIVE)) {
       throw new CustomException(ErrorCode.NOT_FOUND_MEMBER);
     }
@@ -394,6 +441,7 @@ public class MemberServiceImpl implements MemberService {
 
     // 연동 SNS가 있는지 확인
     if (member.getIsNaver()) { // 네이버 연동 해제
+
       String naverAccessToken = redisTemplate.opsForValue()
           .get("naverAcessTokenEmail: " + member.getEmail());
       ResponseEntity<NaverLinkDto> delete = naverLoginClient.unLink(
@@ -411,13 +459,16 @@ public class MemberServiceImpl implements MemberService {
         .build();
     memberRepository.save(updateMember);
 
-    return CheckDto.builder()
-        .success(true)
-        .build();
+    // 예치금 삭제
+    Money money = moneyRepository.findByMemberId(member.getMemberId())
+        .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MONEY));
+    moneyRepository.delete(money);
+
+    return ResultDTO.of("회원탈퇴에 성공했습니다.", CheckDto.builder().success(true).build());
   }
 
+
   @Scheduled(cron = "0 0 0 * * ?")
-  @Transactional
   public void deleteWithdrawalMembers() {
     LocalDateTime thirtyDaysAgo = LocalDateTime.now().minusDays(30);
     List<Member> withdrawalMembers = memberRepository.findAllByWithdrawalDateBefore(thirtyDaysAgo);

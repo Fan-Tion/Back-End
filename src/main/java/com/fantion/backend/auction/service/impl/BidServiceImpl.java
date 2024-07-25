@@ -313,6 +313,32 @@ public class BidServiceImpl implements BidService {
         return response;
     }
 
+    @Override
+    public BidSuccessListDto.Response successBidAuctionList() {
+        // 로그인한 사용자 가져오기
+        String loginEmail = MemberAuthUtil.getLoginUserId();
+
+        // 사용자 조회
+        Member member = memberRepository.findByEmail(loginEmail)
+                .orElseThrow(()-> new CustomException(NOT_FOUND_MEMBER));
+
+        // 경매가 마감되어있으면서 인수 확인이 되어있지 않는 경매 물품 조회
+        // 구매중인 경매물품 조회
+        List<Auction> buyList = auctionRepository
+                .findByStatusAndReceiveChkAndCurrentBidder(false, false,member.getNickname());
+
+        // 판매중인 경매물품 조회
+        List<Auction> sellList = auctionRepository
+                .findByStatusAndReceiveChkAndMember(false, false,member);
+
+        BidSuccessListDto.Response response = BidSuccessListDto.Response.builder()
+                .buyList(buyList)
+                .sellList(sellList)
+                .build();
+
+        return response;
+    }
+
     // 인계 확인
     @Transactional
     @Override
