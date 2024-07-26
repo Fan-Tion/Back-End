@@ -40,6 +40,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
@@ -65,6 +66,7 @@ public class MemberServiceImpl implements MemberService {
   private final HttpServletRequest httpServletRequest;
   private final S3Uploader s3Uploader;
   private final MoneyRepository moneyRepository;
+  private final PasswordEncoder passwordEncoder;
 
   @Override
   @Transactional
@@ -193,7 +195,7 @@ public class MemberServiceImpl implements MemberService {
     }
 
     // 비밀번호 확인
-    if (!member.getPassword().equals(signinDto.getPassword())) {
+    if (!passwordEncoder.matches(signinDto.getPassword(), member.getPassword())) {
       throw new CustomException(ErrorCode.PASSWORD_INVALID);
     }
 
