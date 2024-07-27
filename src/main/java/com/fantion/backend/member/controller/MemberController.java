@@ -2,6 +2,7 @@ package com.fantion.backend.member.controller;
 
 import com.fantion.backend.common.dto.ResultDTO;
 import com.fantion.backend.member.dto.CheckDto;
+import com.fantion.backend.member.dto.MemberDto;
 import com.fantion.backend.member.dto.SigninDto;
 import com.fantion.backend.member.dto.SignupDto;
 import com.fantion.backend.member.dto.TokenDto;
@@ -91,6 +92,12 @@ public class MemberController {
   @PostMapping("/withdrawal")
   public ResponseEntity<?> withdrawal() {
     ResultDTO<CheckDto> result = memberService.withdrawal();
+    return ResponseEntity.ok(result);
+  }
+
+  @GetMapping("/my-info")
+  public ResponseEntity<?> myInfo() {
+    ResultDTO<MemberDto> result = memberService.myInfo();
     return ResponseEntity.ok(result);
   }
 }
