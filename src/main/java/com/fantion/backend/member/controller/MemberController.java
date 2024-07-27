@@ -97,7 +97,15 @@ public class MemberController {
 
   @GetMapping("/my-info")
   public ResponseEntity<?> myInfo() {
-    ResultDTO<MemberDto> result = memberService.myInfo();
+    ResultDTO<MemberDto.Response> result = memberService.myInfo();
+    return ResponseEntity.ok(result);
+  }
+
+  @PutMapping("/edit")
+  public ResponseEntity<?> myInfoEdit(
+      @Valid @RequestPart(value = "request") MemberDto.Request request,
+      @RequestPart(value = "file", required = false) MultipartFile file) {
+    ResultDTO<CheckDto> result = memberService.myInfoEdit(request, file);
     return ResponseEntity.ok(result);
   }
 }

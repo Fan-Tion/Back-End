@@ -33,5 +33,7 @@ public interface MemberService {
 
   ResultDTO<CheckDto> withdrawal();
 
-  ResultDTO<MemberDto> myInfo();
+  ResultDTO<MemberDto.Response> myInfo();
+
+  ResultDTO<CheckDto> myInfoEdit(MemberDto.Request request, MultipartFile file);
 }

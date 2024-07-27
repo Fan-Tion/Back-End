@@ -119,21 +119,13 @@ public class PaymentServiceImpl implements PaymentService {
       String email = payment.getMemberId().getEmail();
       Member member = memberRepository.findByEmail(email)
           .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
+      Money money = moneyRepository.findByMemberId(member.getMemberId())
+          .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MONEY));
 
-      Optional<Money> byMemberId = moneyRepository.findByMemberId(member.getMemberId());
-      if (byMemberId.isEmpty()) { // 첫 예치금 충전 회원
-        Money money = Money.builder()
-            .member(member)
-            .balance(amount)
-            .build();
-        moneyRepository.save(money);
-      } else {
-        Money money = byMemberId.get();
-        Money updateMoney = money.toBuilder()
-            .balance(money.getBalance() + amount)
-            .build();
-        moneyRepository.save(updateMoney);
-      }
+      Money updateMoney = money.toBuilder()
+          .balance(money.getBalance() + amount)
+          .build();
+      moneyRepository.save(updateMoney);
 
       // 예치금 내역에도 저장
       BalanceHistory balanceHistory = BalanceHistory.builder()
@@ -168,7 +160,7 @@ public class PaymentServiceImpl implements PaymentService {
   public ResultDTO<PaymentResponseDto.Success> cancelPayment(CancelDto cancelDto) {
 
     // 나중에 결제 취소 규정을 정하고 그에 맞는 Valid 추가하기
-    // 현재는 결제 취소 금액이 현재 가지고 있는 예치금보다 적은지만 와
+    // 현재는 결제 취소 금액이 현재 가지고 있는 예치금보다 적은지와
     // 토스 결제 조회 API를 통해 결제 정보가 정말 있는지만 체크
 
     String email = MemberAuthUtil.getCurrentEmail();
@@ -204,19 +196,23 @@ public class PaymentServiceImpl implements PaymentService {
       String idempotencyKey = redisTemplate.opsForValue().get("orderId: " + payment.getOrderId());
 
       if (idempotencyKey != null && !idempotencyKey.isEmpty()) {
-        PaymentResponseDto.Success response = paymentClient.cancelPayment(authorizationHeader, idempotencyKey, paymentKey,
+        PaymentResponseDto.Success response = paymentClient.cancelPayment(authorizationHeader,
+            idempotencyKey, paymentKey,
             cancelDto).getBody();
         return ResultDTO.of("중복 결제 취소 요청입니다.", response);
       }
 
       idempotencyKey = paymentComponent.createIdempotencyKey();
       // Toss에서 공시한 멱등키 유효기간은 15일
-      redisTemplate.opsForValue().set("orderId: " + payment.getOrderId(), idempotencyKey, 15, TimeUnit.DAYS);
+      redisTemplate.opsForValue()
+          .set("orderId: " + payment.getOrderId(), idempotencyKey, 15, TimeUnit.DAYS);
 
-      PaymentResponseDto.Success response = paymentClient.cancelPayment(authorizationHeader, idempotencyKey, paymentKey,
+      PaymentResponseDto.Success response = paymentClient.cancelPayment(authorizationHeader,
+          idempotencyKey, paymentKey,
           cancelDto).getBody();
 
-      MoneyAndBalanceHistoryAndPaymentUpdate(payment.getAmount(), balance, money, member, payment, cancelDto.getCancelReason());
+      MoneyAndBalanceHistoryAndPaymentUpdate(payment.getAmount(), balance, money, member, payment,
+          cancelDto.getCancelReason());
 
       return ResultDTO.of("결제 취소를 성공했습니다.", response);
     } catch (FeignException fe) {
@@ -224,9 +220,10 @@ public class PaymentServiceImpl implements PaymentService {
     }
   }
 
-  private void MoneyAndBalanceHistoryAndPaymentUpdate(Long cancelAmount, Long balance, Money money, Member member,
+  private void MoneyAndBalanceHistoryAndPaymentUpdate(Long cancelAmount, Long balance, Money money,
+      Member member,
       Payment payment, String cancelReason) {
-    
+
     balance -= cancelAmount;
     Money updateMoney = money.toBuilder()
         .balance(balance)
