@@ -31,12 +31,17 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Random;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -75,13 +80,20 @@ public class AuctionServiceImpl implements AuctionService {
   @Transactional
   public ResultDTO<String> createAuction(@Valid AuctionDto.Request request,
       List<MultipartFile> auctionImage) {
-    Long auctionIdx = auctionRepository.count() + 1;
+    auctionRepository.save(toAuction(request, null));
 
-    Auction auction = toAuction(auctionIdx, request, saveImages(auctionIdx, auctionImage));
+    /*
+    * 저장한 auciton을 가져와서 변경
+    * */
+    Auction auction = auctionRepository.findTopByMemberOrderByAuctionIdDesc(
+        memberRepository.findById(getLoginUserId()).orElseThrow(
+            () -> new CustomException(NOT_FOUND_MEMBER))).orElseThrow(
+                () -> new CustomException(NOT_FOUND_AUCTION));
 
-    auctionRepository.save(auction);
+    auction.setAuctionImage(
+        setImageUrl(saveImages(auction.getAuctionId(), auctionImage)));
 
-    return ResultDTO.of("경매 생성에 성공했습니다.", " auctionId: " + auctionIdx);
+    return ResultDTO.of("경매 생성에 성공했습니다.", " auctionId: " + auction.getAuctionId());
   }
 
   // 경매 상세보기
@@ -117,6 +129,9 @@ public class AuctionServiceImpl implements AuctionService {
   @Override
   @Transactional
   public ResultDTO<Boolean> deleteAuction(Long auctionId) {
+    auctionRepository.findById(auctionId).orElseThrow(
+        () -> new CustomException(ErrorCode.NOT_FOUND_AUCTION));
+
     auctionRepository.deleteById(auctionId);
     s3Uploader.deleteFolder(auctionId);
 
@@ -151,7 +166,6 @@ public class AuctionServiceImpl implements AuctionService {
       } else if (searchOption == SearchType.CATEGORY) {
         if (categoryType == CategoryType.ALL) {
           auctionPage = auctionRepository.findAll(pageable);
-          System.out.println("0");
         } else if (keyword == null) {
           auctionPage = auctionRepository.findByCategory(categoryType, pageable);
         } else {
@@ -372,9 +386,9 @@ public class AuctionServiceImpl implements AuctionService {
     return auction;
   }
 
-  private Auction toAuction(Long auctionId, AuctionDto.Request request, List<String> auctionImageList) {
+  private Auction toAuction(AuctionDto.Request request, List<String> auctionImageList) {
     return Auction.builder()
-        .member(memberRepository.findById(1L)
+        .member(memberRepository.findById(getLoginUserId())
             .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER)))
         .title(request.getTitle())
         .category(request.getCategory())
@@ -400,7 +414,8 @@ public class AuctionServiceImpl implements AuctionService {
         .category(auction.getCategory())
         .auctionType(auction.isAuctionType())
         .auctionImage(
-            Arrays.stream(auction.getAuctionImage().split(",")).toList())
+            Arrays.stream(auction.getAuctionImage().split(","))
+                .map(x -> serverUrl + x).toList())
         .description(auction.getDescription())
         .currentBidPrice(auction.getCurrentBidPrice())
         .currentBidder(auction.getCurrentBidder())
@@ -428,9 +443,9 @@ public class AuctionServiceImpl implements AuctionService {
   public List<String> saveImages(Long auctionId, List<MultipartFile> images) {
     try {
       List<String> imageUrls = new ArrayList<>();
-      for (MultipartFile image : images) {
-        if (image != null && !image.isEmpty()) {
-          String imageUrl = s3Uploader.upload(image, "auction-images/" + auctionId);
+      for (int i = 0; i < images.size(); i++) {
+        if (images.get(i) != null && !images.get(i).isEmpty()) {
+          String imageUrl = s3Uploader.upload(images.get(i), "auction-images/" + auctionId, i + 1);
           imageUrls.add(imageUrl.replace(serverUrl, ""));
         } else {
           throw new CustomException(ErrorCode.IMAGE_EXCEPTION);
@@ -448,10 +463,7 @@ public class AuctionServiceImpl implements AuctionService {
    */
   private String setImageUrl(List<String> auctionImgList) {
     try {
-      String collect = auctionImgList.stream()
-          .map(x -> serverUrl + x).collect(Collectors.joining(","));
-      System.out.println(collect);
-      return collect;
+      return auctionImgList == null ? null : String.join(",", auctionImgList);
     } catch (SecurityException e) {
       throw new CustomException(ErrorCode.IMAGE_ACCESS_DENIED);
     } catch (InvalidPathException e) {
