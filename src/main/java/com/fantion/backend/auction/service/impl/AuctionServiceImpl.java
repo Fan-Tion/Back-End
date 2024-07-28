@@ -392,11 +392,13 @@ public class AuctionServiceImpl implements AuctionService {
   }
 
   private AuctionDto.Response toResponse(Auction auction) {
+    Member seller = memberRepository.findById(auction.getMember().getMemberId())
+            .orElseThrow(() -> new CustomException(NOT_FOUND_MEMBER));
+
     return AuctionDto.Response.builder()
         .auctionId(auction.getAuctionId())
         .title(auction.getTitle())
-        .auctionUserNickname(memberRepository.findById(1L)
-            .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER)).getNickname())
+        .auctionUserNickname(seller.getNickname())
         .category(auction.getCategory())
         .auctionType(auction.isAuctionType())
         .auctionImage(
@@ -405,10 +407,11 @@ public class AuctionServiceImpl implements AuctionService {
         .currentBidPrice(auction.getCurrentBidPrice())
         .currentBidder(auction.getCurrentBidder())
         .buyNowPrice(auction.getBuyNowPrice())
-        .favoritePrice(auction.getFavoriteCnt())
+        .favoriteCnt(auction.getFavoriteCnt())
         .createDate(auction.getCreateDate())
         .endDate(auction.getEndDate())
         .status(auction.isStatus())
+        .rating(seller.getRating())
         .build();
   }
 
