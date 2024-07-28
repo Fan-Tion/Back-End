@@ -471,13 +471,13 @@ public class MemberServiceImpl implements MemberService {
   }
 
   @Override
-  public ResultDTO<MemberDto> myInfo() {
+  public ResultDTO<MemberDto.Response> myInfo() {
 
     String email = MemberAuthUtil.getCurrentEmail();
     Member member = memberRepository.findByEmail(email)
         .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
 
-    MemberDto memberDto = MemberDto.builder()
+    MemberDto.Response memberDto = MemberDto.Response.builder()
         .email(member.getEmail())
         .nickname(member.getNickname())
         .address(member.getAddress())
@@ -488,13 +488,57 @@ public class MemberServiceImpl implements MemberService {
         .createDate(member.getCreateDate())
         .build();
 
-    if (member.getIsNaver() == true) {
+    if (member.getIsNaver()) {
       memberDto.setAuthType("NAVER");
-    } else if (member.getIsKakao() == true) {
+    } else if (member.getIsKakao()) {
       memberDto.setAuthType("KAKAO");
     }
 
     return ResultDTO.of("회원정보를 불러오는데 성공했습니다", memberDto);
+  }
+
+  @Override
+  public ResultDTO<CheckDto> myInfoEdit(MemberDto.Request request, MultipartFile file) {
+    String email = MemberAuthUtil.getCurrentEmail();
+    Member member = memberRepository.findByEmail(email)
+        .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
+
+    // 중복 닉네임 체크
+    memberRepository.findByNickname(request.getNickname()).ifPresent(nickname -> {
+      throw new CustomException(ErrorCode.NICKNAME_DUPLICATE);
+    });
+
+    Member updateMember;
+    // 이미지
+    if (file == null || file.isEmpty()) {
+      updateMember = member.toBuilder()
+          .nickname(request.getNickname())
+          .address(request.getAddress())
+          .profileImage(null)
+          .build();
+    } else {
+      String fileExtension = StringUtils.getFilenameExtension(file.getOriginalFilename());
+      List<String> allowedExtensions = Arrays.asList("jpg", "jpeg", "png", "gif");
+      String imageUrl;
+
+      if (fileExtension != null && allowedExtensions.contains(fileExtension.toLowerCase())) {
+        try {
+          imageUrl = s3Uploader.upload(file, "profile-images");
+        } catch (Exception e) {
+          throw new CustomException(ErrorCode.FAILED_IMAGE_SAVE);
+        }
+      } else {
+        throw new CustomException(ErrorCode.UN_SUPPORTED_IMAGE_TYPE);
+      }
+      updateMember = member.toBuilder()
+          .nickname(request.getNickname())
+          .address(request.getAddress())
+          .profileImage(imageUrl)
+          .build();
+    }
+    memberRepository.save(updateMember);
+
+    return ResultDTO.of("회원정보 수정에 성공했습니다.", CheckDto.builder().success(true).build());
   }
 
 
