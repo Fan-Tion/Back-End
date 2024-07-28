@@ -10,7 +10,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -44,7 +44,7 @@ public class Auction {
   @Column(name = "auction_type")
   private boolean auctionType;          // 경매 타입 (true - 공개, false - 비공개)
 
-  @Column(name = "auction_image")
+  @Column(name = "auction_image", length = 512)
   private String auctionImage;          // 경매 물품 이미지
 
   @Column(name = "description")
@@ -63,10 +63,10 @@ public class Auction {
   private Long favoriteCnt;             // 찜한 회원의 수
 
   @Column(name = "create_date")
-  private LocalDateTime createDate;     // 경매 생성일
+  private LocalDate createDate;     // 경매 생성일
 
   @Column(name = "end_date")
-  private LocalDateTime endDate;        // 경매 마감일
+  private LocalDate endDate;        // 경매 마감일
 
   @Column(name = "status")
   private boolean status;               // 경매 상태 (true - 경매중, false - 경매마감)
@@ -78,6 +78,10 @@ public class Auction {
   @Column(name = "receive_chk")
   @ColumnDefault("false")
   private boolean receiveChk;           // 인수 확인
+
+  @Column(name = "cancel_chk")
+  @ColumnDefault("false")
+  private boolean cancelChk;            // 취소 확인
 
 
   // 상위 입찰 설정
@@ -94,5 +98,10 @@ public class Auction {
   // 인수 확인
   public void receiveChking(boolean receiveChk) {
     this.receiveChk = receiveChk;
+  }
+
+  // 취소 확인
+  public void cancelChking(boolean cancelChk) {
+    this.cancelChk = cancelChk;
   }
 }
