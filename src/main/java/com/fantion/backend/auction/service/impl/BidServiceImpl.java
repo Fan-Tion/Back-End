@@ -530,7 +530,7 @@ public class BidServiceImpl implements BidService {
 
         BidAuctionCancelDto.Response response = BidAuctionCancelDto.Response.builder()
                 .auctionId(cancelBidAuction.getAuctionId())
-                .balance(cancelBidAuction.getCurrentBidPrice())
+                .balance(commissionBalance)
                 .createDate(LocalDateTime.now())
                 .build();
         return response;
