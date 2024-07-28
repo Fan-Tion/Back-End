@@ -12,7 +12,7 @@ import com.fantion.backend.auction.entity.FavoriteAuction;
 import com.fantion.backend.auction.repository.AuctionRepository;
 import com.fantion.backend.auction.repository.FavoriteAuctionRepository;
 import com.fantion.backend.auction.service.AuctionService;
-import com.fantion.backend.common.config.S3Uploader;
+import com.fantion.backend.common.component.S3Uploader;
 import com.fantion.backend.common.dto.ResultDTO;
 import com.fantion.backend.exception.ErrorCode;
 import com.fantion.backend.exception.impl.CustomException;
