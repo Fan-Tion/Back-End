@@ -34,5 +34,6 @@ public interface BidService {
     // 인수 확인
     HandOverDto.Response receiveChk(HandOverDto.Request request);
 
-
+    // 구매 철회
+    BidAuctionCancelDto.Response cancelBidAuction(BidAuctionCancelDto.Request request);
 }

@@ -30,16 +30,16 @@ public class Money {
   private Member member;
   private Long balance;
 
-  // 낙찰
-  public void successBid(Long bidPrice){
+  // 예치금 사용
+  public void useBalance(Long bidPrice){
     if (bidPrice > balance) {
       throw new CustomException(ErrorCode.NOT_ENOUGH_BALANCE);
     }
     balance -= bidPrice;
   }
 
-  // 판매
-  public void successSellBid(Long bidPrice){
+  // 예치금 충전
+  public void chargingBalance(Long bidPrice){
     balance += bidPrice;
   }
 
