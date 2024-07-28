@@ -2,6 +2,7 @@ package com.fantion.backend.member.service;
 
 import com.fantion.backend.common.dto.ResultDTO;
 import com.fantion.backend.member.dto.CheckDto;
+import com.fantion.backend.member.dto.MemberDto;
 import com.fantion.backend.member.dto.SigninDto;
 import com.fantion.backend.member.dto.SignupDto;
 import com.fantion.backend.member.dto.TokenDto;
@@ -31,4 +32,6 @@ public interface MemberService {
   ResultDTO<CheckDto> signout();
 
   ResultDTO<CheckDto> withdrawal();
+
+  ResultDTO<MemberDto> myInfo();
 }

@@ -9,6 +9,7 @@ import com.fantion.backend.member.configuration.NaverConfiguration;
 import com.fantion.backend.member.configuration.NaverLoginClient;
 import com.fantion.backend.member.configuration.NaverProfileClient;
 import com.fantion.backend.member.dto.CheckDto;
+import com.fantion.backend.member.dto.MemberDto;
 import com.fantion.backend.member.dto.NaverLinkDto;
 import com.fantion.backend.member.dto.NaverMemberDto;
 import com.fantion.backend.member.dto.NaverMemberDto.NaverMemberDetail;
@@ -467,6 +468,33 @@ public class MemberServiceImpl implements MemberService {
     moneyRepository.delete(money);
 
     return ResultDTO.of("회원탈퇴에 성공했습니다.", CheckDto.builder().success(true).build());
+  }
+
+  @Override
+  public ResultDTO<MemberDto> myInfo() {
+
+    String email = MemberAuthUtil.getCurrentEmail();
+    Member member = memberRepository.findByEmail(email)
+        .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
+
+    MemberDto memberDto = MemberDto.builder()
+        .email(member.getEmail())
+        .nickname(member.getNickname())
+        .address(member.getAddress())
+        .auth(member.getAuth())
+        .rating(member.getRating())
+        .profileImage(member.getProfileImage())
+        .phoneNumber(member.getPhoneNumber())
+        .createDate(member.getCreateDate())
+        .build();
+
+    if (member.getIsNaver() == true) {
+      memberDto.setAuthType("NAVER");
+    } else if (member.getIsKakao() == true) {
+      memberDto.setAuthType("KAKAO");
+    }
+
+    return ResultDTO.of("회원정보를 불러오는데 성공했습니다", memberDto);
   }
 
 
