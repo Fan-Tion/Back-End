@@ -78,7 +78,7 @@ public class AuctionServiceImpl implements AuctionService {
 
   @Override
   @Transactional
-  public ResultDTO<String> createAuction(@Valid AuctionDto.Request request,
+  public ResultDTO<Map<String, Long>> createAuction(@Valid AuctionDto.Request request,
       List<MultipartFile> auctionImage) {
     auctionRepository.save(toAuction(request, null));
 
@@ -93,7 +93,9 @@ public class AuctionServiceImpl implements AuctionService {
     auction.setAuctionImage(
         setImageUrl(saveImages(auction.getAuctionId(), auctionImage)));
 
-    return ResultDTO.of("경매 생성에 성공했습니다.", " auctionId: " + auction.getAuctionId());
+
+
+    return ResultDTO.of("경매 생성에 성공했습니다.", Map.of("auctionId", auction.getAuctionId()));
   }
 
   // 경매 상세보기
