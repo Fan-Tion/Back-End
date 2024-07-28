@@ -9,7 +9,6 @@ import com.fantion.backend.auction.service.BidService;
 import com.fantion.backend.auction.service.RedisMessageService;
 import com.fantion.backend.auction.service.SseEmitterService;
 import com.fantion.backend.common.dto.ResultDTO;
-import com.fantion.backend.exception.ErrorCode;
 import com.fantion.backend.exception.impl.CustomException;
 import com.fantion.backend.member.auth.MemberAuthUtil;
 import com.fantion.backend.member.entity.BalanceHistory;
@@ -25,6 +24,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -50,10 +50,9 @@ public class BidServiceImpl implements BidService {
     public ResultDTO<BidDto.Response> createBid(BidDto.Request request) {
         // 입찰하려는 경매 조회
         Auction auction = auctionRepository.getReferenceById(request.getAuctionId());
-        LocalDateTime endDate = auction.getEndDate();
 
-        // 경매 종료일이 지난 경우 입찰 불가능
-        if (LocalDateTime.now().isAfter(endDate)) {
+        // 경매 마감인 경우 입찰 불가능
+        if (!auction.isStatus()) {
             throw new CustomException(TOO_OLD_AUCTION);
 
         }
@@ -268,17 +267,14 @@ public class BidServiceImpl implements BidService {
         Auction auction = auctionRepository.findById(request.getAuctionId())
                 .orElseThrow(()-> new CustomException(NOT_FOUND_AUCTION));
 
-        // 경매 종료일
-        LocalDateTime endDate = auction.getEndDate();
-
         // 구매자의 사용 가능한 예치금
         Long buyerCanUseBalance = balanceCheck(buyer).getCanUseBalance();
 
         // 즉시 구매가
         Long buyNowPrice = auction.getBuyNowPrice();
 
-        // 경매 종료일이 지난 경우 즉시구매 불가능
-        if (LocalDateTime.now().isAfter(endDate)) {
+        // 경매 마감인 경우 즉시구매 불가능
+        if (!auction.isStatus()) {
             throw new CustomException(TOO_OLD_AUCTION);
 
         }
@@ -340,8 +336,8 @@ public class BidServiceImpl implements BidService {
 
         }
 
-        // 경매 종료일이 지난 경우 이거나 경매 마감인경우 입찰취소 불가능
-        if (LocalDateTime.now().isAfter(cancelAuction.getEndDate()) || !cancelAuction.isStatus()) {
+        // 경매 마감인경우 입찰취소 불가능
+        if (!cancelAuction.isStatus()) {
             throw new CustomException(TOO_OLD_AUCTION);
 
         }
