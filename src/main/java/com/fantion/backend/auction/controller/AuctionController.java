@@ -122,15 +122,15 @@ public class AuctionController {
   }
 
   @GetMapping("/view/{auctionId}")
-  public AuctionDto.Response findAuction(@PathVariable(name = "auctionId") Long auctionId) {
+  public ResultDTO<AuctionDto.Response> findAuction(@PathVariable(name = "auctionId") Long auctionId) {
     return auctionService.findAuction(auctionId);
   }
   @GetMapping("/favorite/{auctionId}")
-  public AuctionFavoriteDto.Response favoriteChk(@PathVariable(name = "auctionId") Long auctionId) {
+  public ResultDTO<AuctionFavoriteDto.Response> favoriteChk(@PathVariable(name = "auctionId") Long auctionId) {
     return auctionService.favoriteChk(auctionId);
   }
   @PostMapping("/favorite/{auctionId}")
-  public AuctionFavoriteDto.Response favoriteAuction(@PathVariable(name = "auctionId") Long auctionId) {
+  public ResultDTO<AuctionFavoriteDto.Response> favoriteAuction(@PathVariable(name = "auctionId") Long auctionId) {
     return auctionService.favoriteAuction(auctionId);
   }
 }

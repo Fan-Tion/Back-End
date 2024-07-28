@@ -12,6 +12,7 @@ import com.fantion.backend.auction.entity.FavoriteAuction;
 import com.fantion.backend.auction.repository.AuctionRepository;
 import com.fantion.backend.auction.repository.FavoriteAuctionRepository;
 import com.fantion.backend.auction.service.AuctionService;
+import com.fantion.backend.common.dto.ResultDTO;
 import com.fantion.backend.exception.ErrorCode;
 import com.fantion.backend.exception.impl.CustomException;
 import com.fantion.backend.member.auth.MemberAuthUtil;
@@ -85,12 +86,12 @@ public class AuctionServiceImpl implements AuctionService {
 
   // 경매 상세보기
   @Override
-  public AuctionDto.Response findAuction(Long auctionId) {
+  public ResultDTO<AuctionDto.Response> findAuction(Long auctionId) {
     // 상세보기할 경매 조회
     Auction auction = auctionRepository.findById(auctionId)
         .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_AUCTION));
 
-    return toResponse(auction);
+    return ResultDTO.of("성공적으로 상세보기할 경매가 조회되었습니다.",toResponse(auction));
   }
 
   /**
@@ -280,7 +281,7 @@ public class AuctionServiceImpl implements AuctionService {
   }
   @Transactional
   @Override
-  public AuctionFavoriteDto.Response favoriteChk(Long auctionId) {
+  public ResultDTO<AuctionFavoriteDto.Response> favoriteChk(Long auctionId) {
     // 찜 여부 확인할 경매 조회
     Auction favoriteChkAuction = auctionRepository.findById(auctionId)
             .orElseThrow(()-> new CustomException(NOT_FOUND_AUCTION));
@@ -306,11 +307,11 @@ public class AuctionServiceImpl implements AuctionService {
       response.setFavoriteChk(false);
     }
 
-    return response;
+    return ResultDTO.of("성공적으로 찜 여부가 조회되었습니다.",response);
   }
   @Transactional
   @Override
-  public AuctionFavoriteDto.Response favoriteAuction(Long auctionId) {
+  public ResultDTO<AuctionFavoriteDto.Response> favoriteAuction(Long auctionId) {
     // 찜하거나 찜 취소할 경매 조회
     Auction favoriteChkAuction = auctionRepository.findById(auctionId)
             .orElseThrow(()-> new CustomException(NOT_FOUND_AUCTION));
@@ -346,7 +347,7 @@ public class AuctionServiceImpl implements AuctionService {
 
     }
 
-    return response;
+    return ResultDTO.of("성공적으로 찜 또는 찜취소가 되었습니다.",response);
   }
 
 

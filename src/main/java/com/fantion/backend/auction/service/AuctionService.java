@@ -4,6 +4,7 @@ package com.fantion.backend.auction.service;
 import com.fantion.backend.auction.dto.AuctionDto;
 import com.fantion.backend.auction.dto.AuctionFavoriteDto;
 import com.fantion.backend.auction.dto.CategoryDto;
+import com.fantion.backend.common.dto.ResultDTO;
 import com.fantion.backend.type.CategoryType;
 import com.fantion.backend.type.SearchType;
 import java.nio.file.Path;
@@ -31,7 +32,7 @@ public interface AuctionService {
   Page<AuctionDto.Response> getSearchList(int page, SearchType searchOption, CategoryType categoryOption, String keyword);
 
   // 경매 상세보기
-  AuctionDto.Response findAuction(Long auctionId);
+  ResultDTO<AuctionDto.Response> findAuction(Long auctionId);
 
   Resource getImage(Path imagePath, HttpHeaders headers);
 
@@ -44,8 +45,8 @@ public interface AuctionService {
   List<CategoryDto> getFavoriteAuctionCategory();
 
   // 찜 확인
-  AuctionFavoriteDto.Response favoriteChk(Long auctionId);
+  ResultDTO<AuctionFavoriteDto.Response> favoriteChk(Long auctionId);
 
   // 찜 & 찜 취소
-  AuctionFavoriteDto.Response favoriteAuction(Long auctionId);
+  ResultDTO<AuctionFavoriteDto.Response> favoriteAuction(Long auctionId);
 }
