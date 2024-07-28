@@ -9,6 +9,7 @@ import com.amazonaws.services.s3.model.ListObjectsV2Result;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -30,6 +31,17 @@ public class S3Uploader {
 
   public String upload(MultipartFile file, String dirName) throws IOException {
     String fileName = dirName + "/" + UUID.randomUUID() + "_" + file.getOriginalFilename();
+    ObjectMetadata metadata = new ObjectMetadata();
+    metadata.setContentLength(file.getSize());
+    metadata.setContentType(file.getContentType());
+
+    amazonS3.putObject(new PutObjectRequest(bucket, fileName, file.getInputStream(), metadata)
+        .withCannedAcl(CannedAccessControlList.PublicRead));
+    return amazonS3.getUrl(bucket, fileName).toString();
+  }
+
+  public String upload(MultipartFile file, String dirName, int i) throws IOException {
+    String fileName = dirName + "/" + UUID.randomUUID() + "_" + i + ".jpg";
     ObjectMetadata metadata = new ObjectMetadata();
     metadata.setContentLength(file.getSize());
     metadata.setContentType(file.getContentType());
