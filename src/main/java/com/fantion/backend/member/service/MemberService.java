@@ -3,6 +3,8 @@ package com.fantion.backend.member.service;
 import com.fantion.backend.common.dto.ResultDTO;
 import com.fantion.backend.member.dto.CheckDto;
 import com.fantion.backend.member.dto.MemberDto;
+import com.fantion.backend.member.dto.RatingRequestDto;
+import com.fantion.backend.member.dto.ResetPasswordDto;
 import com.fantion.backend.member.dto.SigninDto;
 import com.fantion.backend.member.dto.SignupDto;
 import com.fantion.backend.member.dto.TokenDto;
@@ -36,4 +38,10 @@ public interface MemberService {
   ResultDTO<MemberDto.Response> myInfo();
 
   ResultDTO<CheckDto> myInfoEdit(MemberDto.Request request, MultipartFile file);
+
+  ResultDTO<CheckDto> resetPasswordEmail(ResetPasswordDto.MailRequest request);
+
+  ResultDTO<CheckDto> resetPassword(ResetPasswordDto.ChangeRequest request);
+
+  ResultDTO<CheckDto> rating(RatingRequestDto request);
 }

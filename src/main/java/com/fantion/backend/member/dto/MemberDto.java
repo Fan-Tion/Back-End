@@ -36,6 +36,7 @@ public class MemberDto {
     private Integer rating;
     private String profileImage;
     private String phoneNumber;
+    private Long balance;
     private LocalDateTime createDate;
   }
 }

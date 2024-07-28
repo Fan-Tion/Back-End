@@ -42,6 +42,4 @@ public class Money {
   public void chargingBalance(Long bidPrice){
     balance += bidPrice;
   }
-
-
 }

@@ -1,4 +1,4 @@
-package com.fantion.backend.common.config;
+package com.fantion.backend.common.component;
 
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
@@ -9,6 +9,7 @@ import com.amazonaws.services.s3.model.ListObjectsV2Result;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;

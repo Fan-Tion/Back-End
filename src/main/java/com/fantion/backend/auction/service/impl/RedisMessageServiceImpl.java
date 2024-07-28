@@ -2,7 +2,7 @@ package com.fantion.backend.auction.service.impl;
 
 import com.fantion.backend.auction.dto.BidDto;
 import com.fantion.backend.auction.service.RedisMessageService;
-import com.fantion.backend.common.config.RedisSubscriber;
+import com.fantion.backend.common.component.RedisSubscriber;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;

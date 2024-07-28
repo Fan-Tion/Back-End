@@ -3,6 +3,8 @@ package com.fantion.backend.member.controller;
 import com.fantion.backend.common.dto.ResultDTO;
 import com.fantion.backend.member.dto.CheckDto;
 import com.fantion.backend.member.dto.MemberDto;
+import com.fantion.backend.member.dto.RatingRequestDto;
+import com.fantion.backend.member.dto.ResetPasswordDto;
 import com.fantion.backend.member.dto.SigninDto;
 import com.fantion.backend.member.dto.SignupDto;
 import com.fantion.backend.member.dto.TokenDto;
@@ -106,6 +108,24 @@ public class MemberController {
       @Valid @RequestPart(value = "request") MemberDto.Request request,
       @RequestPart(value = "file", required = false) MultipartFile file) {
     ResultDTO<CheckDto> result = memberService.myInfoEdit(request, file);
+    return ResponseEntity.ok(result);
+  }
+
+  @PostMapping("/reset-password-request")
+  public ResponseEntity<?> resetPasswordRequest(@Valid @RequestBody ResetPasswordDto.MailRequest Request) {
+    ResultDTO<CheckDto> result = memberService.resetPasswordEmail(Request);
+    return ResponseEntity.ok(result);
+  }
+
+  @PutMapping("/reset-password")
+  public ResponseEntity<?> resetPassword(@Valid @RequestBody ResetPasswordDto.ChangeRequest request) {
+    ResultDTO<CheckDto> result = memberService.resetPassword(request);
+    return ResponseEntity.ok(result);
+  }
+
+  @PostMapping("/rating")
+  public ResponseEntity<?> rating(@RequestBody RatingRequestDto request) {
+    ResultDTO<CheckDto> result = memberService.rating(request);
     return ResponseEntity.ok(result);
   }
 }
