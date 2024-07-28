@@ -1,4 +1,4 @@
-package com.fantion.backend.common.config;
+package com.fantion.backend.common.component;
 
 import com.fantion.backend.auction.service.AuctionService;
 import lombok.RequiredArgsConstructor;

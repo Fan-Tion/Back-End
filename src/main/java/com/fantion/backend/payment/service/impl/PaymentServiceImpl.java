@@ -59,11 +59,10 @@ public class PaymentServiceImpl implements PaymentService {
   @Transactional
   public ResultDTO<PaymentDto.Response> requestPayment(PaymentDto.Request request) {
 
-    // accessToken을 이용한 유저정보 저장 및 반환 수정
-    // 지금은 프론트에서 유저 정보를 그냥 던져주는 중
     String orderId = UUID.randomUUID().toString();
 
-    Member member = memberRepository.findByEmail(request.getCustomerEmail())
+    String email = MemberAuthUtil.getCurrentEmail();
+    Member member = memberRepository.findByEmail(email)
         .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
 
     // 결제 요청 정보를 DB에 저장

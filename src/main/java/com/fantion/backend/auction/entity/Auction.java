@@ -24,7 +24,7 @@ import org.hibernate.annotations.ColumnDefault;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@Builder(toBuilder = true)
 public class Auction {
   @Id
   @Column(name = "auction_id")
