@@ -18,4 +18,6 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
   Optional<Member> findByLinkedEmail(String LinkedEmail);
 
   List<Member> findAllByWithdrawalDateBefore(LocalDateTime thirtyDaysAgo);
+
+  Optional<Member> findByEmailAndPhoneNumber(String email, String phoneNumber);
 }

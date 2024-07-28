@@ -25,10 +25,6 @@ public class PaymentDto {
     private Long amount;           // 결제 금액
     @NotBlank(message = "결제상품 이름은 필수값 입니다.")
     private String orderName;     // 주문 이름 (상품명)
-    @NotBlank(message = "고객 이메일은 필수값 입니다.")
-    private String customerEmail; // 고객 이메일
-    @NotBlank(message = "고객 이름은 필수값 입니다.")
-    private String customerName;  // 고객 이름
   }
 
   @Setter

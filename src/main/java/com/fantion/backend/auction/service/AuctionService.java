@@ -16,7 +16,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.web.multipart.MultipartFile;
 
 public interface AuctionService {
-  ResultDTO<String> createAuction(
+  ResultDTO<Map<String, Long>> createAuction(
       AuctionDto.Request request,
       List<MultipartFile> auctionImage);
 

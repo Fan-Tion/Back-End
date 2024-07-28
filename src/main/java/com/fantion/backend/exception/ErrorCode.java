@@ -17,6 +17,9 @@ public enum ErrorCode {
     DUPLICATE_LINKED_ERROR("이미 해당 소셜계정과 연동하셨습니다.", HttpStatus.BAD_REQUEST),
     TOKEN_INVALID("유효하지 않은 토큰입니다.", HttpStatus.FORBIDDEN),
     UN_LINKED_ERROR("연동해제 중 에러가 발생했습니다.", HttpStatus.INTERNAL_SERVER_ERROR),
+    PASSWORD_DUPLICATE("기존과 동일한 비밀번호로 변경할 수 없습니다.", HttpStatus.BAD_REQUEST),
+    ALREADY_RATED("이미 해당 경매건에 평점을 매겼습니다.", HttpStatus.BAD_REQUEST),
+    PASSWORD_RESET_TIMEOUT("비밀번호 인증이 만료되었습니다.", HttpStatus.BAD_REQUEST),
 
     // Payment
     NOT_FOUND_MONEY("예치금이 존재하지 않습니다.", HttpStatus.NOT_FOUND),
@@ -41,6 +44,7 @@ public enum ErrorCode {
     NOT_SEND_CHKING("인계 확인이 되어있지 않습니다.",HttpStatus.BAD_REQUEST),
     ALREADY_SEND_CHK("이미 인계확인이 되어있습니다.",HttpStatus.BAD_REQUEST),
     ALREADY_RECEIVE_CHK("이미 인수확인이 되어있습니다.",HttpStatus.BAD_REQUEST),
+    ALREADY_CANCEL_CHK("이미 거래취소가 되어있습니다.",HttpStatus.BAD_REQUEST),
 
     // Common
     PARSING_ERROR("파싱 오류가 발생했습니다.", HttpStatus.BAD_REQUEST),
@@ -52,7 +56,8 @@ public enum ErrorCode {
     IMAGE_EXCEPTION("이미지 관련 에러입니다.", HttpStatus.INTERNAL_SERVER_ERROR),
     IMAGE_INTERNAL_SERVER_ERROR("이미지 내부 서버 오류입니다.",HttpStatus.INTERNAL_SERVER_ERROR),
     IMAGE_MALFORMED("잘못된 형식의 URL입니다.", HttpStatus.INTERNAL_SERVER_ERROR),
-    IMAGE_NOT_FOUND("이미지가 존재하지 않습니다.", HttpStatus.NOT_FOUND);
+    IMAGE_NOT_FOUND("이미지가 존재하지 않습니다.", HttpStatus.NOT_FOUND),
+    SEND_MAIL_FAIL("메일전송에 실패했습니다.", HttpStatus.INTERNAL_SERVER_ERROR);
 
 
     String message;
