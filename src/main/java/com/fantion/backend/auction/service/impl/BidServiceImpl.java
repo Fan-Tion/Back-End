@@ -210,13 +210,30 @@ public class BidServiceImpl implements BidService {
 
                 } else {
                     Bid bid = OptionalBid.get();
-                    Member bidder = bid.getBidder();
+                    Member buyer = bid.getBidder();
 
                     // 경매 마감 설정
                     auction.setStatus(false);
 
-                    // 상위 입찰 설정
-                    auction.topBid(bid.getBidPrice(), bidder.getNickname());
+                    // 상위 입찰 설정 (비공개 입찰)
+                    auction.topBid(bid.getBidPrice(), buyer.getNickname());
+
+                    // 구매자(낙찰자) 예치금 조회
+                    Money buyerMoney = moneyRepository.findByMemberId(buyer.getMemberId())
+                            .orElseThrow(()-> new CustomException(ErrorCode.NOT_FOUND_MONEY));
+
+                    // 구매자가 보유한 예치금에서 낙찰된 금액만큼 차감
+                    buyerMoney.useBalance(bid.getBidPrice());
+
+                    // 예치금 내역 생성
+                    BalanceHistory buyerHistory = BalanceHistory.builder()
+                            .memberId(buyer)
+                            .balance(bid.getBidPrice())
+                            .type(BalanceType.USE)
+                            .build();
+
+                    // 예치금 내역 저장
+                    balanceHistoryRepository.save(buyerHistory);
 
                 }
 
@@ -225,17 +242,18 @@ public class BidServiceImpl implements BidService {
     }
 
     // 즉시 구매
+    @Transactional
     @Override
     public BuyNowDto.Response buyNow(BuyNowDto.Request request) {
         // 로그인한 사용자 가져오기
         String loginEmail = MemberAuthUtil.getLoginUserId();
 
         // 사용자 조회
-        Member member = memberRepository.findByEmail(loginEmail)
+        Member buyer = memberRepository.findByEmail(loginEmail)
                 .orElseThrow(()-> new CustomException(NOT_FOUND_MEMBER));
 
         // 사용자가 보유한 예치금 조회
-        Money money = moneyRepository.findByMemberId(member.getMemberId())
+        Money buyerMoney = moneyRepository.findByMemberId(buyer.getMemberId())
                 .orElseThrow(()-> new CustomException(ErrorCode.NOT_FOUND_MONEY));
 
         // 즉시 구매하려는 경매 물품 조회
@@ -246,10 +264,10 @@ public class BidServiceImpl implements BidService {
         LocalDate endDate = auction.getEndDate();
 
         // 구매자의 보유한 예치금
-        Long balance = money.getBalance();
+        Long buyerBalance = buyerMoney.getBalance();
 
         // 구매자의 사용 가능한 예치금
-        Long canUseBalance = balanceCheck(member).getCanUseBalance();
+        Long buyerCanUseBalance = balanceCheck(buyer).getCanUseBalance();
 
         // 즉시 구매가
         Long buyNowPrice = auction.getBuyNowPrice();
@@ -261,7 +279,7 @@ public class BidServiceImpl implements BidService {
         }
 
         // 사용 가능한 예치금 보다 즉시 구매가가 더 클 경우
-        if (canUseBalance < buyNowPrice) {
+        if (buyerCanUseBalance < buyNowPrice) {
             throw new CustomException(ErrorCode.NOT_ENOUGH_BALANCE);
         }
 
@@ -269,12 +287,25 @@ public class BidServiceImpl implements BidService {
         auction.setStatus(false);
 
         // 상위 입찰 설정
-        auction.topBid(auction.getBuyNowPrice(),member.getNickname());
+        auction.topBid(auction.getBuyNowPrice(),buyer.getNickname());
+
+        // 구매자가 보유한 예치금에서 즉시구매 금액만큼 차감
+        buyerMoney.useBalance(buyNowPrice);
+
+        // 예치금 내역 생성
+        BalanceHistory buyerHistory = BalanceHistory.builder()
+                .memberId(buyer)
+                .balance(buyNowPrice)
+                .type(BalanceType.USE)
+                .build();
+
+        // 예치금 내역 저장
+        balanceHistoryRepository.save(buyerHistory);
 
         BuyNowDto.Response response = BuyNowDto.Response.builder()
                 .title(auction.getTitle())
                 .buyNowPrice(buyNowPrice)
-                .balance(balance - buyNowPrice)
+                .balance(buyerBalance - buyNowPrice)
                 .build();
 
         return response;
@@ -399,9 +430,6 @@ public class BidServiceImpl implements BidService {
             throw new CustomException(ALREADY_RECEIVE_CHK);
         }
 
-        // 인수 확인
-        auction.receiveChking(true);
-
         // 구매자 정보
         // 로그인한 사용자 가져오기
         String loginEmail = MemberAuthUtil.getLoginUserId();
@@ -415,10 +443,6 @@ public class BidServiceImpl implements BidService {
             throw new CustomException(NOT_AUCTION_BUYER);
         }
 
-        // 구매자가 보유한 예치금 조회
-        Money buyerMoney = moneyRepository.findByMemberId(buyer.getMemberId())
-                .orElseThrow(()-> new CustomException(NOT_FOUND_MONEY));
-
         // 판매자 정보
         // 사용자 조회
         Member seller = memberRepository.findById(auction.getMember().getMemberId())
@@ -428,18 +452,10 @@ public class BidServiceImpl implements BidService {
         Money sellerMoney = moneyRepository.findByMemberId(seller.getMemberId())
                 .orElseThrow(()-> new CustomException(NOT_FOUND_MONEY));
 
-        // 예치금 정산
-        buyerMoney.successBid(auction.getCurrentBidPrice());
-        sellerMoney.successSellBid(auction.getCurrentBidPrice());
+        // 판매자가 보유한 예치금에서 낙찰된 금액만큼 증가
+        sellerMoney.chargingBalance(auction.getCurrentBidPrice());
 
         // 예치금 내역 생성
-        BalanceHistory buyerHistory = BalanceHistory.builder()
-                .memberId(buyer)
-                .balance(auction.getCurrentBidPrice())
-                .type(BalanceType.USE)
-                .createDate(LocalDateTime.now())
-                .build();
-
         BalanceHistory sellerHistory = BalanceHistory.builder()
                 .memberId(seller)
                 .balance(auction.getCurrentBidPrice())
@@ -448,15 +464,76 @@ public class BidServiceImpl implements BidService {
                 .build();
 
         // 예치금 내역 저장
-        balanceHistoryRepository.save(buyerHistory);
         balanceHistoryRepository.save(sellerHistory);
+
+        // 인수 확인
+        auction.receiveChking(true);
 
         HandOverDto.Response response = HandOverDto.Response.builder()
                 .auctionId(auction.getAuctionId())
                 .balance(auction.getCurrentBidPrice())
-                .createDate(buyerHistory.getCreateDate())
+                .createDate(sellerHistory.getCreateDate())
                 .build();
 
+        return response;
+    }
+
+    @Transactional
+    @Override
+    public BidAuctionCancelDto.Response cancelBidAuction(BidAuctionCancelDto.Request request) {
+        // 구매 철회할 경매물품 조회
+        Auction cancelBidAuction = auctionRepository.findById(request.getAuctionId())
+                .orElseThrow(() -> new CustomException(NOT_FOUND_AUCTION));
+
+        // 이미 구매 철회되어있는 경매 물품인경우
+        if (cancelBidAuction.isCancelChk()) {
+            throw new CustomException(ALREADY_CANCEL_CHK);
+        }
+
+        // 이미 인수 확인이 되어있는 경우
+        if (cancelBidAuction.isReceiveChk()) {
+            throw new CustomException(ALREADY_RECEIVE_CHK);
+        }
+
+        // 로그인한 사용자 가져오기
+        String loginEmail = MemberAuthUtil.getLoginUserId();
+
+        // 구매자 조회
+        Member buyer = memberRepository.findByEmail(loginEmail)
+                .orElseThrow(()-> new CustomException(NOT_FOUND_MEMBER));
+
+        // 구매자 예치금 조회
+        Money buyerMoney = moneyRepository.findByMemberId(buyer.getMemberId())
+                .orElseThrow(()-> new CustomException(NOT_FOUND_MONEY));
+
+        // 구매자가 아닌 경우
+        if (!buyer.getNickname().equals(cancelBidAuction.getCurrentBidder())) {
+            throw new CustomException(NOT_AUCTION_BUYER);
+        }
+
+        // 취소 확인
+        cancelBidAuction.cancelChking(true);
+
+        // 구매자 예치금 원복 (10% 수수료 제외)
+        long commissionBalance = (long) (cancelBidAuction.getCurrentBidPrice() * 0.9);
+        buyerMoney.chargingBalance(commissionBalance);
+
+        // 예치금 내역 생성
+        BalanceHistory buyerHistory = BalanceHistory.builder()
+                .memberId(buyer)
+                .balance(commissionBalance)
+                .type(BalanceType.CHARGING)
+                .createDate(LocalDateTime.now())
+                .build();
+
+        // 예치금 내역 저장
+        balanceHistoryRepository.save(buyerHistory);
+
+        BidAuctionCancelDto.Response response = BidAuctionCancelDto.Response.builder()
+                .auctionId(cancelBidAuction.getAuctionId())
+                .balance(commissionBalance)
+                .createDate(LocalDateTime.now())
+                .build();
         return response;
     }
 

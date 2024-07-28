@@ -79,6 +79,10 @@ public class Auction {
   @ColumnDefault("false")
   private boolean receiveChk;           // 인수 확인
 
+  @Column(name = "cancel_chk")
+  @ColumnDefault("false")
+  private boolean cancelChk;            // 취소 확인
+
 
   // 상위 입찰 설정
   public void topBid(Long bidPrice,String bidder) {
@@ -94,5 +98,10 @@ public class Auction {
   // 인수 확인
   public void receiveChking(boolean receiveChk) {
     this.receiveChk = receiveChk;
+  }
+
+  // 취소 확인
+  public void cancelChking(boolean cancelChk) {
+    this.cancelChk = cancelChk;
   }
 }

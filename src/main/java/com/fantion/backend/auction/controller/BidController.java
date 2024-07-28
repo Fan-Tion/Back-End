@@ -54,6 +54,11 @@ public class BidController {
         return bidService.sendChk(request);
     }
 
+    @DeleteMapping("/auction")
+    private BidAuctionCancelDto.Response cancelBidAuction(@RequestBody BidAuctionCancelDto.Request request){
+        return bidService.cancelBidAuction(request);
+    }
+
     @GetMapping("/balance")
     private BalanceCheckDto.Response useBalanceCheck(){
         return bidService.useBalanceCheck();
