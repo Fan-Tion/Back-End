@@ -43,4 +43,13 @@ public class Bid {
   @Column(name = "create_date")
   private LocalDateTime createDate;   // 입찰한 시간
 
+
+  // 기존 입찰의 입찰가와 입찰시간 갱신
+  public void updateBid(Long bidPrice,LocalDateTime createDate) {
+    this.bidPrice = bidPrice;
+    this.createDate = createDate;
+
+  }
+
+
 }

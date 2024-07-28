@@ -53,7 +53,7 @@ public class BidServiceImpl implements BidService {
 
         // 경매 종료일이 지난 경우 입찰 불가능
         if (LocalDateTime.now().isAfter(endDate)) {
-            throw new CustomException(ErrorCode.TOO_OLD_AUCTION);
+            throw new CustomException(TOO_OLD_AUCTION);
 
         }
 
@@ -69,7 +69,7 @@ public class BidServiceImpl implements BidService {
 
         // 사용 가능한 예치금이 입찰가보다 더 적을 경우
         if (canUseBalance < request.getBidPrice()) {
-            throw new CustomException(ErrorCode.NOT_ENOUGH_BALANCE);
+            throw new CustomException(NOT_ENOUGH_BALANCE);
         }
 
         // 공개 입찰인 경우
@@ -78,20 +78,29 @@ public class BidServiceImpl implements BidService {
             auction.topBid(request.getBidPrice(),member.getNickname());
         }
 
-        // 입찰 생성
-        Bid bid = Bid.builder()
-                .auctionId(auction)
-                .bidPrice(request.getBidPrice())
-                .bidder(member)
-                .createDate(LocalDateTime.now())
-                .build();
+        // 기존에 입찰한 경매물품 조회
+        Optional<Bid> bidingAuction = bidRepository.findByAuctionIdAndBidder(auction, member);
 
-        // 기존 입찰 수정
-        if (request.getBidId() != null) {
-            bid.setBidId(request.getBidId());
+        // 응답값 변수
+        BidDto.Response response;
+
+        // 기존에 입찰한 경매물품이 아닌 경우
+        if (bidingAuction.isEmpty()) {
+            // 입찰 생성
+            Bid newBid = Bid.builder()
+                    .auctionId(auction)
+                    .bidPrice(request.getBidPrice())
+                    .bidder(member)
+                    .createDate(LocalDateTime.now())
+                    .build();
+            response = BidDto.Response(bidRepository.save(newBid));
+        } else {
+            // 기존 입찰 갱신
+            Bid oldBid = bidingAuction.get();
+            oldBid.updateBid(request.getBidPrice(),LocalDateTime.now());
+            response = BidDto.Response(oldBid);
         }
 
-        BidDto.Response response = BidDto.Response(bidRepository.save(bid));
         publishBid(response);
 
         return response;
@@ -114,7 +123,7 @@ public class BidServiceImpl implements BidService {
     public BalanceCheckDto.Response balanceCheck(Member member) {
         // 사용자의 보유한 예치금 조회
         Money money = moneyRepository.findByMemberId(member.getMemberId())
-                .orElseThrow(()-> new CustomException(ErrorCode.NOT_FOUND_MONEY));
+                .orElseThrow(()-> new CustomException(NOT_FOUND_MONEY));
         Long haveBalance = money.getBalance();
 
         // 공개 입찰 사용 가능한 예치금 계산
@@ -219,7 +228,7 @@ public class BidServiceImpl implements BidService {
 
                     // 구매자(낙찰자) 예치금 조회
                     Money buyerMoney = moneyRepository.findByMemberId(buyer.getMemberId())
-                            .orElseThrow(()-> new CustomException(ErrorCode.NOT_FOUND_MONEY));
+                            .orElseThrow(()-> new CustomException(NOT_FOUND_MONEY));
 
                     // 구매자가 보유한 예치금에서 낙찰된 금액만큼 차감
                     buyerMoney.useBalance(bid.getBidPrice());
@@ -253,11 +262,11 @@ public class BidServiceImpl implements BidService {
 
         // 사용자가 보유한 예치금 조회
         Money buyerMoney = moneyRepository.findByMemberId(buyer.getMemberId())
-                .orElseThrow(()-> new CustomException(ErrorCode.NOT_FOUND_MONEY));
+                .orElseThrow(()-> new CustomException(NOT_FOUND_MONEY));
 
         // 즉시 구매하려는 경매 물품 조회
         Auction auction = auctionRepository.findById(request.getAuctionId())
-                .orElseThrow(()-> new CustomException(ErrorCode.NOT_FOUND_AUCTION));
+                .orElseThrow(()-> new CustomException(NOT_FOUND_AUCTION));
 
         // 경매 종료일
         LocalDateTime endDate = auction.getEndDate();
@@ -273,13 +282,13 @@ public class BidServiceImpl implements BidService {
 
         // 경매 종료일이 지난 경우 즉시구매 불가능
         if (LocalDateTime.now().isAfter(endDate)) {
-            throw new CustomException(ErrorCode.TOO_OLD_AUCTION);
+            throw new CustomException(TOO_OLD_AUCTION);
 
         }
 
         // 사용 가능한 예치금 보다 즉시 구매가가 더 클 경우
         if (buyerCanUseBalance < buyNowPrice) {
-            throw new CustomException(ErrorCode.NOT_ENOUGH_BALANCE);
+            throw new CustomException(NOT_ENOUGH_BALANCE);
         }
 
         // 경매 마감 설정
@@ -314,11 +323,11 @@ public class BidServiceImpl implements BidService {
     public BidCancelDto.Response cancelBid(BidCancelDto.Request request) {
         // 입찰 취소하려는 입찰 조회
         Bid cancelBid = bidRepository.findById(request.getBidId())
-                .orElseThrow(()-> new CustomException(ErrorCode.NOT_FOUND_BID));
+                .orElseThrow(()-> new CustomException(NOT_FOUND_BID));
 
         // 입찰 취소하려는 경매 물품 조회
         Auction cancelAuction = auctionRepository.findById(cancelBid.getAuctionId().getAuctionId())
-                .orElseThrow(()-> new CustomException(ErrorCode.NOT_FOUND_AUCTION));
+                .orElseThrow(()-> new CustomException(NOT_FOUND_AUCTION));
 
         // 비공개 입찰만 입찰 취소 가능
         if (cancelAuction.isAuctionType()) {
@@ -328,7 +337,7 @@ public class BidServiceImpl implements BidService {
 
         // 경매 종료일이 지난 경우 입찰취소 불가능
         if (LocalDateTime.now().isAfter(cancelAuction.getEndDate())) {
-            throw new CustomException(ErrorCode.TOO_OLD_AUCTION);
+            throw new CustomException(TOO_OLD_AUCTION);
 
         }
 
