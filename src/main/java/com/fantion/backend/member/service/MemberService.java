@@ -37,7 +37,9 @@ public interface MemberService {
 
   ResultDTO<MemberDto.Response> myInfo();
 
-  ResultDTO<CheckDto> myInfoEdit(MemberDto.Request request, MultipartFile file);
+  ResultDTO<CheckDto> myInfoEdit(MemberDto.Request request);
+
+  ResultDTO<CheckDto> profileImageEdit(MultipartFile file);
 
   ResultDTO<CheckDto> resetPasswordEmail(ResetPasswordDto.MailRequest request);
 

@@ -40,6 +40,8 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class PaymentServiceImpl implements PaymentService {
 
+  private static final Long IDEMPOTENCY_KEY_EXPIRES_IN = 1296000000L;
+
   private final PaymentRepository paymentRepository;
   private final MemberRepository memberRepository;
   private final MoneyRepository moneyRepository;
@@ -204,7 +206,7 @@ public class PaymentServiceImpl implements PaymentService {
       idempotencyKey = paymentComponent.createIdempotencyKey();
       // Toss에서 공시한 멱등키 유효기간은 15일
       redisTemplate.opsForValue()
-          .set("orderId: " + payment.getOrderId(), idempotencyKey, 15, TimeUnit.DAYS);
+          .set("orderId: " + payment.getOrderId(), idempotencyKey, IDEMPOTENCY_KEY_EXPIRES_IN, TimeUnit.MILLISECONDS);
 
       PaymentResponseDto.Success response = paymentClient.cancelPayment(authorizationHeader,
           idempotencyKey, paymentKey,

@@ -103,22 +103,28 @@ public class MemberController {
     return ResponseEntity.ok(result);
   }
 
-  @PutMapping("/edit")
-  public ResponseEntity<?> myInfoEdit(
-      @Valid @RequestPart(value = "request") MemberDto.Request request,
-      @RequestPart(value = "file", required = false) MultipartFile file) {
-    ResultDTO<CheckDto> result = memberService.myInfoEdit(request, file);
+  @PutMapping("/edit/info")
+  public ResponseEntity<?> myInfoEdit(@Valid @RequestBody MemberDto.Request request) {
+    ResultDTO<CheckDto> result = memberService.myInfoEdit(request);
+    return ResponseEntity.ok(result);
+  }
+
+  @PutMapping("/edit/profile-image")
+  public ResponseEntity<?> profileImageEdit(@RequestPart(value = "file" ) MultipartFile file) {
+    ResultDTO<CheckDto> result = memberService.profileImageEdit(file);
     return ResponseEntity.ok(result);
   }
 
   @PostMapping("/reset-password-request")
-  public ResponseEntity<?> resetPasswordRequest(@Valid @RequestBody ResetPasswordDto.MailRequest Request) {
+  public ResponseEntity<?> resetPasswordRequest(
+      @Valid @RequestBody ResetPasswordDto.MailRequest Request) {
     ResultDTO<CheckDto> result = memberService.resetPasswordEmail(Request);
     return ResponseEntity.ok(result);
   }
 
   @PutMapping("/reset-password")
-  public ResponseEntity<?> resetPassword(@Valid @RequestBody ResetPasswordDto.ChangeRequest request) {
+  public ResponseEntity<?> resetPassword(
+      @Valid @RequestBody ResetPasswordDto.ChangeRequest request) {
     ResultDTO<CheckDto> result = memberService.resetPassword(request);
     return ResponseEntity.ok(result);
   }
