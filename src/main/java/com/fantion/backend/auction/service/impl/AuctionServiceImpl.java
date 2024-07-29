@@ -1,7 +1,6 @@
 package com.fantion.backend.auction.service.impl;
 
-import static com.fantion.backend.exception.ErrorCode.NOT_FOUND_AUCTION;
-import static com.fantion.backend.exception.ErrorCode.NOT_FOUND_MEMBER;
+import static com.fantion.backend.exception.ErrorCode.*;
 import static org.springframework.util.FileSystemUtils.deleteRecursively;
 
 import com.fantion.backend.auction.dto.AuctionDto;
@@ -9,8 +8,10 @@ import com.fantion.backend.auction.dto.AuctionDto.Response;
 import com.fantion.backend.auction.dto.AuctionFavoriteDto;
 import com.fantion.backend.auction.dto.CategoryDto;
 import com.fantion.backend.auction.entity.Auction;
+import com.fantion.backend.auction.entity.Bid;
 import com.fantion.backend.auction.entity.FavoriteAuction;
 import com.fantion.backend.auction.repository.AuctionRepository;
+import com.fantion.backend.auction.repository.BidRepository;
 import com.fantion.backend.auction.repository.FavoriteAuctionRepository;
 import com.fantion.backend.auction.service.AuctionService;
 import com.fantion.backend.common.component.S3Uploader;
@@ -70,6 +71,7 @@ public class AuctionServiceImpl implements AuctionService {
   private final AuctionRepository auctionRepository;
   private final MemberRepository memberRepository;
   private final FavoriteAuctionRepository favoriteAuctionRepository;
+  private final BidRepository bidRepository;
 
   private final RedisTemplate<String, Object> redisTemplate;
 
@@ -106,7 +108,8 @@ public class AuctionServiceImpl implements AuctionService {
     Auction auction = auctionRepository.findById(auctionId)
         .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_AUCTION));
 
-    return ResultDTO.of("경매 업데이트 성공했습니다.", toResponse(auction));
+    return ResultDTO.of("성공적으로 상세보기할 경매가 조회되었습니다.",toResponse(auction));
+
   }
 
   /**
@@ -296,7 +299,7 @@ public class AuctionServiceImpl implements AuctionService {
   }
   @Transactional
   @Override
-  public AuctionFavoriteDto.Response favoriteChk(Long auctionId) {
+  public ResultDTO<AuctionFavoriteDto.Response> favoriteChk(Long auctionId) {
     // 찜 여부 확인할 경매 조회
     Auction favoriteChkAuction = auctionRepository.findById(auctionId)
             .orElseThrow(()-> new CustomException(NOT_FOUND_AUCTION));
@@ -322,11 +325,11 @@ public class AuctionServiceImpl implements AuctionService {
       response.setFavoriteChk(false);
     }
 
-    return response;
+    return ResultDTO.of("성공적으로 찜 여부가 조회되었습니다.",response);
   }
   @Transactional
   @Override
-  public AuctionFavoriteDto.Response favoriteAuction(Long auctionId) {
+  public ResultDTO<AuctionFavoriteDto.Response> favoriteAuction(Long auctionId) {
     // 찜하거나 찜 취소할 경매 조회
     Auction favoriteChkAuction = auctionRepository.findById(auctionId)
             .orElseThrow(()-> new CustomException(NOT_FOUND_AUCTION));
@@ -362,7 +365,74 @@ public class AuctionServiceImpl implements AuctionService {
 
     }
 
-    return response;
+    return ResultDTO.of("성공적으로 찜 또는 찜취소가 되었습니다.",response);
+  }
+
+  @Override
+  public ResultDTO<Page<AuctionDto.Response>> getSellAuctionList(int page) {
+    // 로그인한 사용자 가져오기
+    String loginEmail = MemberAuthUtil.getLoginUserId();
+
+    // 사용자 조회
+    Member seller = memberRepository.findByEmail(loginEmail)
+            .orElseThrow(()-> new CustomException(NOT_FOUND_MEMBER));
+
+    Pageable pageable = getPageable(page);
+
+    // 경매 주최자가 본인인 경매 물품 조회
+    Page<AuctionDto.Response> response = covertToResponseList(auctionRepository.findByMember(seller, pageable));
+    return ResultDTO.of("성공적으로 판매한 경매 목룍이 조회되었습니다.",response);
+  }
+
+  @Override
+  public ResultDTO<Page<AuctionDto.Response>> getBuyAuctionList(int page) {
+    // 로그인한 사용자 가져오기
+    String loginEmail = MemberAuthUtil.getLoginUserId();
+
+    // 사용자 조회
+    Member buyer = memberRepository.findByEmail(loginEmail)
+            .orElseThrow(()-> new CustomException(NOT_FOUND_MEMBER));
+
+    Pageable pageable = getPageable(page);
+
+    // 현재 입찰자가 본인이면서 인수확인이 되어있는 경매 물품 조회
+    Page<AuctionDto.Response> response = covertToResponseList(auctionRepository
+            .findByStatusAndReceiveChkAndCurrentBidder(false, true, buyer.getNickname(),pageable));
+    return ResultDTO.of("성공적으로 구매한 경매 목룍이 조회되었습니다.",response);
+  }
+
+  @Override
+  public ResultDTO<Page<AuctionDto.Response>> getJoinAuctionList(int page) {
+    // 로그인한 사용자 가져오기
+    String loginEmail = MemberAuthUtil.getLoginUserId();
+
+    // 사용자 조회
+    Member bidder = memberRepository.findByEmail(loginEmail)
+            .orElseThrow(()-> new CustomException(NOT_FOUND_MEMBER));
+
+    Pageable pageable = getPageable(page);
+
+    // 입찰 목록에서 경매목록 추출
+    Page<AuctionDto.Response> response = covertToResponseList(
+            bidRepository.findByBidder(bidder, pageable).map(Bid::getAuctionId));
+    return ResultDTO.of("성공적으로 입찰한 경매 목룍이 조회되었습니다.",response);
+  }
+
+  @Override
+  public ResultDTO<Page<AuctionDto.Response>> getFavoriteAuctionList(int page) {
+    // 로그인한 사용자 가져오기
+    String loginEmail = MemberAuthUtil.getLoginUserId();
+
+    // 사용자 조회
+    Member member = memberRepository.findByEmail(loginEmail)
+            .orElseThrow(()-> new CustomException(NOT_FOUND_MEMBER));
+
+    Pageable pageable = getPageable(page);
+
+    // 찜한 목록에서 경매목록 추출
+    Page<AuctionDto.Response> response = covertToResponseList(
+            favoriteAuctionRepository.findByMember(member, pageable).map(FavoriteAuction::getAuction));
+    return ResultDTO.of("성공적으로 찜한 경매 목룍이 조회되었습니다.",response);
   }
 
   private Auction updateValue(AuctionDto.Request request, Long auctionId, List<String> auctionImgList) {
@@ -407,11 +477,18 @@ public class AuctionServiceImpl implements AuctionService {
   }
 
   private AuctionDto.Response toResponse(Auction auction) {
+    Member seller = memberRepository.findById(auction.getMember().getMemberId())
+            .orElseThrow(() -> new CustomException(NOT_FOUND_MEMBER));
+
+    // 이미지가 존재하지 않는 경우
+    if (auction.getAuctionImage() == null) {
+      throw new CustomException(IMAGE_NOT_FOUND);
+    }
+
     return AuctionDto.Response.builder()
         .auctionId(auction.getAuctionId())
         .title(auction.getTitle())
-        .auctionUserNickname(memberRepository.findById(auction.getMember().getMemberId())
-            .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER)).getNickname())
+        .auctionUserNickname(seller.getNickname())
         .category(auction.getCategory())
         .auctionType(auction.isAuctionType())
         .auctionImage(
@@ -421,10 +498,11 @@ public class AuctionServiceImpl implements AuctionService {
         .currentBidPrice(auction.getCurrentBidPrice())
         .currentBidder(auction.getCurrentBidder())
         .buyNowPrice(auction.getBuyNowPrice())
-        .favoritePrice(auction.getFavoriteCnt())
+        .favoriteCnt(auction.getFavoriteCnt())
         .createDate(auction.getCreateDate())
         .endDate(LocalDateTime.of(auction.getEndDate(), LocalTime.of(23, 59,59)))
         .status(auction.isStatus())
+        .rating(seller.getRating())
         .build();
   }
 
