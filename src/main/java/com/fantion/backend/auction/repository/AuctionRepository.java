@@ -38,5 +38,4 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
   List<Auction> findAllByCurrentBidder(String nickname);
   
   Optional<Auction> findTopByMemberOrderByAuctionIdDesc(Member member);
-
 }
