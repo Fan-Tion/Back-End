@@ -1,5 +1,6 @@
 package com.fantion.backend.common.config;
 
+import com.fantion.backend.common.component.RedisSubscriber;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

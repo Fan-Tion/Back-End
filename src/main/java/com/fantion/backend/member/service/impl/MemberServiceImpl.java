@@ -1,6 +1,9 @@
 package com.fantion.backend.member.service.impl;
 
-import com.fantion.backend.common.config.S3Uploader;
+import com.fantion.backend.auction.entity.Auction;
+import com.fantion.backend.auction.repository.AuctionRepository;
+import com.fantion.backend.common.component.MailComponents;
+import com.fantion.backend.common.component.S3Uploader;
 import com.fantion.backend.common.dto.ResultDTO;
 import com.fantion.backend.exception.ErrorCode;
 import com.fantion.backend.exception.impl.CustomException;
@@ -9,18 +12,24 @@ import com.fantion.backend.member.configuration.NaverConfiguration;
 import com.fantion.backend.member.configuration.NaverLoginClient;
 import com.fantion.backend.member.configuration.NaverProfileClient;
 import com.fantion.backend.member.dto.CheckDto;
+import com.fantion.backend.member.dto.MemberDto;
 import com.fantion.backend.member.dto.NaverLinkDto;
 import com.fantion.backend.member.dto.NaverMemberDto;
 import com.fantion.backend.member.dto.NaverMemberDto.NaverMemberDetail;
+import com.fantion.backend.member.dto.RatingRequestDto;
+import com.fantion.backend.member.dto.ResetPasswordDto;
+import com.fantion.backend.member.dto.ResetPasswordDto.ChangeRequest;
 import com.fantion.backend.member.dto.SigninDto;
 import com.fantion.backend.member.dto.SignupDto;
 import com.fantion.backend.member.dto.SignupDto.Response;
 import com.fantion.backend.member.dto.TokenDto;
 import com.fantion.backend.member.entity.Member;
 import com.fantion.backend.member.entity.Money;
+import com.fantion.backend.member.entity.RatingHistory;
 import com.fantion.backend.member.jwt.JwtTokenProvider;
 import com.fantion.backend.member.repository.MemberRepository;
 import com.fantion.backend.member.repository.MoneyRepository;
+import com.fantion.backend.member.repository.RatingHistoryRepository;
 import com.fantion.backend.member.service.MemberService;
 import com.fantion.backend.type.MemberStatus;
 import jakarta.servlet.http.HttpServletRequest;
@@ -40,6 +49,8 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.security.crypto.bcrypt.BCrypt;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
@@ -65,6 +76,10 @@ public class MemberServiceImpl implements MemberService {
   private final HttpServletRequest httpServletRequest;
   private final S3Uploader s3Uploader;
   private final MoneyRepository moneyRepository;
+  private final PasswordEncoder passwordEncoder;
+  private final MailComponents mailComponents;
+  private final AuctionRepository auctionRepository;
+  private final RatingHistoryRepository ratingHistoryRepository;
 
   @Override
   @Transactional
@@ -193,7 +208,7 @@ public class MemberServiceImpl implements MemberService {
     }
 
     // 비밀번호 확인
-    if (!member.getPassword().equals(signinDto.getPassword())) {
+    if (!passwordEncoder.matches(signinDto.getPassword(), member.getPassword())) {
       throw new CustomException(ErrorCode.PASSWORD_INVALID);
     }
 
@@ -465,6 +480,186 @@ public class MemberServiceImpl implements MemberService {
     moneyRepository.delete(money);
 
     return ResultDTO.of("회원탈퇴에 성공했습니다.", CheckDto.builder().success(true).build());
+  }
+
+  @Override
+  public ResultDTO<MemberDto.Response> myInfo() {
+
+    String email = MemberAuthUtil.getCurrentEmail();
+    Member member = memberRepository.findByEmail(email)
+        .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
+
+    Money money = moneyRepository.findByMemberId(member.getMemberId())
+        .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MONEY));
+
+    MemberDto.Response memberDto = MemberDto.Response.builder()
+        .email(member.getEmail())
+        .nickname(member.getNickname())
+        .address(member.getAddress())
+        .auth(member.getAuth())
+        .rating(member.getRating())
+        .profileImage(member.getProfileImage())
+        .phoneNumber(member.getPhoneNumber())
+        .balance(money.getBalance())
+        .createDate(member.getCreateDate())
+        .build();
+
+    if (member.getIsNaver()) {
+      memberDto.setAuthType("NAVER");
+    } else if (member.getIsKakao()) {
+      memberDto.setAuthType("KAKAO");
+    }
+
+    return ResultDTO.of("회원정보를 불러오는데 성공했습니다", memberDto);
+  }
+
+  @Override
+  @Transactional
+  public ResultDTO<CheckDto> myInfoEdit(MemberDto.Request request, MultipartFile file) {
+
+    String email = MemberAuthUtil.getCurrentEmail();
+    Member member = memberRepository.findByEmail(email)
+        .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
+
+    // 중복 닉네임 체크
+    memberRepository.findByNickname(request.getNickname()).ifPresent(nickname -> {
+      throw new CustomException(ErrorCode.NICKNAME_DUPLICATE);
+    });
+
+    Member updateMember;
+    // 이미지
+    if (file == null || file.isEmpty()) {
+      updateMember = member.toBuilder()
+          .nickname(request.getNickname())
+          .address(request.getAddress())
+          .profileImage(null)
+          .build();
+    } else {
+      String fileExtension = StringUtils.getFilenameExtension(file.getOriginalFilename());
+      List<String> allowedExtensions = Arrays.asList("jpg", "jpeg", "png", "gif");
+      String imageUrl;
+
+      if (fileExtension != null && allowedExtensions.contains(fileExtension.toLowerCase())) {
+        try {
+          imageUrl = s3Uploader.upload(file, "profile-images");
+        } catch (Exception e) {
+          throw new CustomException(ErrorCode.FAILED_IMAGE_SAVE);
+        }
+      } else {
+        throw new CustomException(ErrorCode.UN_SUPPORTED_IMAGE_TYPE);
+      }
+      updateMember = member.toBuilder()
+          .nickname(request.getNickname())
+          .address(request.getAddress())
+          .profileImage(imageUrl)
+          .build();
+    }
+
+    // 변경되는 닉네임으로 경매 현재 입찰자 수정
+    if (!member.getNickname().equals(request.getNickname())) {
+      List<Auction> auctionList = auctionRepository.findAllByCurrentBidder(member.getNickname());
+      for (Auction auction : auctionList) {
+        Auction updateAuction = auction.toBuilder()
+            .currentBidder(request.getNickname())
+            .build();
+        auctionRepository.save(updateAuction);
+      }
+    }
+
+    memberRepository.save(updateMember);
+
+    return ResultDTO.of("회원정보 수정에 성공했습니다.", CheckDto.builder().success(true).build());
+  }
+
+  @Override
+  public ResultDTO<CheckDto> resetPasswordEmail(ResetPasswordDto.MailRequest request) {
+
+    memberRepository.findByEmailAndPhoneNumber(request.getEmail(), request.getPhoneNumber())
+        .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
+
+    String email = request.getEmail();
+    String baseUrl = "https://fan-tion-fe.vercel.app";
+    String title = "Fan-Tion 계정 비빌번호 변경 이메일";
+    String uuid = UUID.randomUUID().toString();
+    String message = "<h3>Fan-Tion 계정 비빌번호 변경 링크입니다. 아래의 링크를 클릭하셔서 비밀번호 변경을 완료해주세요.</h3>" +
+        "<div><a href='" + baseUrl + "/reset-password-page?uuid=" + uuid
+        + "'> 비밀번호 변경 링크 </a></div>";
+    mailComponents.sendMail(email, title, message);
+
+    // redis에 uuid를 임시 저장
+    redisTemplate.opsForValue().set("PasswordAuth: " + uuid, email, 5, TimeUnit.MINUTES);
+
+    return ResultDTO.of("비밀번호 변경 이메일 발송에 성공했습니다.", CheckDto.builder().success(true).build());
+  }
+
+  @Override
+  public ResultDTO<CheckDto> resetPassword(ChangeRequest request) {
+
+    String email = redisTemplate.opsForValue().get("PasswordAuth: " + request.getUuid());
+    if (email == null || email.isEmpty()) {
+      throw new CustomException(ErrorCode.PASSWORD_RESET_TIMEOUT);
+    }
+
+    Member member = memberRepository.findByEmail(email)
+        .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
+
+    // 기존 비밀번호랑 비교
+    if (passwordEncoder.matches(request.getNewPassword(), member.getPassword())) {
+      throw new CustomException(ErrorCode.PASSWORD_DUPLICATE);
+    }
+
+    String encPassword = BCrypt.hashpw(request.getNewPassword(), BCrypt.gensalt());
+
+    Member updateMember = member.toBuilder()
+        .password(encPassword)
+        .build();
+    memberRepository.save(updateMember);
+
+    return ResultDTO.of("비밀번호 변경에 성공했습니다.", CheckDto.builder().success(true).build());
+  }
+
+  @Override
+  @Transactional
+  public ResultDTO<CheckDto> rating(RatingRequestDto request) {
+
+    String email = MemberAuthUtil.getCurrentEmail();
+    Member buyer = memberRepository.findByEmail(email)
+        .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
+
+    // 그 경매의 실제 구매자인지 체크
+    Auction auction = auctionRepository.findById(request.getAuctionId())
+        .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_AUCTION));
+    if (!auction.getCurrentBidder().equals(buyer.getNickname())) {
+      throw new CustomException(ErrorCode.NOT_AUCTION_BUYER);
+    }
+
+    // 이미 그 경매건에 대해 평점을 줬는지 체크
+    Optional<RatingHistory> byAuctionIdAndMemberId = ratingHistoryRepository.findByAuctionIdAndMemberId(
+        auction.getAuctionId(), buyer);
+    if (byAuctionIdAndMemberId.isPresent()) {
+      throw new CustomException(ErrorCode.ALREADY_RATED);
+    }
+
+    RatingHistory ratingHistory = RatingHistory.builder()
+        .auction(auction)
+        .memberId(buyer)
+        .build();
+    ratingHistoryRepository.save(ratingHistory);
+
+    Member seller = memberRepository.findById(auction.getMember().getMemberId())
+        .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
+
+    int ratingCnt = seller.getRatingCnt() + 1;
+    int totalRating = seller.getTotalRating() + request.getRating();
+
+    Member updateSeller = seller.toBuilder()
+        .ratingCnt(seller.getRatingCnt() + 1)
+        .totalRating(totalRating)
+        .rating(totalRating / ratingCnt)
+        .build();
+    memberRepository.save(updateSeller);
+
+    return ResultDTO.of("해당 경매에 대해 판매자에게 평점을 부여했습니다.", CheckDto.builder().success(true).build());
   }
 
 

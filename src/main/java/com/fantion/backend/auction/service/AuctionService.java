@@ -16,20 +16,20 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.web.multipart.MultipartFile;
 
 public interface AuctionService {
-  Long createAuction(
+  ResultDTO<Map<String, Long>> createAuction(
       AuctionDto.Request request,
       List<MultipartFile> auctionImage);
 
-  AuctionDto.Response updateAuction(
+  ResultDTO<AuctionDto.Response> updateAuction(
       AuctionDto.Request request,
       List<MultipartFile> auctionImage,
       Long auctionId);
 
-  boolean deleteAuction(Long auctionId);
+  ResultDTO<Boolean> deleteAuction(Long auctionId);
 
-  Page<AuctionDto.Response> getList(int page);
+  ResultDTO<Page<AuctionDto.Response>> getList(int page);
 
-  Page<AuctionDto.Response> getSearchList(int page, SearchType searchOption, CategoryType categoryOption, String keyword);
+  ResultDTO<Page<AuctionDto.Response>> getSearchList(int page, SearchType searchOption, CategoryType categoryOption, String keyword);
 
   // 경매 상세보기
   ResultDTO<AuctionDto.Response> findAuction(Long auctionId);
@@ -40,9 +40,9 @@ public interface AuctionService {
 
   Map<String, Integer> getAuctionDateValue();
 
-  List<CategoryDto> getAllAuctionCategory();
+  ResultDTO<List<CategoryDto>> getAllAuctionCategory();
 
-  List<CategoryDto> getFavoriteAuctionCategory();
+  ResultDTO<List<CategoryDto>> getFavoriteAuctionCategory();
 
   // 찜 확인
   ResultDTO<AuctionFavoriteDto.Response> favoriteChk(Long auctionId);

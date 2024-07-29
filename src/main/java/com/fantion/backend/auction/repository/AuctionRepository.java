@@ -5,6 +5,7 @@ import com.fantion.backend.member.entity.Member;
 import com.fantion.backend.type.CategoryType;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -27,8 +28,15 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
   List<Auction> findByAuctionTypeAndStatus(boolean auctionType,boolean status);
 
   List<Auction> findByStatusAndReceiveChkAndCurrentBidder(boolean status,boolean receiveChk,String bidder);
+
   List<Auction> findByStatusAndReceiveChkAndMember(boolean status, boolean receiveChk, Member member);
 
   Page<Auction> findByMember(Member member,Pageable pageable);
+  
   Page<Auction> findByStatusAndReceiveChkAndCurrentBidder(boolean status,boolean receiveChk,String bidder,Pageable pageable);
+  
+  List<Auction> findAllByCurrentBidder(String nickname);
+  
+  Optional<Auction> findTopByMemberOrderByAuctionIdDesc(Member member);
+
 }
