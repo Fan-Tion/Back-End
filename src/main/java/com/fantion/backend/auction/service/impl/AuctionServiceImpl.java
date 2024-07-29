@@ -270,7 +270,6 @@ public class AuctionServiceImpl implements AuctionService {
     List<CategoryDto> categoryList = map.entrySet()
         .stream()
         .sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
-        .limit(5)
         .map(entry -> new CategoryDto(
             entry.getKey(), serverUrl + "search?searchOption=CATEGORY&categoryOption="
             + entry.getKey() + "&keyword=&page=0"))
@@ -279,7 +278,7 @@ public class AuctionServiceImpl implements AuctionService {
     Random random = new Random();
     CategoryType[] categoryArray = CategoryType.values();
 
-    while (categoryList.size() < 5) {
+    while (categoryList.size() < CategoryType.values().length) {
       String categoryTypeStr
           = categoryArray[random.nextInt(categoryArray.length)].name();
 
