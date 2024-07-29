@@ -5,6 +5,7 @@ import static com.fantion.backend.exception.ErrorCode.NOT_FOUND_MEMBER;
 import static org.springframework.util.FileSystemUtils.deleteRecursively;
 
 import com.fantion.backend.auction.dto.AuctionDto;
+import com.fantion.backend.auction.dto.AuctionDto.Response;
 import com.fantion.backend.auction.dto.AuctionFavoriteDto;
 import com.fantion.backend.auction.dto.CategoryDto;
 import com.fantion.backend.auction.entity.Auction;
@@ -261,7 +262,6 @@ public class AuctionServiceImpl implements AuctionService {
 
   @Override
   public ResultDTO<List<CategoryDto>> getFavoriteAuctionCategory() {
-
     Map<String, Integer> map = getAuctionDateValue();
     if (map == null) {
       map = new HashMap<>();
@@ -365,7 +365,6 @@ public class AuctionServiceImpl implements AuctionService {
     return response;
   }
 
-
   private Auction updateValue(AuctionDto.Request request, Long auctionId, List<String> auctionImgList) {
     Auction auction = auctionRepository.findById(auctionId)
         .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_AUCTION));
@@ -408,10 +407,14 @@ public class AuctionServiceImpl implements AuctionService {
   }
 
   private AuctionDto.Response toResponse(Auction auction) {
+    System.out.println(
+        Arrays.stream(auction.getAuctionImage().split(","))
+            .map(x -> serverUrl + x).toList());
+
     return AuctionDto.Response.builder()
         .auctionId(auction.getAuctionId())
         .title(auction.getTitle())
-        .auctionUserNickname(memberRepository.findById(1L)
+        .auctionUserNickname(memberRepository.findById(auction.getMember().getMemberId())
             .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER)).getNickname())
         .category(auction.getCategory())
         .auctionType(auction.isAuctionType())
