@@ -1,12 +1,13 @@
 package com.fantion.backend.auction.service;
 
 import com.fantion.backend.auction.dto.*;
+import com.fantion.backend.common.dto.ResultDTO;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 public interface BidService {
 
     // 입찰
-    BidDto.Response createBid(BidDto.Request request);
+    ResultDTO<BidDto.Response> createBid(BidDto.Request request);
 
     // 입찰내역 구독
     SseEmitter subscribeBid(BidSubscribeDto.Request request);
@@ -18,22 +19,22 @@ public interface BidService {
     void finishBid();
 
     // 사용 가능한 예치금 조회
-    BalanceCheckDto.Response useBalanceCheck();
+    ResultDTO<BalanceCheckDto.Response> useBalanceCheck();
 
     // 즉시 구매
-    BuyNowDto.Response buyNow(BuyNowDto.Request request);
+    ResultDTO<BuyNowDto.Response> buyNow(BuyNowDto.Request request);
 
     // 입찰 취소
-    BidCancelDto.Response cancelBid(BidCancelDto.Request request);
+    ResultDTO<BidCancelDto.Response> cancelBid(BidCancelDto.Request request);
 
     // 거래중인 경매 물품 조회
-    BidSuccessListDto.Response successBidAuctionList();
+    ResultDTO<BidSuccessListDto.Response> successBidAuctionList();
     // 인계 확인
-    HandOverDto.Response sendChk(HandOverDto.Request request);
+    ResultDTO<HandOverDto.Response> sendChk(HandOverDto.Request request);
 
     // 인수 확인
-    HandOverDto.Response receiveChk(HandOverDto.Request request);
+    ResultDTO<HandOverDto.Response> receiveChk(HandOverDto.Request request);
 
     // 구매 철회
-    BidAuctionCancelDto.Response cancelBidAuction(BidAuctionCancelDto.Request request);
+    ResultDTO<BidAuctionCancelDto.Response> cancelBidAuction(BidAuctionCancelDto.Request request);
 }

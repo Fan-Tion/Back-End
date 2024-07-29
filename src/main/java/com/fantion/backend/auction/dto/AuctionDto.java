@@ -53,10 +53,10 @@ public class AuctionDto {
     private Long currentBidPrice;
     private String currentBidder;
     private Long buyNowPrice;
-    private Long favoritePrice;
+    private Long favoriteCnt;
     private LocalDate createDate;
     private LocalDateTime endDate;
     private boolean status;
-    private List<BidDto.Response> bidList;
+    private Integer rating;
   }
 }
