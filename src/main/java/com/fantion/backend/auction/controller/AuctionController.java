@@ -133,4 +133,27 @@ public class AuctionController {
   public ResultDTO<AuctionFavoriteDto.Response> favoriteAuction(@PathVariable(name = "auctionId") Long auctionId) {
     return auctionService.favoriteAuction(auctionId);
   }
+
+  @GetMapping("/sell-auction-list")
+  public ResultDTO<Page<AuctionDto.Response>> getSellAuctionList(@Valid @RequestParam(value = "page", defaultValue = "0") int page) {
+    return auctionService.getSellAuctionList(page);
+  }
+
+  @GetMapping("/buy-auction-list")
+  public ResultDTO<Page<AuctionDto.Response>> getBuyAuctionList(@Valid @RequestParam(value = "page", defaultValue = "0") int page) {
+    return auctionService.getBuyAuctionList(page);
+  }
+
+  @GetMapping("/join-auction-list")
+  public ResultDTO<Page<AuctionDto.Response>> getJoinAuctionList(@Valid @RequestParam(value = "page", defaultValue = "0") int page) {
+    return auctionService.getJoinAuctionList(page);
+  }
+
+  @GetMapping("/favorite-auction-list")
+  public ResultDTO<Page<AuctionDto.Response>> getFavoriteAuctionList(@Valid @RequestParam(value = "page", defaultValue = "0") int page) {
+    return auctionService.getFavoriteAuctionList(page);
+  }
+
+
+
 }

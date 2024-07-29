@@ -49,4 +49,12 @@ public interface AuctionService {
 
   // 찜 & 찜 취소
   ResultDTO<AuctionFavoriteDto.Response> favoriteAuction(Long auctionId);
+
+  ResultDTO<Page<AuctionDto.Response>> getSellAuctionList(int page);
+
+  ResultDTO<Page<AuctionDto.Response>> getBuyAuctionList(int page);
+
+  ResultDTO<Page<AuctionDto.Response>> getJoinAuctionList(int page);
+
+  ResultDTO<Page<AuctionDto.Response>> getFavoriteAuctionList(int page);
 }
