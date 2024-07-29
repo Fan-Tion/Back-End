@@ -4,6 +4,7 @@ import static com.fantion.backend.exception.ErrorCode.*;
 import static org.springframework.util.FileSystemUtils.deleteRecursively;
 
 import com.fantion.backend.auction.dto.AuctionDto;
+import com.fantion.backend.auction.dto.AuctionDto.Response;
 import com.fantion.backend.auction.dto.AuctionFavoriteDto;
 import com.fantion.backend.auction.dto.CategoryDto;
 import com.fantion.backend.auction.entity.Auction;
@@ -264,7 +265,6 @@ public class AuctionServiceImpl implements AuctionService {
 
   @Override
   public ResultDTO<List<CategoryDto>> getFavoriteAuctionCategory() {
-
     Map<String, Integer> map = getAuctionDateValue();
     if (map == null) {
       map = new HashMap<>();
@@ -273,7 +273,6 @@ public class AuctionServiceImpl implements AuctionService {
     List<CategoryDto> categoryList = map.entrySet()
         .stream()
         .sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
-        .limit(5)
         .map(entry -> new CategoryDto(
             entry.getKey(), serverUrl + "search?searchOption=CATEGORY&categoryOption="
             + entry.getKey() + "&keyword=&page=0"))
@@ -282,7 +281,7 @@ public class AuctionServiceImpl implements AuctionService {
     Random random = new Random();
     CategoryType[] categoryArray = CategoryType.values();
 
-    while (categoryList.size() < 5) {
+    while (categoryList.size() < CategoryType.values().length) {
       String categoryTypeStr
           = categoryArray[random.nextInt(categoryArray.length)].name();
 
@@ -434,7 +433,6 @@ public class AuctionServiceImpl implements AuctionService {
             favoriteAuctionRepository.findByMember(member, pageable).map(FavoriteAuction::getAuction));
     return ResultDTO.of("성공적으로 찜한 경매 목룍이 조회되었습니다.",response);
   }
-
 
   private Auction updateValue(AuctionDto.Request request, Long auctionId, List<String> auctionImgList) {
     Auction auction = auctionRepository.findById(auctionId)
