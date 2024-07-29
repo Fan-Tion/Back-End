@@ -407,10 +407,6 @@ public class AuctionServiceImpl implements AuctionService {
   }
 
   private AuctionDto.Response toResponse(Auction auction) {
-    System.out.println(
-        Arrays.stream(auction.getAuctionImage().split(","))
-            .map(x -> serverUrl + x).toList());
-
     return AuctionDto.Response.builder()
         .auctionId(auction.getAuctionId())
         .title(auction.getTitle())
