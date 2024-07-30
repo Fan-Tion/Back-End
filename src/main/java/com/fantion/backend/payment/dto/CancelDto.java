@@ -1,6 +1,5 @@
 package com.fantion.backend.payment.dto;
 
-import com.fantion.backend.type.BalanceType;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;

@@ -17,6 +17,7 @@ import com.fantion.backend.payment.dto.CancelDto;
 import com.fantion.backend.payment.dto.ConfirmDto;
 import com.fantion.backend.payment.dto.PaymentDto;
 import com.fantion.backend.payment.dto.PaymentResponseDto;
+import com.fantion.backend.payment.dto.PaymentResponseDto.PaymentSuccess;
 import com.fantion.backend.payment.entity.Payment;
 import com.fantion.backend.payment.repository.PaymentRepository;
 import com.fantion.backend.payment.service.PaymentService;
@@ -170,7 +171,6 @@ public class PaymentServiceImpl implements PaymentService {
     Payment payment = paymentRepository.findByAmountAndPaymentDate(cancelDto.getBalance(), cancelDto.getCreateTime())
         .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_PAYMENT_INFO));
     String paymentKey = payment.getPaymentKey();
-    String orderId = payment.getOrderId();
 
     // payment의 유저정보와 accessToken의 유저 정보가 틀릴경우
     if (payment.getMemberId() != member || !payment.getMemberId().equals(member)) {
@@ -185,7 +185,7 @@ public class PaymentServiceImpl implements PaymentService {
 
     try {
       // 토스 결제 조회
-      paymentClient.getPayment(authorizationHeader, orderId).getBody();
+      paymentClient.getPayment(authorizationHeader, paymentKey).getBody();
 
       // 취소금액이 현재 예치금보다 많을 경우
       if (balance < payment.getAmount()) {
