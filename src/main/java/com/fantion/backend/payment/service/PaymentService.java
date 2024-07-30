@@ -9,11 +9,11 @@ import org.springframework.stereotype.Service;
 @Service
 public interface PaymentService {
 
-  ResultDTO<PaymentDto.Response> requestPayment(PaymentDto.Request request);
+  ResultDTO<PaymentDto.PaymentResponse> requestPayment(PaymentDto.PaymentRequest request);
 
-  ResultDTO<PaymentResponseDto.Success> successPayment(String orderId, String paymentKey, Long amount);
+  ResultDTO<PaymentResponseDto.PaymentSuccess> successPayment(String orderId, String paymentKey, Long amount);
 
-  ResultDTO<PaymentResponseDto.fail> failPayment(String code, String message, String orderId);
+  ResultDTO<PaymentResponseDto.PaymentFail> failPayment(String code, String message, String orderId);
 
-  ResultDTO<PaymentResponseDto.Success> cancelPayment(CancelDto cancelDto);
+  ResultDTO<PaymentResponseDto.PaymentSuccess> cancelPayment(CancelDto cancelDto);
 }
