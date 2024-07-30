@@ -165,8 +165,8 @@ public class BidServiceImpl implements BidService {
     // 입찰내역 구독
     @Transactional
     @Override
-    public SseEmitter subscribeBid(BidSubscribeDto.Request request) {
-        String channel = String.valueOf(request.getAuctionId());
+    public SseEmitter subscribeBid(Long auctionId) {
+        String channel = String.valueOf(auctionId);
         // SSE 통신 객체 생성
         SseEmitter sseEmitter = sseEmitterService.createEmitter(channel);
 
