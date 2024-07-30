@@ -23,9 +23,6 @@ public class SwaggerConfig {
         .bearerFormat("JWT")
     );
 
-    Server server = new Server();
-    server.setUrl("https://www.fantion.kro.kr");
-
     return new OpenAPI()
         .components(new Components())
         .info(apiInfo())
