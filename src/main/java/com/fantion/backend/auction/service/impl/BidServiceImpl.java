@@ -469,7 +469,7 @@ public class BidServiceImpl implements BidService {
         BalanceHistory sellerHistory = BalanceHistory.builder()
                 .memberId(seller)
                 .balance(auction.getCurrentBidPrice())
-                .type(BalanceType.CHARGING)
+                .type(BalanceType.SALES)
                 .createDate(LocalDateTime.now())
                 .build();
 
@@ -532,7 +532,7 @@ public class BidServiceImpl implements BidService {
         BalanceHistory buyerHistory = BalanceHistory.builder()
                 .memberId(buyer)
                 .balance(commissionBalance)
-                .type(BalanceType.CHARGING)
+                .type(BalanceType.CANCEL)
                 .createDate(LocalDateTime.now())
                 .build();
 
