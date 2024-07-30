@@ -210,7 +210,7 @@ public class BidServiceImpl implements BidService {
             // 종료일이 지난 경매 물품인 경우
             if (LocalDate.now().isAfter(endDate)) {
                 // 해당 경매 물품의 가장 높은 입찰내역 조회
-                Optional<Bid> OptionalBid = bidRepository.findByAuctionIdOrderByBidPriceDesc(auction);
+                Optional<Bid> OptionalBid = bidRepository.findTopByAuctionIdOrderByBidPriceDesc(auction);
 
                 // 입찰가가 없는 경우 (유찰)
                 if (OptionalBid.isEmpty()) {
