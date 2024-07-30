@@ -43,6 +43,7 @@ public class SseEmitterServiceImpl implements SseEmitterService {
             log.info("send to client {}:[{}]", emitterKey, data);
             sseEmitter.send(SseEmitter.event()
                     .id(emitterKey)
+                    .name("addBid")
                     .data(data, MediaType.APPLICATION_JSON));
         } catch (IOException | IllegalStateException e) {
             log.error("IOException | IllegalStateException is occurred. ", e);
