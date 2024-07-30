@@ -40,10 +40,12 @@ import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
+import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -282,18 +284,19 @@ public class AuctionServiceImpl implements AuctionService {
     Random random = new Random();
     CategoryType[] categoryArray = CategoryType.values();
 
-    while (categoryList.size() < CategoryType.values().length) {
-      String categoryTypeStr
-          = categoryArray[random.nextInt(categoryArray.length)].name();
+    Set<String> categorySet = new HashSet<>();
 
-      if (ableCategoryCheck(categoryList, categoryTypeStr)) {
-        categoryList.add(
-            new CategoryDto(
-                categoryTypeStr,
-                serverUrl + "search?searchOption=CATEGORY&categoryOption="
-                    + categoryTypeStr + "&keyword=&page=0"));
+    while (categorySet.size() < categoryArray.length) {
+      String categoryTypeStr = categoryArray[random.nextInt(categoryArray.length)].name();
+
+      if (categorySet.add(categoryTypeStr)) {
+        categoryList.add(new CategoryDto(
+            categoryTypeStr,
+            serverUrl + "search?searchOption=CATEGORY&categoryOption=" + categoryTypeStr + "&keyword=&page=0"
+        ));
       }
     }
+
 
     return ResultDTO.of("인기 카테고리를 불러오는데 성공했습니다.", categoryList);
   }
