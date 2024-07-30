@@ -3,12 +3,14 @@ package com.fantion.backend.member.service;
 import com.fantion.backend.common.dto.ResultDTO;
 import com.fantion.backend.member.dto.CheckDto;
 import com.fantion.backend.member.dto.MemberDto;
+import com.fantion.backend.member.dto.MyBalanceDto;
 import com.fantion.backend.member.dto.RatingRequestDto;
 import com.fantion.backend.member.dto.ResetPasswordDto;
 import com.fantion.backend.member.dto.SigninDto;
 import com.fantion.backend.member.dto.SignupDto;
 import com.fantion.backend.member.dto.SignupDto.SignupResponse;
 import com.fantion.backend.member.dto.TokenDto;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.view.RedirectView;
@@ -47,4 +49,6 @@ public interface MemberService {
   ResultDTO<CheckDto> resetPassword(ResetPasswordDto.ChangeRequest request);
 
   ResultDTO<CheckDto> rating(RatingRequestDto request);
+
+  ResultDTO<Page<MyBalanceDto>> myBalance(String searchOption, Integer pageNumber);
 }

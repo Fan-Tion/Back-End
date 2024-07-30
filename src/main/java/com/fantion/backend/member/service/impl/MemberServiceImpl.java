@@ -1,5 +1,6 @@
 package com.fantion.backend.member.service.impl;
 
+import com.fantion.backend.auction.dto.AuctionDto;
 import com.fantion.backend.auction.entity.Auction;
 import com.fantion.backend.auction.repository.AuctionRepository;
 import com.fantion.backend.common.component.MailComponents;
@@ -13,6 +14,7 @@ import com.fantion.backend.member.configuration.NaverLoginClient;
 import com.fantion.backend.member.configuration.NaverProfileClient;
 import com.fantion.backend.member.dto.CheckDto;
 import com.fantion.backend.member.dto.MemberDto;
+import com.fantion.backend.member.dto.MyBalanceDto;
 import com.fantion.backend.member.dto.NaverLinkDto;
 import com.fantion.backend.member.dto.NaverMemberDto;
 import com.fantion.backend.member.dto.RatingRequestDto;
@@ -20,10 +22,12 @@ import com.fantion.backend.member.dto.ResetPasswordDto;
 import com.fantion.backend.member.dto.SigninDto;
 import com.fantion.backend.member.dto.SignupDto;
 import com.fantion.backend.member.dto.TokenDto;
+import com.fantion.backend.member.entity.BalanceHistory;
 import com.fantion.backend.member.entity.Member;
 import com.fantion.backend.member.entity.Money;
 import com.fantion.backend.member.entity.RatingHistory;
 import com.fantion.backend.member.jwt.JwtTokenProvider;
+import com.fantion.backend.member.repository.BalanceHistoryRepository;
 import com.fantion.backend.member.repository.MemberRepository;
 import com.fantion.backend.member.repository.MoneyRepository;
 import com.fantion.backend.member.repository.RatingHistoryRepository;
@@ -34,6 +38,7 @@ import jakarta.transaction.Transactional;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
@@ -42,8 +47,13 @@ import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.validator.routines.EmailValidator;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -80,10 +90,12 @@ public class MemberServiceImpl implements MemberService {
   private final MailComponents mailComponents;
   private final AuctionRepository auctionRepository;
   private final RatingHistoryRepository ratingHistoryRepository;
+  private final BalanceHistoryRepository balanceHistoryRepository;
 
   @Override
   @Transactional
-  public ResultDTO<SignupDto.SignupResponse> signup(SignupDto.SignupRequest request, MultipartFile file) {
+  public ResultDTO<SignupDto.SignupResponse> signup(SignupDto.SignupRequest request,
+      MultipartFile file) {
 
     // 이메일 체크
     if (!emailValidator.isValid(request.getEmail())) {
@@ -575,7 +587,7 @@ public class MemberServiceImpl implements MemberService {
         s3Uploader.deleteFile(exProfileImage);
       }
     } catch (MalformedURLException e) {
-      throw new CustomException(ErrorCode. IMAGE_NOT_HAVE_PATH);
+      throw new CustomException(ErrorCode.IMAGE_NOT_HAVE_PATH);
     }
 
     Member updateMember;
@@ -623,7 +635,8 @@ public class MemberServiceImpl implements MemberService {
     mailComponents.sendMail(email, title, message);
 
     // redis에 uuid를 임시 저장
-    redisTemplate.opsForValue().set("PasswordAuth: " + uuid, email, MAIL_EXPIRES_IN, TimeUnit.MILLISECONDS);
+    redisTemplate.opsForValue()
+        .set("PasswordAuth: " + uuid, email, MAIL_EXPIRES_IN, TimeUnit.MILLISECONDS);
 
     return ResultDTO.of("비밀번호 변경 이메일 발송에 성공했습니다.", CheckDto.builder().success(true).build());
   }
@@ -701,6 +714,54 @@ public class MemberServiceImpl implements MemberService {
     memberRepository.save(updateSeller);
 
     return ResultDTO.of("해당 경매에 대해 판매자에게 평점을 부여했습니다.", CheckDto.builder().success(true).build());
+  }
+
+  @Override
+  public ResultDTO<Page<MyBalanceDto>> myBalance(String searchOption, Integer pageNumber) {
+
+    String email = MemberAuthUtil.getCurrentEmail();
+    Member member = memberRepository.findByEmail(email)
+        .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
+
+    LocalDateTime startDate = LocalDateTime.now();
+
+    if (searchOption != null && !searchOption.isEmpty()) {
+      switch (searchOption) {
+        case "1months":
+          startDate = startDate.minus(1, ChronoUnit.MONTHS);
+          break;
+        case "3months":
+          startDate = startDate.minus(3, ChronoUnit.MONTHS);
+          break;
+        case "1year":
+          startDate = startDate.minus(1, ChronoUnit.YEARS);
+          break;
+        default:
+          throw new CustomException(ErrorCode.INVALID_SEARCH_SCOPE);
+      }
+    }
+
+    Pageable pageable = PageRequest.of(pageNumber, 10);
+    Page<MyBalanceDto> balanceHistoryPage = covertToResponseList(
+        balanceHistoryRepository.findByMemberAndCreateDateAfter(member, startDate, pageable));
+
+    return ResultDTO.of("예치금 내역 불러오기를 성공했습니다.", balanceHistoryPage);
+  }
+
+  private Page<MyBalanceDto> covertToResponseList(Page<BalanceHistory> balanceHistories) {
+    List<MyBalanceDto> responseList = balanceHistories.stream().map(this::convertToMyBalanceDto)
+        .collect(Collectors.toList());
+
+    return new PageImpl<>(responseList, balanceHistories.getPageable(),
+        balanceHistories.getTotalElements());
+  }
+
+  private MyBalanceDto convertToMyBalanceDto(BalanceHistory balanceHistory) {
+    return MyBalanceDto.builder()
+        .balance(balanceHistory.getBalance())
+        .Type(balanceHistory.getType())
+        .createTime(balanceHistory.getCreateDate())
+        .build();
   }
 
 

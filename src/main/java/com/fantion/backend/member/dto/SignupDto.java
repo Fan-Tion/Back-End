@@ -56,7 +56,7 @@ public class SignupDto {
   @NoArgsConstructor
   @AllArgsConstructor
   @Builder(toBuilder = true)
-  @Schema(description = "회원가입 성공시 내려주는 정보")
+  @Schema(description = "회원가입 성공시 리턴되는 값")
   public static class SignupResponse {
     @Schema(description = "회원가입 성공여부")
     private Boolean success;

@@ -77,7 +77,7 @@ public class PaymentServiceImpl implements PaymentService {
         .paymentKey(null)
         .cancelYn(false)
         .cancelReason(null)
-        .paymentDate(LocalDateTime.now())
+        .paymentDate(null)
         .cancelDate(null)
         .build();
     paymentRepository.save(payment);
@@ -101,6 +101,7 @@ public class PaymentServiceImpl implements PaymentService {
     // paymentKey와 성공여부를 true로 저장
     Payment updatePayment = payment.toBuilder()
         .paymentKey(paymentKey)
+        .paymentDate(LocalDateTime.now())
         .successYn(true)
         .build();
     paymentRepository.save(updatePayment);
@@ -132,7 +133,7 @@ public class PaymentServiceImpl implements PaymentService {
           .memberId(member)
           .balance(amount)
           .type(BalanceType.CHARGING)
-          .createDate(LocalDateTime.now())
+          .createDate(updatePayment.getPaymentDate())
           .build();
       balanceHistoryRepository.save(balanceHistory);
 
