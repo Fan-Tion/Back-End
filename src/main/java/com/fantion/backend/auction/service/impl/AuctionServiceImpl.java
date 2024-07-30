@@ -253,6 +253,7 @@ public class AuctionServiceImpl implements AuctionService {
     CategoryType[] categoryArray = CategoryType.values();
     List<CategoryDto> categoryList = new ArrayList<>();
 
+
     for (int i = 1; i < categoryArray.length; i++) {
       categoryList.add(new CategoryDto(
           categoryArray[i].name(),
