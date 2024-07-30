@@ -355,6 +355,10 @@ public class MemberServiceImpl implements MemberService {
   public ResultDTO<CheckDto> naverLink(String linkEmail) {
 
     // 네이버 계정인지 확인
+    String string = linkEmail.split("@")[1];
+    if (!string.equals("naver.com")) {
+      throw new CustomException(ErrorCode.EMAIL_INVALID);
+    }
 
     // 현재 토큰에 저장된 email 가져오기
     String currentEmail = MemberAuthUtil.getCurrentEmail();

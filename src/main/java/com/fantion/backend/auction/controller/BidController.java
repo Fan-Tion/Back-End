@@ -2,6 +2,7 @@ package com.fantion.backend.auction.controller;
 
 import com.fantion.backend.auction.dto.*;
 import com.fantion.backend.auction.service.BidService;
+import com.fantion.backend.common.dto.ResultDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
@@ -22,45 +23,45 @@ public class BidController {
     }
 
     @PostMapping
-    private BidDto.Response createBid(@RequestBody BidDto.Request request){
+    private ResultDTO<BidDto.Response> createBid(@RequestBody BidDto.Request request){
         log.info("[Controller] createBid");
         return bidService.createBid(request);
     }
 
     @PutMapping
-    private BuyNowDto.Response buyNow(@RequestBody BuyNowDto.Request request){
+    private ResultDTO<BuyNowDto.Response> buyNow(@RequestBody BuyNowDto.Request request){
         log.info("[Controller] buyNow");
         return bidService.buyNow(request);
     }
 
     @DeleteMapping
-    private BidCancelDto.Response cancelBid(@RequestBody BidCancelDto.Request request){
+    private ResultDTO<BidCancelDto.Response> cancelBid(@RequestBody BidCancelDto.Request request){
         log.info("[Controller] cancelBid");
         return bidService.cancelBid(request);
     }
 
     @GetMapping("/auction")
-    private BidSuccessListDto.Response successBidAuctionList(){
+    private ResultDTO<BidSuccessListDto.Response> successBidAuctionList(){
         return bidService.successBidAuctionList();
     }
 
     @PostMapping("/auction")
-    private HandOverDto.Response receiveChk(@RequestBody HandOverDto.Request request){
+    private ResultDTO<HandOverDto.Response> receiveChk(@RequestBody HandOverDto.Request request){
         return bidService.receiveChk(request);
     }
 
     @PutMapping("/auction")
-    private HandOverDto.Response sendChk(@RequestBody HandOverDto.Request request){
+    private ResultDTO<HandOverDto.Response> sendChk(@RequestBody HandOverDto.Request request){
         return bidService.sendChk(request);
     }
 
     @DeleteMapping("/auction")
-    private BidAuctionCancelDto.Response cancelBidAuction(@RequestBody BidAuctionCancelDto.Request request){
+    private ResultDTO<BidAuctionCancelDto.Response> cancelBidAuction(@RequestBody BidAuctionCancelDto.Request request){
         return bidService.cancelBidAuction(request);
     }
 
     @GetMapping("/balance")
-    private BalanceCheckDto.Response useBalanceCheck(){
+    private ResultDTO<BalanceCheckDto.Response> useBalanceCheck(){
         return bidService.useBalanceCheck();
     }
 

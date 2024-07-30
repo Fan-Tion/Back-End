@@ -128,7 +128,7 @@ public class MemberController {
   @Operation(summary = "네이버 연동", description = "네이버 연동 할 때 사용하는 API")
   @ApiResponses(value = {
       @ApiResponse(responseCode = "200", description = "네이버 연동에 성공했습니다."),
-      @ApiResponse(responseCode = "400", description = "이미 가입한 이메일 입니다.<br>다른 이메일과 소셜계정 연동한 이메일 입니다."
+      @ApiResponse(responseCode = "400", description = "이미 가입한 이메일 입니다.<br>다른 이메일과 소셜계정 연동한 이메일 입니다.<br>유효하지 않는 이메일 입니다."
           + "이미 다른 소셜계정으로 연동 하셨습니다.<br>이미 해당 소셜계정과 연동하셨습니다.",
           content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(responseCode = "404", description = "존재하지 않는 회원입니다.",

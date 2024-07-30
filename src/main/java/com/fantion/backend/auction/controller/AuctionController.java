@@ -14,6 +14,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -107,11 +108,34 @@ public class AuctionController {
     return auctionService.findAuction(auctionId);
   }
   @GetMapping("/favorite/{auctionId}")
-  public AuctionFavoriteDto.Response favoriteChk(@PathVariable(name = "auctionId") Long auctionId) {
+  public ResultDTO<AuctionFavoriteDto.Response> favoriteChk(@PathVariable(name = "auctionId") Long auctionId) {
     return auctionService.favoriteChk(auctionId);
   }
   @PostMapping("/favorite/{auctionId}")
-  public AuctionFavoriteDto.Response favoriteAuction(@PathVariable(name = "auctionId") Long auctionId) {
+  public ResultDTO<AuctionFavoriteDto.Response> favoriteAuction(@PathVariable(name = "auctionId") Long auctionId) {
     return auctionService.favoriteAuction(auctionId);
   }
+
+  @GetMapping("/sell-auction-list")
+  public ResultDTO<Page<AuctionDto.Response>> getSellAuctionList(@Valid @RequestParam(value = "page", defaultValue = "0") int page) {
+    return auctionService.getSellAuctionList(page);
+  }
+
+  @GetMapping("/buy-auction-list")
+  public ResultDTO<Page<AuctionDto.Response>> getBuyAuctionList(@Valid @RequestParam(value = "page", defaultValue = "0") int page) {
+    return auctionService.getBuyAuctionList(page);
+  }
+
+  @GetMapping("/join-auction-list")
+  public ResultDTO<Page<AuctionDto.Response>> getJoinAuctionList(@Valid @RequestParam(value = "page", defaultValue = "0") int page) {
+    return auctionService.getJoinAuctionList(page);
+  }
+
+  @GetMapping("/favorite-auction-list")
+  public ResultDTO<Page<AuctionDto.Response>> getFavoriteAuctionList(@Valid @RequestParam(value = "page", defaultValue = "0") int page) {
+    return auctionService.getFavoriteAuctionList(page);
+  }
+
+
+
 }
