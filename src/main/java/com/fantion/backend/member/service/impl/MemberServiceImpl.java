@@ -579,15 +579,18 @@ public class MemberServiceImpl implements MemberService {
     Member member = memberRepository.findByEmail(email)
         .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
 
+
     // 기존 프로필 이미지 삭제
-    try {
-      URL exProfileImageUrl = new URL(member.getProfileImage());
-      String exProfileImage = exProfileImageUrl.getPath().substring(1);
-      if (exProfileImage != null) {
-        s3Uploader.deleteFile(exProfileImage);
+    if (member.getProfileImage() != null) {
+      try {
+        URL exProfileImageUrl = new URL(member.getProfileImage());
+        String exProfileImage = exProfileImageUrl.getPath().substring(1);
+        if (exProfileImage != null) {
+          s3Uploader.deleteFile(exProfileImage);
+        }
+      } catch (MalformedURLException e) {
+        throw new CustomException(ErrorCode.IMAGE_NOT_HAVE_PATH);
       }
-    } catch (MalformedURLException e) {
-      throw new CustomException(ErrorCode.IMAGE_NOT_HAVE_PATH);
     }
 
     Member updateMember;
