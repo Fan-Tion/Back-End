@@ -506,6 +506,7 @@ public class AuctionServiceImpl implements AuctionService {
         .endDate(LocalDateTime.of(auction.getEndDate(), LocalTime.of(23, 59,59)))
         .status(auction.isStatus())
         .rating(seller.getRating())
+        .BidCount(bidRepository.countByAuctionId(auction))
         .build();
   }
 
