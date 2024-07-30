@@ -13,6 +13,7 @@ import java.util.Map;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.multipart.MultipartFile;
 
 public interface AuctionService {
@@ -45,8 +46,16 @@ public interface AuctionService {
   ResultDTO<List<CategoryDto>> getFavoriteAuctionCategory();
 
   // 찜 확인
-  AuctionFavoriteDto.Response favoriteChk(Long auctionId);
+  ResultDTO<AuctionFavoriteDto.Response> favoriteChk(Long auctionId);
 
   // 찜 & 찜 취소
-  AuctionFavoriteDto.Response favoriteAuction(Long auctionId);
+  ResultDTO<AuctionFavoriteDto.Response> favoriteAuction(Long auctionId);
+
+  ResultDTO<Page<AuctionDto.Response>> getSellAuctionList(int page);
+
+  ResultDTO<Page<AuctionDto.Response>> getBuyAuctionList(int page);
+
+  ResultDTO<Page<AuctionDto.Response>> getJoinAuctionList(int page);
+
+  ResultDTO<Page<AuctionDto.Response>> getFavoriteAuctionList(int page);
 }
