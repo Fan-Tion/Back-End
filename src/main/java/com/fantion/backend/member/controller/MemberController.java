@@ -5,6 +5,7 @@ import com.fantion.backend.exception.ErrorResponse;
 import com.fantion.backend.member.dto.CheckDto;
 import com.fantion.backend.member.dto.MemberDto;
 import com.fantion.backend.member.dto.MyBalanceDto;
+import com.fantion.backend.member.dto.ProfileImageResponseDto;
 import com.fantion.backend.member.dto.RatingRequestDto;
 import com.fantion.backend.member.dto.ResetPasswordDto;
 import com.fantion.backend.member.dto.SigninDto;
@@ -224,9 +225,9 @@ public class MemberController {
           content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErrorResponse.class)))
   })
   @PutMapping(value = "/profile-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-  public ResponseEntity<ResultDTO<CheckDto>> profileImageEdit(
+  public ResponseEntity<ResultDTO<ProfileImageResponseDto>> profileImageEdit(
       @RequestPart(value = "file") MultipartFile file) {
-    ResultDTO<CheckDto> result = memberService.profileImageEdit(file);
+    ResultDTO<ProfileImageResponseDto> result = memberService.profileImageEdit(file);
     return ResponseEntity.ok(result);
   }
 
