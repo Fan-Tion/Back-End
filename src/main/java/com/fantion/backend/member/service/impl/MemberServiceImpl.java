@@ -15,13 +15,10 @@ import com.fantion.backend.member.dto.CheckDto;
 import com.fantion.backend.member.dto.MemberDto;
 import com.fantion.backend.member.dto.NaverLinkDto;
 import com.fantion.backend.member.dto.NaverMemberDto;
-import com.fantion.backend.member.dto.NaverMemberDto.NaverMemberDetail;
 import com.fantion.backend.member.dto.RatingRequestDto;
 import com.fantion.backend.member.dto.ResetPasswordDto;
-import com.fantion.backend.member.dto.ResetPasswordDto.ChangeRequest;
 import com.fantion.backend.member.dto.SigninDto;
 import com.fantion.backend.member.dto.SignupDto;
-import com.fantion.backend.member.dto.SignupDto.Response;
 import com.fantion.backend.member.dto.TokenDto;
 import com.fantion.backend.member.entity.Member;
 import com.fantion.backend.member.entity.Money;
@@ -34,6 +31,8 @@ import com.fantion.backend.member.service.MemberService;
 import com.fantion.backend.type.MemberStatus;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Date;
@@ -63,6 +62,7 @@ public class MemberServiceImpl implements MemberService {
 
   private static final Long REFRESH_TOKEN_EXPIRES_IN = 86400000L;
   private static final Long NICKNAME_EXPIRES_IN = 300000L;
+  private static final Long MAIL_EXPIRES_IN = 300000L;
   private static final Pattern NICKNAME_PATTERN = Pattern.compile("^[a-zA-Z0-9가-힣]{1,12}$");
 
   private final MemberRepository memberRepository;
@@ -83,7 +83,7 @@ public class MemberServiceImpl implements MemberService {
 
   @Override
   @Transactional
-  public ResultDTO<SignupDto.Response> signup(SignupDto.Request request, MultipartFile file) {
+  public ResultDTO<SignupDto.SignupResponse> signup(SignupDto.SignupRequest request, MultipartFile file) {
 
     // 이메일 체크
     if (!emailValidator.isValid(request.getEmail())) {
@@ -147,7 +147,7 @@ public class MemberServiceImpl implements MemberService {
         .build();
     moneyRepository.save(money);
 
-    SignupDto.Response response = Response.builder()
+    SignupDto.SignupResponse response = SignupDto.SignupResponse.builder()
         .email(member.getEmail())
         .success(true)
         .build();
@@ -165,6 +165,12 @@ public class MemberServiceImpl implements MemberService {
 
     memberRepository.findByEmail(email).ifPresent(member -> {
       throw new CustomException(ErrorCode.EMAIL_DUPLICATE);
+    });
+
+    memberRepository.findByLinkedEmail(email).ifPresent(member -> {
+      if (!member.getStatus().equals(MemberStatus.WITHDRAWN)) {
+        throw new CustomException(ErrorCode.LINKED_EMAIL_ERROR);
+      }
     });
 
     return ResultDTO.of("사용가능한 이메일 입니다.", CheckDto.builder().success(true).build());
@@ -253,7 +259,7 @@ public class MemberServiceImpl implements MemberService {
     // 가져온 토큰으로 프로필 정보 가져오기
     String accessToken = "Bearer " + naverTokens.getBody().getAccessToken();
     ResponseEntity<NaverMemberDto> profile = naverProfileClient.getProfile(accessToken);
-    NaverMemberDetail profileDto = profile.getBody().getNaverMemberDetail();
+    NaverMemberDto.NaverMemberDetail profileDto = profile.getBody().getNaverMemberDetail();
 
     // 연동 이메일 찾아오기
     Optional<Member> byEmail = memberRepository.findByLinkedEmail(profileDto.getEmail());
@@ -347,6 +353,12 @@ public class MemberServiceImpl implements MemberService {
 
   @Override
   public ResultDTO<CheckDto> naverLink(String linkEmail) {
+
+    // 네이버 계정인지 확인
+    String string = linkEmail.split("@")[1];
+    if (!string.equals("naver.com")) {
+      throw new CustomException(ErrorCode.EMAIL_INVALID);
+    }
 
     // 현재 토큰에 저장된 email 가져오기
     String currentEmail = MemberAuthUtil.getCurrentEmail();
@@ -483,7 +495,7 @@ public class MemberServiceImpl implements MemberService {
   }
 
   @Override
-  public ResultDTO<MemberDto.Response> myInfo() {
+  public ResultDTO<MemberDto.MemberResponse> myInfo() {
 
     String email = MemberAuthUtil.getCurrentEmail();
     Member member = memberRepository.findByEmail(email)
@@ -492,7 +504,7 @@ public class MemberServiceImpl implements MemberService {
     Money money = moneyRepository.findByMemberId(member.getMemberId())
         .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MONEY));
 
-    MemberDto.Response memberDto = MemberDto.Response.builder()
+    MemberDto.MemberResponse memberDto = MemberDto.MemberResponse.builder()
         .email(member.getEmail())
         .nickname(member.getNickname())
         .address(member.getAddress())
@@ -515,23 +527,60 @@ public class MemberServiceImpl implements MemberService {
 
   @Override
   @Transactional
-  public ResultDTO<CheckDto> myInfoEdit(MemberDto.Request request, MultipartFile file) {
+  public ResultDTO<CheckDto> myInfoEdit(MemberDto.MemberUpdateRequest request) {
 
     String email = MemberAuthUtil.getCurrentEmail();
     Member member = memberRepository.findByEmail(email)
         .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
 
     // 중복 닉네임 체크
-    memberRepository.findByNickname(request.getNickname()).ifPresent(nickname -> {
-      throw new CustomException(ErrorCode.NICKNAME_DUPLICATE);
-    });
+    if (!member.getNickname().equals(request.getNickname())) {
+      memberRepository.findByNickname(request.getNickname()).ifPresent(nickname -> {
+        throw new CustomException(ErrorCode.NICKNAME_DUPLICATE);
+      });
+    }
+
+    Member updateMember = member.toBuilder()
+        .nickname(request.getNickname())
+        .address(request.getAddress())
+        .build();
+    memberRepository.save(updateMember);
+
+    // 변경되는 닉네임으로 경매 현재 입찰자 수정
+    if (!member.getNickname().equals(request.getNickname())) {
+      List<Auction> auctionList = auctionRepository.findAllByCurrentBidder(member.getNickname());
+      for (Auction auction : auctionList) {
+        Auction updateAuction = auction.toBuilder()
+            .currentBidder(request.getNickname())
+            .build();
+        auctionRepository.save(updateAuction);
+      }
+    }
+
+    return ResultDTO.of("회원정보 수정에 성공했습니다.", CheckDto.builder().success(true).build());
+  }
+
+  @Override
+  public ResultDTO<CheckDto> profileImageEdit(MultipartFile file) {
+
+    String email = MemberAuthUtil.getCurrentEmail();
+    Member member = memberRepository.findByEmail(email)
+        .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
+
+    // 기존 프로필 이미지 삭제
+    try {
+      URL exProfileImageUrl = new URL(member.getProfileImage());
+      String exProfileImage = exProfileImageUrl.getPath().substring(1);
+      if (exProfileImage != null) {
+        s3Uploader.deleteFile(exProfileImage);
+      }
+    } catch (MalformedURLException e) {
+      throw new CustomException(ErrorCode. IMAGE_NOT_HAVE_PATH);
+    }
 
     Member updateMember;
-    // 이미지
     if (file == null || file.isEmpty()) {
       updateMember = member.toBuilder()
-          .nickname(request.getNickname())
-          .address(request.getAddress())
           .profileImage(null)
           .build();
     } else {
@@ -549,26 +598,13 @@ public class MemberServiceImpl implements MemberService {
         throw new CustomException(ErrorCode.UN_SUPPORTED_IMAGE_TYPE);
       }
       updateMember = member.toBuilder()
-          .nickname(request.getNickname())
-          .address(request.getAddress())
           .profileImage(imageUrl)
           .build();
     }
 
-    // 변경되는 닉네임으로 경매 현재 입찰자 수정
-    if (!member.getNickname().equals(request.getNickname())) {
-      List<Auction> auctionList = auctionRepository.findAllByCurrentBidder(member.getNickname());
-      for (Auction auction : auctionList) {
-        Auction updateAuction = auction.toBuilder()
-            .currentBidder(request.getNickname())
-            .build();
-        auctionRepository.save(updateAuction);
-      }
-    }
-
     memberRepository.save(updateMember);
 
-    return ResultDTO.of("회원정보 수정에 성공했습니다.", CheckDto.builder().success(true).build());
+    return ResultDTO.of("프로필 이미지 변경에 성공했습니다.", CheckDto.builder().success(true).build());
   }
 
   @Override
@@ -587,13 +623,13 @@ public class MemberServiceImpl implements MemberService {
     mailComponents.sendMail(email, title, message);
 
     // redis에 uuid를 임시 저장
-    redisTemplate.opsForValue().set("PasswordAuth: " + uuid, email, 5, TimeUnit.MINUTES);
+    redisTemplate.opsForValue().set("PasswordAuth: " + uuid, email, MAIL_EXPIRES_IN, TimeUnit.MILLISECONDS);
 
     return ResultDTO.of("비밀번호 변경 이메일 발송에 성공했습니다.", CheckDto.builder().success(true).build());
   }
 
   @Override
-  public ResultDTO<CheckDto> resetPassword(ChangeRequest request) {
+  public ResultDTO<CheckDto> resetPassword(ResetPasswordDto.ChangeRequest request) {
 
     String email = redisTemplate.opsForValue().get("PasswordAuth: " + request.getUuid());
     if (email == null || email.isEmpty()) {
@@ -629,15 +665,20 @@ public class MemberServiceImpl implements MemberService {
     // 그 경매의 실제 구매자인지 체크
     Auction auction = auctionRepository.findById(request.getAuctionId())
         .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_AUCTION));
+
     if (!auction.getCurrentBidder().equals(buyer.getNickname())) {
       throw new CustomException(ErrorCode.NOT_AUCTION_BUYER);
     }
 
     // 이미 그 경매건에 대해 평점을 줬는지 체크
-    Optional<RatingHistory> byAuctionIdAndMemberId = ratingHistoryRepository.findByAuctionIdAndMemberId(
-        auction.getAuctionId(), buyer);
-    if (byAuctionIdAndMemberId.isPresent()) {
-      throw new CustomException(ErrorCode.ALREADY_RATED);
+    ratingHistoryRepository.findByAuctionIdAndMemberId(auction.getAuctionId(), buyer)
+        .ifPresent(item -> {
+          throw new CustomException(ErrorCode.ALREADY_RATED);
+        });
+
+    // 인수확인이 된 경매인지 체크
+    if (!auction.isReceiveChk()) {
+      throw new CustomException(ErrorCode.NOT_CONFIRMED_RECEIVE);
     }
 
     RatingHistory ratingHistory = RatingHistory.builder()

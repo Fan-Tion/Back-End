@@ -19,7 +19,7 @@ public enum ErrorCode {
     UN_LINKED_ERROR("연동해제 중 에러가 발생했습니다.", HttpStatus.INTERNAL_SERVER_ERROR),
     PASSWORD_DUPLICATE("기존과 동일한 비밀번호로 변경할 수 없습니다.", HttpStatus.BAD_REQUEST),
     ALREADY_RATED("이미 해당 경매건에 평점을 매겼습니다.", HttpStatus.BAD_REQUEST),
-    PASSWORD_RESET_TIMEOUT("비밀번호 인증이 만료되었습니다.", HttpStatus.BAD_REQUEST),
+    PASSWORD_RESET_TIMEOUT("비밀번호 변경 기간이 만료되었습니다.", HttpStatus.BAD_REQUEST),
 
     // Payment
     NOT_FOUND_MONEY("예치금이 존재하지 않습니다.", HttpStatus.NOT_FOUND),
@@ -45,6 +45,7 @@ public enum ErrorCode {
     ALREADY_SEND_CHK("이미 인계확인이 되어있습니다.",HttpStatus.BAD_REQUEST),
     ALREADY_RECEIVE_CHK("이미 인수확인이 되어있습니다.",HttpStatus.BAD_REQUEST),
     ALREADY_CANCEL_CHK("이미 거래취소가 되어있습니다.",HttpStatus.BAD_REQUEST),
+    NOT_CONFIRMED_RECEIVE("인수확인이 아직 완료되지 않았습니다.", HttpStatus.BAD_REQUEST),
 
     // Common
     PARSING_ERROR("파싱 오류가 발생했습니다.", HttpStatus.BAD_REQUEST),

@@ -3,7 +3,7 @@ package com.fantion.backend.payment.service.impl;
 import com.fantion.backend.common.dto.ResultDTO;
 import com.fantion.backend.exception.ErrorCode;
 import com.fantion.backend.exception.impl.CustomException;
-import com.fantion.backend.exception.impl.TossApiException;
+import com.fantion.backend.exception.impl.TossAPIException;
 import com.fantion.backend.member.auth.MemberAuthUtil;
 import com.fantion.backend.member.entity.BalanceHistory;
 import com.fantion.backend.member.entity.Member;
@@ -27,7 +27,6 @@ import feign.FeignException;
 import jakarta.transaction.Transactional;
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
@@ -39,6 +38,8 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 public class PaymentServiceImpl implements PaymentService {
+
+  private static final Long IDEMPOTENCY_KEY_EXPIRES_IN = 1296000000L;
 
   private final PaymentRepository paymentRepository;
   private final MemberRepository memberRepository;
@@ -57,7 +58,7 @@ public class PaymentServiceImpl implements PaymentService {
 
   @Override
   @Transactional
-  public ResultDTO<PaymentDto.Response> requestPayment(PaymentDto.Request request) {
+  public ResultDTO<PaymentDto.PaymentResponse> requestPayment(PaymentDto.PaymentRequest request) {
 
     String orderId = UUID.randomUUID().toString();
 
@@ -87,7 +88,7 @@ public class PaymentServiceImpl implements PaymentService {
 
   @Override
   @Transactional
-  public ResultDTO<PaymentResponseDto.Success> successPayment(String orderId, String paymentKey,
+  public ResultDTO<PaymentResponseDto.PaymentSuccess> successPayment(String orderId, String paymentKey,
       Long amount) {
 
     // DB에 저장되어있는 값과 Param으로 들어온 값이 같은지 검증
@@ -135,18 +136,17 @@ public class PaymentServiceImpl implements PaymentService {
           .build();
       balanceHistoryRepository.save(balanceHistory);
 
-      return ResultDTO.of("결제를 성공했습니다.",
-          paymentClient.confirmPayment(header, confirmDto).getBody());
+      return ResultDTO.of("결제를 성공했습니다.", paymentClient.confirmPayment(header, confirmDto).getBody());
     } catch (FeignException fe) {
       return handleFeignException(fe);
     }
   }
 
   @Override
-  public ResultDTO<PaymentResponseDto.fail> failPayment(String code, String message,
+  public ResultDTO<PaymentResponseDto.PaymentFail> failPayment(String code, String message,
       String orderId) {
 
-    PaymentResponseDto.fail failDto = PaymentResponseDto.fail.builder()
+    PaymentResponseDto.PaymentFail failDto = PaymentResponseDto.PaymentFail.builder()
         .errorCode(code)
         .message(message)
         .orderId(orderId)
@@ -156,7 +156,7 @@ public class PaymentServiceImpl implements PaymentService {
 
   @Override
   @Transactional
-  public ResultDTO<PaymentResponseDto.Success> cancelPayment(CancelDto cancelDto) {
+  public ResultDTO<PaymentResponseDto.PaymentSuccess> cancelPayment(CancelDto cancelDto) {
 
     // 나중에 결제 취소 규정을 정하고 그에 맞는 Valid 추가하기
     // 현재는 결제 취소 금액이 현재 가지고 있는 예치금보다 적은지와
@@ -195,7 +195,7 @@ public class PaymentServiceImpl implements PaymentService {
       String idempotencyKey = redisTemplate.opsForValue().get("orderId: " + payment.getOrderId());
 
       if (idempotencyKey != null && !idempotencyKey.isEmpty()) {
-        PaymentResponseDto.Success response = paymentClient.cancelPayment(authorizationHeader,
+        PaymentResponseDto.PaymentSuccess response = paymentClient.cancelPayment(authorizationHeader,
             idempotencyKey, paymentKey,
             cancelDto).getBody();
         return ResultDTO.of("중복 결제 취소 요청입니다.", response);
@@ -204,9 +204,9 @@ public class PaymentServiceImpl implements PaymentService {
       idempotencyKey = paymentComponent.createIdempotencyKey();
       // Toss에서 공시한 멱등키 유효기간은 15일
       redisTemplate.opsForValue()
-          .set("orderId: " + payment.getOrderId(), idempotencyKey, 15, TimeUnit.DAYS);
+          .set("orderId: " + payment.getOrderId(), idempotencyKey, IDEMPOTENCY_KEY_EXPIRES_IN, TimeUnit.MILLISECONDS);
 
-      PaymentResponseDto.Success response = paymentClient.cancelPayment(authorizationHeader,
+      PaymentResponseDto.PaymentSuccess response = paymentClient.cancelPayment(authorizationHeader,
           idempotencyKey, paymentKey,
           cancelDto).getBody();
 
@@ -245,7 +245,7 @@ public class PaymentServiceImpl implements PaymentService {
     paymentRepository.save(updatePayment);
   }
 
-  private ResultDTO<PaymentResponseDto.Success> handleFeignException(FeignException fe) {
+  private ResultDTO<PaymentResponseDto.PaymentSuccess> handleFeignException(FeignException fe) {
     // HTTP 상태 코드 가져오기
     HttpStatus httpStatus = HttpStatus.valueOf(fe.status());
     // 에러 응답 본문 가져오기
@@ -256,7 +256,7 @@ public class PaymentServiceImpl implements PaymentService {
       String errorCode = jsonNode.path("code").asText();
       String errorMessage = jsonNode.path("message").asText();
 
-      throw new TossApiException(httpStatus, errorCode, errorMessage);
+      throw new TossAPIException(httpStatus, errorCode, errorMessage);
     } catch (IOException ioException) {
       // JSON 파싱 예외 처리
       throw new CustomException(ErrorCode.PARSING_ERROR);

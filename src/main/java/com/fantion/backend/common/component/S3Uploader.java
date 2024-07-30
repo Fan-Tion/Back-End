@@ -1,7 +1,10 @@
 package com.fantion.backend.common.component;
 
+import com.amazonaws.AmazonServiceException;
+import com.amazonaws.SdkClientException;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
+import com.amazonaws.services.s3.model.DeleteObjectRequest;
 import com.amazonaws.services.s3.model.DeleteObjectsRequest;
 import com.amazonaws.services.s3.model.DeleteObjectsResult;
 import com.amazonaws.services.s3.model.ListObjectsV2Request;
@@ -9,6 +12,8 @@ import com.amazonaws.services.s3.model.ListObjectsV2Result;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
+import com.fantion.backend.exception.ErrorCode;
+import com.fantion.backend.exception.impl.CustomException;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -51,25 +56,25 @@ public class S3Uploader {
     return amazonS3.getUrl(bucket, fileName).toString();
   }
 
-  public List<String> getImageNames(Long auctionId) {
-    List<String> imageNames = new ArrayList<>();
-    String prefix = "auction-images/" + auctionId + "/";
-
-    ListObjectsV2Request req = new ListObjectsV2Request().withBucketName(bucket).withPrefix(prefix);
-    ListObjectsV2Result result;
-
-    do {
-      result = amazonS3.listObjectsV2(req);
-
-      for (S3ObjectSummary objectSummary : result.getObjectSummaries()) {
-        String key = objectSummary.getKey();
-        String imageName = key.substring(key.lastIndexOf('/') + 1);
-        imageNames.add(imageName);
+  public void deleteFile(String fileName) {
+    try{
+      amazonS3.deleteObject(new DeleteObjectRequest(bucket, fileName));
+    } catch (AmazonServiceException e) {
+      switch (e.getStatusCode()) {
+        case 403:
+          throw new CustomException(ErrorCode.IMAGE_ACCESS_DENIED);
+        case 404:
+          throw new CustomException(ErrorCode.IMAGE_NOT_FOUND);
+        case 400:
+          throw new CustomException(ErrorCode.IMAGE_NOT_HAVE_PATH);
+        default:
+          throw new CustomException(ErrorCode.IMAGE_INTERNAL_SERVER_ERROR);
       }
-      req.setContinuationToken(result.getNextContinuationToken());
-    } while (result.isTruncated());
-
-    return imageNames;
+    } catch (SdkClientException e) {
+      throw new CustomException(ErrorCode.IMAGE_EXCEPTION);
+    } catch (Exception e) {
+      throw new CustomException(ErrorCode.IMAGE_EXCEPTION);
+    }
   }
 
   public void deleteFolder(Long auctionId) {

@@ -7,6 +7,7 @@ import com.fantion.backend.member.dto.RatingRequestDto;
 import com.fantion.backend.member.dto.ResetPasswordDto;
 import com.fantion.backend.member.dto.SigninDto;
 import com.fantion.backend.member.dto.SignupDto;
+import com.fantion.backend.member.dto.SignupDto.SignupResponse;
 import com.fantion.backend.member.dto.TokenDto;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -15,7 +16,7 @@ import org.springframework.web.servlet.view.RedirectView;
 @Service
 public interface MemberService {
 
-  ResultDTO<SignupDto.Response> signup(SignupDto.Request request, MultipartFile file);
+  ResultDTO<SignupResponse> signup(SignupDto.SignupRequest request, MultipartFile file);
 
   ResultDTO<CheckDto> checkEmail(String email);
 
@@ -35,9 +36,11 @@ public interface MemberService {
 
   ResultDTO<CheckDto> withdrawal();
 
-  ResultDTO<MemberDto.Response> myInfo();
+  ResultDTO<MemberDto.MemberResponse> myInfo();
 
-  ResultDTO<CheckDto> myInfoEdit(MemberDto.Request request, MultipartFile file);
+  ResultDTO<CheckDto> myInfoEdit(MemberDto.MemberUpdateRequest request);
+
+  ResultDTO<CheckDto> profileImageEdit(MultipartFile file);
 
   ResultDTO<CheckDto> resetPasswordEmail(ResetPasswordDto.MailRequest request);
 

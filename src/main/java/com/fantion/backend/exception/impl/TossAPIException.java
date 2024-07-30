@@ -3,13 +3,13 @@ package com.fantion.backend.exception.impl;
 import com.fantion.backend.exception.TossAbstractException;
 import org.springframework.http.HttpStatus;
 
-public class TossApiException extends TossAbstractException {
+public class TossAPIException extends TossAbstractException {
 
   private final HttpStatus status;
   private final String errorCode;
   private final String errorMessage;
 
-  public TossApiException(HttpStatus status,String errorCode, String errorMessage) {
+  public TossAPIException(HttpStatus status,String errorCode, String errorMessage) {
     this.status = status;
     this.errorCode = errorCode;
     this.errorMessage = errorMessage;
