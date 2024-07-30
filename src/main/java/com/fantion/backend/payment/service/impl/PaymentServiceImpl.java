@@ -167,7 +167,7 @@ public class PaymentServiceImpl implements PaymentService {
     Member member = memberRepository.findByEmail(email)
         .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
 
-    Payment payment = paymentRepository.findById(cancelDto.getPaymentId())
+    Payment payment = paymentRepository.findByAmountAndPaymentDate(cancelDto.getBalance(), cancelDto.getCreateTime())
         .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_PAYMENT_INFO));
     String paymentKey = payment.getPaymentKey();
     String orderId = payment.getOrderId();
