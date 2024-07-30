@@ -45,6 +45,7 @@ public enum ErrorCode {
     ALREADY_SEND_CHK("이미 인계확인이 되어있습니다.",HttpStatus.BAD_REQUEST),
     ALREADY_RECEIVE_CHK("이미 인수확인이 되어있습니다.",HttpStatus.BAD_REQUEST),
     ALREADY_CANCEL_CHK("이미 거래취소가 되어있습니다.",HttpStatus.BAD_REQUEST),
+    NOT_CONFIRMED_RECEIVE("인수확인이 아직 완료되지 않았습니다.", HttpStatus.BAD_REQUEST),
 
     // Common
     PARSING_ERROR("파싱 오류가 발생했습니다.", HttpStatus.BAD_REQUEST),

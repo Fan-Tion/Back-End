@@ -27,5 +27,4 @@ public class BuyNowDto {
         private Long balance;           // 남은 예치금
 
     }
-
 }
