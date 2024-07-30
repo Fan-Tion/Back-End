@@ -15,13 +15,10 @@ import com.fantion.backend.member.dto.CheckDto;
 import com.fantion.backend.member.dto.MemberDto;
 import com.fantion.backend.member.dto.NaverLinkDto;
 import com.fantion.backend.member.dto.NaverMemberDto;
-import com.fantion.backend.member.dto.NaverMemberDto.NaverMemberDetail;
 import com.fantion.backend.member.dto.RatingRequestDto;
 import com.fantion.backend.member.dto.ResetPasswordDto;
-import com.fantion.backend.member.dto.ResetPasswordDto.ChangeRequest;
 import com.fantion.backend.member.dto.SigninDto;
 import com.fantion.backend.member.dto.SignupDto;
-import com.fantion.backend.member.dto.SignupDto.Response;
 import com.fantion.backend.member.dto.TokenDto;
 import com.fantion.backend.member.entity.Member;
 import com.fantion.backend.member.entity.Money;
@@ -86,7 +83,7 @@ public class MemberServiceImpl implements MemberService {
 
   @Override
   @Transactional
-  public ResultDTO<SignupDto.Response> signup(SignupDto.Request request, MultipartFile file) {
+  public ResultDTO<SignupDto.SignupResponse> signup(SignupDto.SignupRequest request, MultipartFile file) {
 
     // 이메일 체크
     if (!emailValidator.isValid(request.getEmail())) {
@@ -150,7 +147,7 @@ public class MemberServiceImpl implements MemberService {
         .build();
     moneyRepository.save(money);
 
-    SignupDto.Response response = Response.builder()
+    SignupDto.SignupResponse response = SignupDto.SignupResponse.builder()
         .email(member.getEmail())
         .success(true)
         .build();
@@ -168,6 +165,12 @@ public class MemberServiceImpl implements MemberService {
 
     memberRepository.findByEmail(email).ifPresent(member -> {
       throw new CustomException(ErrorCode.EMAIL_DUPLICATE);
+    });
+
+    memberRepository.findByLinkedEmail(email).ifPresent(member -> {
+      if (!member.getStatus().equals(MemberStatus.WITHDRAWN)) {
+        throw new CustomException(ErrorCode.LINKED_EMAIL_ERROR);
+      }
     });
 
     return ResultDTO.of("사용가능한 이메일 입니다.", CheckDto.builder().success(true).build());
@@ -256,7 +259,7 @@ public class MemberServiceImpl implements MemberService {
     // 가져온 토큰으로 프로필 정보 가져오기
     String accessToken = "Bearer " + naverTokens.getBody().getAccessToken();
     ResponseEntity<NaverMemberDto> profile = naverProfileClient.getProfile(accessToken);
-    NaverMemberDetail profileDto = profile.getBody().getNaverMemberDetail();
+    NaverMemberDto.NaverMemberDetail profileDto = profile.getBody().getNaverMemberDetail();
 
     // 연동 이메일 찾아오기
     Optional<Member> byEmail = memberRepository.findByLinkedEmail(profileDto.getEmail());
@@ -350,6 +353,8 @@ public class MemberServiceImpl implements MemberService {
 
   @Override
   public ResultDTO<CheckDto> naverLink(String linkEmail) {
+
+    // 네이버 계정인지 확인
 
     // 현재 토큰에 저장된 email 가져오기
     String currentEmail = MemberAuthUtil.getCurrentEmail();
@@ -486,7 +491,7 @@ public class MemberServiceImpl implements MemberService {
   }
 
   @Override
-  public ResultDTO<MemberDto.Response> myInfo() {
+  public ResultDTO<MemberDto.MemberResponse> myInfo() {
 
     String email = MemberAuthUtil.getCurrentEmail();
     Member member = memberRepository.findByEmail(email)
@@ -495,7 +500,7 @@ public class MemberServiceImpl implements MemberService {
     Money money = moneyRepository.findByMemberId(member.getMemberId())
         .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MONEY));
 
-    MemberDto.Response memberDto = MemberDto.Response.builder()
+    MemberDto.MemberResponse memberDto = MemberDto.MemberResponse.builder()
         .email(member.getEmail())
         .nickname(member.getNickname())
         .address(member.getAddress())
@@ -518,7 +523,7 @@ public class MemberServiceImpl implements MemberService {
 
   @Override
   @Transactional
-  public ResultDTO<CheckDto> myInfoEdit(MemberDto.Request request) {
+  public ResultDTO<CheckDto> myInfoEdit(MemberDto.MemberUpdateRequest request) {
 
     String email = MemberAuthUtil.getCurrentEmail();
     Member member = memberRepository.findByEmail(email)
@@ -620,7 +625,7 @@ public class MemberServiceImpl implements MemberService {
   }
 
   @Override
-  public ResultDTO<CheckDto> resetPassword(ChangeRequest request) {
+  public ResultDTO<CheckDto> resetPassword(ResetPasswordDto.ChangeRequest request) {
 
     String email = redisTemplate.opsForValue().get("PasswordAuth: " + request.getUuid());
     if (email == null || email.isEmpty()) {

@@ -16,19 +16,19 @@ import org.springframework.web.bind.annotation.RequestHeader;
 public interface PaymentClient {
 
   @PostMapping(value = "${payment.confirm-endpoint}", consumes = MediaType.APPLICATION_JSON_VALUE)
-  ResponseEntity<PaymentResponseDto.Success> confirmPayment(
+  ResponseEntity<PaymentResponseDto.PaymentSuccess> confirmPayment(
       @RequestHeader("Authorization") String authorizationHeader,
       @RequestBody ConfirmDto confirmDto);
 
   @PostMapping(value = "/{paymentKey}/${payment.cancel-endpoint}", consumes = MediaType.APPLICATION_JSON_VALUE)
-  ResponseEntity<PaymentResponseDto.Success> cancelPayment(
+  ResponseEntity<PaymentResponseDto.PaymentSuccess> cancelPayment(
       @RequestHeader("Authorization") String authorizationHeader,
       @RequestHeader("Idempotency-Key") String idempotencyKey,
       @PathVariable("paymentKey") String paymentKey,
       @RequestBody CancelDto cancelReason);
 
   @GetMapping(value = "/${payment.orders-endpoint}/{orderId}")
-  ResponseEntity<PaymentResponseDto.Success> getPayment(
+  ResponseEntity<PaymentResponseDto.PaymentSuccess> getPayment(
       @RequestHeader("Authorization") String authorizationHeader,
       @PathVariable("orderId") String orderId);
 }

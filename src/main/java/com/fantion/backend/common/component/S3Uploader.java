@@ -64,7 +64,7 @@ public class S3Uploader {
         case 403:
           throw new CustomException(ErrorCode.IMAGE_ACCESS_DENIED);
         case 404:
-          throw new CustomException(ErrorCode.IMAGE_IO_ERROR);
+          throw new CustomException(ErrorCode.IMAGE_NOT_FOUND);
         case 400:
           throw new CustomException(ErrorCode.IMAGE_NOT_HAVE_PATH);
         default:

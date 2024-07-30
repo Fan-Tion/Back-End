@@ -1,6 +1,7 @@
 package com.fantion.backend.member.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -14,6 +15,7 @@ public class TokenDto {
   @NoArgsConstructor
   @AllArgsConstructor
   @Builder
+  @Schema(description = "로그인 성공시 주어지는 토큰")
   public static class Local {
     private String accessToken;
     private String refreshToken;

@@ -1,6 +1,5 @@
 package com.fantion.backend.exception;
 
-import com.fantion.backend.exception.impl.TossApiException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
