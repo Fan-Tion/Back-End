@@ -4,6 +4,7 @@ import com.fantion.backend.common.dto.ResultDTO;
 import com.fantion.backend.exception.ErrorResponse;
 import com.fantion.backend.member.dto.CheckDto;
 import com.fantion.backend.member.dto.MemberDto;
+import com.fantion.backend.member.dto.MyBalanceDto;
 import com.fantion.backend.member.dto.RatingRequestDto;
 import com.fantion.backend.member.dto.ResetPasswordDto;
 import com.fantion.backend.member.dto.SigninDto;
@@ -22,9 +23,11 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -46,7 +49,8 @@ public class MemberController {
   @Operation(summary = "회원가입", description = "회원가입 할 때 사용하는 API")
   @ApiResponses(value = {
       @ApiResponse(responseCode = "200", description = "회원가입에 성공했습니다."),
-      @ApiResponse(responseCode = "400", description = "유효하지 않은 이메일 입니다.<br>이미 가입된 계정 입니다.<br>다른 이메일과 소셜계정 연동한 이메일 입니다."
+      @ApiResponse(responseCode = "400", description =
+          "유효하지 않은 이메일 입니다.<br>이미 가입된 계정 입니다.<br>다른 이메일과 소셜계정 연동한 이메일 입니다."
               + "<br>중복된 닉네임 입니다.<br>지원되지 않는 이미지 파일 형식입니다.",
           content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(responseCode = "500", description = "이미지 저장에 실패 했습니다.",
@@ -128,8 +132,9 @@ public class MemberController {
   @Operation(summary = "네이버 연동", description = "네이버 연동 할 때 사용하는 API")
   @ApiResponses(value = {
       @ApiResponse(responseCode = "200", description = "네이버 연동에 성공했습니다."),
-      @ApiResponse(responseCode = "400", description = "이미 가입한 이메일 입니다.<br>다른 이메일과 소셜계정 연동한 이메일 입니다.<br>유효하지 않는 이메일 입니다."
-          + "이미 다른 소셜계정으로 연동 하셨습니다.<br>이미 해당 소셜계정과 연동하셨습니다.",
+      @ApiResponse(responseCode = "400", description =
+          "이미 가입한 이메일 입니다.<br>다른 이메일과 소셜계정 연동한 이메일 입니다.<br>유효하지 않는 이메일 입니다."
+              + "이미 다른 소셜계정으로 연동 하셨습니다.<br>이미 해당 소셜계정과 연동하셨습니다.",
           content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(responseCode = "404", description = "존재하지 않는 회원입니다.",
           content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErrorResponse.class)))
@@ -200,7 +205,8 @@ public class MemberController {
           content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErrorResponse.class)))
   })
   @PutMapping("/my-info")
-  public ResponseEntity<ResultDTO<CheckDto>> myInfoEdit(@RequestBody @Valid MemberDto.MemberUpdateRequest request) {
+  public ResponseEntity<ResultDTO<CheckDto>> myInfoEdit(
+      @RequestBody @Valid MemberDto.MemberUpdateRequest request) {
     ResultDTO<CheckDto> result = memberService.myInfoEdit(request);
     return ResponseEntity.ok(result);
   }
@@ -218,7 +224,8 @@ public class MemberController {
           content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErrorResponse.class)))
   })
   @PutMapping(value = "/profile-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-  public ResponseEntity<ResultDTO<CheckDto>> profileImageEdit(@RequestPart(value = "file") MultipartFile file) {
+  public ResponseEntity<ResultDTO<CheckDto>> profileImageEdit(
+      @RequestPart(value = "file") MultipartFile file) {
     ResultDTO<CheckDto> result = memberService.profileImageEdit(file);
     return ResponseEntity.ok(result);
   }
@@ -232,7 +239,8 @@ public class MemberController {
           content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErrorResponse.class)))
   })
   @PostMapping("/reset-password-request")
-  public ResponseEntity<ResultDTO<CheckDto>> resetPasswordRequest(@RequestBody @Valid ResetPasswordDto.MailRequest Request) {
+  public ResponseEntity<ResultDTO<CheckDto>> resetPasswordRequest(
+      @RequestBody @Valid ResetPasswordDto.MailRequest Request) {
     ResultDTO<CheckDto> result = memberService.resetPasswordEmail(Request);
     return ResponseEntity.ok(result);
   }
@@ -259,11 +267,26 @@ public class MemberController {
           + "<br>이미 해당 경매건에 평점을 매겼습니다.<br>인수확인이 아직 완료되지 않았습니다.",
           content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(responseCode = "404", description = "존재하지 않는 회원입니다.",
-          content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErrorResponse.class))),
+          content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErrorResponse.class)))
   })
   @PostMapping("/rating")
   public ResponseEntity<ResultDTO<CheckDto>> rating(@RequestBody RatingRequestDto request) {
     ResultDTO<CheckDto> result = memberService.rating(request);
+    return ResponseEntity.ok(result);
+  }
+
+  @Operation(summary = "기간별 예치금 내역 보기", description = "기간별 예치금 내역 보기를 할 때 사용하는 API")
+  @ApiResponses(value = {
+      @ApiResponse(responseCode = "200", description = "예치금 내역 불러오기를 성공했습니다."),
+      @ApiResponse(responseCode = "400", description = "유효하지 않은 검색범위 입니다.",
+          content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErrorResponse.class))),
+      @ApiResponse(responseCode = "404", description = "존재하지 않는 회원입니다.",
+          content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErrorResponse.class)))
+  })
+  @GetMapping("/my-balance/{searchOption}")
+  public ResponseEntity<ResultDTO<Page<MyBalanceDto>>> myBalance(@PathVariable(value = "searchOption") String searchOption,
+      @RequestParam(value = "page", defaultValue = "0") Integer pageNumber) {
+    ResultDTO<Page<MyBalanceDto>> result = memberService.myBalance(searchOption, pageNumber);
     return ResponseEntity.ok(result);
   }
 }
