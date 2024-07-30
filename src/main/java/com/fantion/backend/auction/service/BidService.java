@@ -10,7 +10,7 @@ public interface BidService {
     ResultDTO<BidDto.Response> createBid(BidDto.Request request);
 
     // 입찰내역 구독
-    SseEmitter subscribeBid(BidSubscribeDto.Request request);
+    SseEmitter subscribeBid(Long auctionId);
 
     // 입찰내역 발행
     void publishBid(BidDto.Response bid);
