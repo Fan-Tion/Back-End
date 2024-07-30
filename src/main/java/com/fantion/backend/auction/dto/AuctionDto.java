@@ -58,5 +58,6 @@ public class AuctionDto {
     private LocalDateTime endDate;
     private boolean status;
     private Integer rating;
+    private Long BidCount;
   }
 }
