@@ -28,7 +28,7 @@ public enum ErrorCode {
     INVALID_CANCEL_AMOUNT("취소금액이 잘못되었습니다.", HttpStatus.BAD_REQUEST),
 
     // Auction
-    NOT_FOUND_AUCTION("존재하지 않는 경매입니다", HttpStatus.BAD_REQUEST),
+    NOT_FOUND_AUCTION("존재하지 않는 경매입니다", HttpStatus.NOT_FOUND),
     TOO_OLD_AUCTION("종료일이 지난 경매입니다.", HttpStatus.BAD_REQUEST),
     ENUM_INVALID_FORMAT("경매 카테고리가 존재하지 않습니다.", HttpStatus.BAD_REQUEST),
     AUCTION_NOT_FOUND("경매가 존재하지 않습니다.", HttpStatus.NOT_FOUND),
@@ -41,9 +41,10 @@ public enum ErrorCode {
     NOT_FOUND_BID("존재하지 않는 입찰입니다.",HttpStatus.BAD_REQUEST),
     NOT_PRIVATE_BID_CANCEL("비공개 입찰만 입찰 취소가 가능합니다.",HttpStatus.BAD_REQUEST),
     NOT_ENOUGH_BALANCE("예치금이 부족합니다.",HttpStatus.BAD_REQUEST),
+    INVALID_BID_PRICE("잘못된 입찰가입니다.",HttpStatus.BAD_REQUEST),
+    INVALID_BID("잘못된 입찰입니다",HttpStatus.BAD_REQUEST),
     NOT_SEND_CHKING("인계 확인이 되어있지 않습니다.",HttpStatus.BAD_REQUEST),
-    ALREADY_SEND_CHK("이미 인계확인이 되어있습니다.",HttpStatus.BAD_REQUEST),
-    ALREADY_RECEIVE_CHK("이미 인수확인이 되어있습니다.",HttpStatus.BAD_REQUEST),
+    ALREADY_CHKING("이미 인계 또는 인수 확인이 되어있습니다.",HttpStatus.BAD_REQUEST),
     ALREADY_CANCEL_CHK("이미 거래취소가 되어있습니다.",HttpStatus.BAD_REQUEST),
     NOT_CONFIRMED_RECEIVE("인수확인이 아직 완료되지 않았습니다.", HttpStatus.BAD_REQUEST),
 

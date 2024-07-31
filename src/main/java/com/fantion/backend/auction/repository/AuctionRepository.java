@@ -27,7 +27,7 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
 
   List<Auction> findByAuctionTypeAndStatus(boolean auctionType,boolean status);
 
-  List<Auction> findByStatusAndReceiveChkAndCurrentBidder(boolean status,boolean receiveChk,String bidder);
+  List<Auction> findByStatusAndReceiveChkAndCurrentBidderAndCancelChk(boolean status,boolean receiveChk,String bidder,boolean cancelChk);
 
   List<Auction> findByStatusAndReceiveChkAndMember(boolean status, boolean receiveChk, Member member);
 
@@ -38,4 +38,6 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
   List<Auction> findAllByCurrentBidder(String nickname);
   
   Optional<Auction> findTopByMemberOrderByAuctionIdDesc(Member member);
+
+  Page<Auction> findAllByTitleContaining(String keyword, Pageable pageable);
 }
