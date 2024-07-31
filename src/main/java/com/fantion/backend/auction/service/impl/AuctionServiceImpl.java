@@ -4,6 +4,7 @@ import static com.fantion.backend.exception.ErrorCode.*;
 import static org.springframework.util.FileSystemUtils.deleteRecursively;
 
 import com.fantion.backend.auction.dto.AuctionDto;
+import com.fantion.backend.auction.dto.AuctionDto.AuctionResponse;
 import com.fantion.backend.auction.dto.AuctionFavoriteDto;
 import com.fantion.backend.auction.dto.CategoryDto;
 import com.fantion.backend.auction.entity.Auction;
@@ -155,25 +156,25 @@ public class AuctionServiceImpl implements AuctionService {
    * 경매 검색
    */
   @Override
-  public ResultDTO<Page<AuctionDto.AuctionResponse>> getSearchList(
-      int page,
-      SearchType searchOption,
-      CategoryType categoryType,
+  public ResultDTO<Page<AuctionDto.AuctionResponse>> getSearchList(int page, CategoryType category,
       String keyword) {
+
     Pageable pageable = getPageable(page);
-    Page<Auction> auctionPage = null;
+    Page<Auction> auctionPage;
 
     try {
-      if (searchOption == SearchType.TITLE) {
-        auctionPage = auctionRepository.findByTitleContaining(keyword, pageable);
-      } else if (searchOption == SearchType.CATEGORY) {
-        if (categoryType == CategoryType.ALL) {
-          auctionPage = auctionRepository.findAll(pageable);
-        } else if (keyword == null) {
-          auctionPage = auctionRepository.findByCategory(categoryType, pageable);
+      if (keyword != null) {
+        if (category.equals(CategoryType.ALL)) {
+          auctionPage = auctionRepository.findAllByTitleContaining(keyword, pageable);
         } else {
-          auctionPage = auctionRepository.findByCategoryAndTitleContaining(categoryType, keyword,
+          auctionPage = auctionRepository.findByCategoryAndTitleContaining(category, keyword,
               pageable);
+        }
+      } else {
+        if (category.equals(CategoryType.ALL)) {
+          auctionPage = auctionRepository.findAll(pageable);
+        } else {
+          auctionPage = auctionRepository.findByCategory(category, pageable);
         }
       }
     } catch (Exception e) {
