@@ -40,4 +40,6 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
   Optional<Auction> findTopByMemberOrderByAuctionIdDesc(Member member);
 
   Page<Auction> findAllByTitleContaining(String keyword, Pageable pageable);
+
+  Page<Auction> findAllByStatus(boolean status, Pageable pageable);
 }
