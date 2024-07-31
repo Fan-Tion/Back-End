@@ -210,10 +210,7 @@ public class AuctionServiceImpl implements AuctionService {
   @Override
   public void endAuctionSaveOrUpdate() {
     List<Auction> endAuctionCategoryList
-        = auctionRepository.findByEndDateBetweenAndStatus(
-        LocalDateTime.now().with(LocalTime.MIN),
-        LocalDateTime.now().with(LocalTime.MAX),
-        false);
+        = auctionRepository.findByEndDateAndStatus(LocalDate.now().minusDays(1), false);
 
     List<String> categoryList = convertAuctionToCategory(endAuctionCategoryList);
 
@@ -223,13 +220,6 @@ public class AuctionServiceImpl implements AuctionService {
     }
     for (String categoryName : categoryList) {
       map.put(categoryName, map.getOrDefault(categoryName, 0) + 1);
-    }
-
-    try {
-      String json = objectMapper.writeValueAsString(map);
-      redisTemplate.opsForValue().set(LocalDate.now().toString(), json, Duration.ofDays(1));
-    } catch (JsonProcessingException e) {
-      throw new CustomException(ErrorCode.PARSING_ERROR);
     }
   }
 
@@ -283,10 +273,10 @@ public class AuctionServiceImpl implements AuctionService {
 
     Random random = new Random();
     CategoryType[] categoryArray = CategoryType.values();
+    Set<String> categorySet
+        = categoryList.stream().map(CategoryDto::getTitle).collect(Collectors.toSet());
 
-    Set<String> categorySet = new HashSet<>();
-
-    while (categorySet.size() < categoryArray.length) {
+    while (categoryList.size() < categoryArray.length) {
       String categoryTypeStr = categoryArray[random.nextInt(categoryArray.length)].name();
 
       if (categorySet.add(categoryTypeStr)) {
