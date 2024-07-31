@@ -440,7 +440,7 @@ public class BidServiceImpl implements BidService {
 
         // 이미 인계 확인이 되어있는 경우
         if (auction.isSendChk()) {
-            throw new CustomException(ALREADY_SEND_CHK);
+            throw new CustomException(ALREADY_CHKING);
         }
 
         // 인계 확인
@@ -470,7 +470,7 @@ public class BidServiceImpl implements BidService {
 
         // 이미 인수 확인이 되어있는 경우
         if (auction.isReceiveChk()) {
-            throw new CustomException(ALREADY_RECEIVE_CHK);
+            throw new CustomException(ALREADY_CHKING);
         }
 
         // 구매자 정보
@@ -533,9 +533,9 @@ public class BidServiceImpl implements BidService {
             throw new CustomException(ALREADY_CANCEL_CHK);
         }
 
-        // 이미 인수 확인이 되어있는 경우
-        if (cancelBidAuction.isReceiveChk()) {
-            throw new CustomException(ALREADY_RECEIVE_CHK);
+        // 이미 인계 또는 인수 확인이 되어있는 경우
+        if (cancelBidAuction.isReceiveChk() || cancelBidAuction.isSendChk()) {
+            throw new CustomException(ALREADY_CHKING);
         }
 
         // 로그인한 사용자 가져오기

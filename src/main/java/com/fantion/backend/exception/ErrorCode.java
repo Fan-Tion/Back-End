@@ -44,8 +44,7 @@ public enum ErrorCode {
     INVALID_BID_PRICE("잘못된 입찰가입니다.",HttpStatus.BAD_REQUEST),
     INVALID_BID("잘못된 입찰입니다",HttpStatus.BAD_REQUEST),
     NOT_SEND_CHKING("인계 확인이 되어있지 않습니다.",HttpStatus.BAD_REQUEST),
-    ALREADY_SEND_CHK("이미 인계확인이 되어있습니다.",HttpStatus.BAD_REQUEST),
-    ALREADY_RECEIVE_CHK("이미 인수확인이 되어있습니다.",HttpStatus.BAD_REQUEST),
+    ALREADY_CHKING("이미 인계 또는 인수 확인이 되어있습니다.",HttpStatus.BAD_REQUEST),
     ALREADY_CANCEL_CHK("이미 거래취소가 되어있습니다.",HttpStatus.BAD_REQUEST),
     NOT_CONFIRMED_RECEIVE("인수확인이 아직 완료되지 않았습니다.", HttpStatus.BAD_REQUEST),
 
