@@ -113,12 +113,12 @@ public class AuctionController {
   @GetMapping("/search")
   public ResponseEntity<ResultDTO<Page<AuctionDto.AuctionResponse>>> searchAuctions(
       @RequestParam(name = "page", defaultValue = "0") int page,
-      @RequestParam("searchOption") @NotNull SearchType searchOption,
-      @RequestParam(name = "categoryOption", defaultValue = "ALL") CategoryType categoryOption,
+      @RequestParam(name = "categoryOption", defaultValue = "ALL") CategoryType category,
       @RequestParam(name = "keyword", defaultValue = "") String keyword) {
-    return ResponseEntity.ok(
-        auctionService.getSearchList(page, searchOption, categoryOption, keyword));
+
+    return ResponseEntity.ok(auctionService.getSearchList(page, category, keyword));
   }
+
 
   /**
    * 이미지 가져오기

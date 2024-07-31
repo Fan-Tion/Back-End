@@ -27,8 +27,7 @@ public interface AuctionService {
 
   ResultDTO<Page<AuctionDto.AuctionResponse>> getList(int page);
 
-  ResultDTO<Page<AuctionDto.AuctionResponse>> getSearchList(int page, SearchType searchOption,
-      CategoryType categoryOption, String keyword);
+  ResultDTO<Page<AuctionDto.AuctionResponse>> getSearchList(int page, CategoryType category, String keyword);
 
   // 경매 상세보기
   ResultDTO<AuctionDto.AuctionResponse> findAuction(Long auctionId);
