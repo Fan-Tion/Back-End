@@ -13,7 +13,6 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface AuctionRepository extends JpaRepository<Auction, Long> {
-  Page<Auction> findByTitleContaining(String keyword, Pageable pageable);
 
   Page<Auction> findByCategoryAndTitleContaining(CategoryType categoryType, String keyword, Pageable pageable);
 
