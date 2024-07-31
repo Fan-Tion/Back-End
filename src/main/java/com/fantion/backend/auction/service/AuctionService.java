@@ -3,10 +3,11 @@ package com.fantion.backend.auction.service;
 
 import com.fantion.backend.auction.dto.AuctionDto;
 import com.fantion.backend.auction.dto.AuctionFavoriteDto;
+import com.fantion.backend.auction.dto.AuctionReportDto;
+import com.fantion.backend.auction.dto.AuctionReportDto;
 import com.fantion.backend.auction.dto.CategoryDto;
 import com.fantion.backend.common.dto.ResultDTO;
 import com.fantion.backend.type.CategoryType;
-import com.fantion.backend.type.SearchType;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -55,4 +56,7 @@ public interface AuctionService {
   ResultDTO<Page<AuctionDto.AuctionResponse>> getJoinAuctionList(int page);
 
   ResultDTO<Page<AuctionDto.AuctionResponse>> getFavoriteAuctionList(int page);
+
+  ResultDTO<AuctionReportDto.AuctionReportResponse> reportAuction(Long auctionId,
+      AuctionReportDto.AuctionReportRequest request);
 }

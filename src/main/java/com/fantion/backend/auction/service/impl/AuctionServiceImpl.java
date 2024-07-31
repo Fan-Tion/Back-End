@@ -1,15 +1,16 @@
 package com.fantion.backend.auction.service.impl;
 
 import static com.fantion.backend.exception.ErrorCode.*;
-import static org.springframework.util.FileSystemUtils.deleteRecursively;
 
 import com.fantion.backend.auction.dto.AuctionDto;
-import com.fantion.backend.auction.dto.AuctionDto.AuctionResponse;
 import com.fantion.backend.auction.dto.AuctionFavoriteDto;
+import com.fantion.backend.auction.dto.AuctionReportDto;
 import com.fantion.backend.auction.dto.CategoryDto;
 import com.fantion.backend.auction.entity.Auction;
+import com.fantion.backend.auction.entity.AuctionReport;
 import com.fantion.backend.auction.entity.Bid;
 import com.fantion.backend.auction.entity.FavoriteAuction;
+import com.fantion.backend.auction.repository.AuctionReportRepository;
 import com.fantion.backend.auction.repository.AuctionRepository;
 import com.fantion.backend.auction.repository.BidRepository;
 import com.fantion.backend.auction.repository.FavoriteAuctionRepository;
@@ -22,15 +23,11 @@ import com.fantion.backend.member.auth.MemberAuthUtil;
 import com.fantion.backend.member.entity.Member;
 import com.fantion.backend.member.repository.MemberRepository;
 import com.fantion.backend.type.CategoryType;
-import com.fantion.backend.type.SearchType;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.Valid;
-import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
-import java.nio.file.DirectoryStream;
-import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -75,6 +72,7 @@ public class AuctionServiceImpl implements AuctionService {
   private final MemberRepository memberRepository;
   private final FavoriteAuctionRepository favoriteAuctionRepository;
   private final BidRepository bidRepository;
+  private final AuctionReportRepository auctionReportRepository;
 
   private final RedisTemplate<String, Object> redisTemplate;
 
@@ -429,6 +427,30 @@ public class AuctionServiceImpl implements AuctionService {
     Page<AuctionDto.AuctionResponse> response = covertToResponseList(
         favoriteAuctionRepository.findByMember(member, pageable).map(FavoriteAuction::getAuction));
     return ResultDTO.of("성공적으로 찜한 경매 목룍이 조회되었습니다.", response);
+  }
+
+  @Override
+  public ResultDTO<AuctionReportDto.AuctionReportResponse> reportAuction(Long auctionId,
+      AuctionReportDto.AuctionReportRequest request) {
+    String email = MemberAuthUtil.getLoginUserId();
+    Member member = memberRepository.findByEmail(email)
+        .orElseThrow(() -> new CustomException(NOT_FOUND_MEMBER));
+    Auction auction = auctionRepository.findById(auctionId)
+        .orElseThrow(() -> new CustomException(NOT_FOUND_AUCTION));
+
+    auctionReportRepository.findByAuctionIdAndMemberId(auction, member).ifPresent(report -> {
+      throw new CustomException(ALREADY_REPORT_AUCTION);
+    });
+
+    AuctionReport auctionReport = AuctionReport.builder()
+        .auctionId(auction)
+        .memberId(member)
+        .description(request.getDescription())
+        .build();
+    auctionReportRepository.save(auctionReport);
+
+    return ResultDTO.of("성공적으로 경매신고가 완료되었습니다.",
+        AuctionReportDto.AuctionReportResponse.builder().title(auction.getTitle()).build());
   }
 
   private Auction updateValue(AuctionDto.AuctionRequest request, Long auctionId,

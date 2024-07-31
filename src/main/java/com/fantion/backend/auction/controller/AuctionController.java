@@ -2,6 +2,8 @@ package com.fantion.backend.auction.controller;
 
 import com.fantion.backend.auction.dto.AuctionDto;
 import com.fantion.backend.auction.dto.AuctionFavoriteDto;
+import com.fantion.backend.auction.dto.AuctionReportDto;
+import com.fantion.backend.auction.dto.AuctionReportDto.AuctionReportResponse;
 import com.fantion.backend.auction.dto.CategoryDto;
 import com.fantion.backend.auction.service.AuctionService;
 import com.fantion.backend.common.dto.ResultDTO;
@@ -33,6 +35,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
@@ -217,5 +220,21 @@ public class AuctionController {
   public ResultDTO<Page<AuctionDto.AuctionResponse>> getFavoriteAuctionList(
       @Valid @RequestParam(value = "page", defaultValue = "0") int page) {
     return auctionService.getFavoriteAuctionList(page);
+  }
+
+  @Operation(summary = "경매 신고", description = "경매 신고 할 때 사용하는 API")
+  @ApiResponses(value = {
+      @ApiResponse(responseCode = "200", description = "성공적으로 경매신고가 완료되었습니다."),
+      @ApiResponse(responseCode = "400", description = "이미 신고한 경매 입니다.",
+          content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErrorResponse.class))),
+      @ApiResponse(responseCode = "404", description = "존재하지 않는 회원입니다.<bt>존재하지 않는 경매입니다",
+          content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErrorResponse.class)))
+  })
+  @PostMapping("/report/{auctionId}")
+  public ResponseEntity<ResultDTO<AuctionReportDto.AuctionReportResponse>> reportAuction(@PathVariable Long auctionId,
+      @RequestBody AuctionReportDto.AuctionReportRequest request) {
+    ResultDTO<AuctionReportResponse> result = auctionService.reportAuction(
+        auctionId, request);
+    return ResponseEntity.ok(result);
   }
 }
