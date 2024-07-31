@@ -393,10 +393,10 @@ public class BidServiceImpl implements BidService {
         Member member = memberRepository.findByEmail(loginEmail)
                 .orElseThrow(()-> new CustomException(NOT_FOUND_MEMBER));
 
-        // 경매가 마감되어있으면서 인수 확인이 되어있지 않는 경매 물품 조회
+        // 경매가 마감되어있으면서 인수 확인이 되어있지 않고 취소된 경매가 아닌 물품 조회
         // 구매중인 경매물품 조회
-        List<Auction> buyList = auctionRepository
-                .findByStatusAndReceiveChkAndCurrentBidder(false, false,member.getNickname());
+        List<Auction> buyList = auctionRepository.findByStatusAndReceiveChkAndCurrentBidderAndCancelChk(
+                false, false,member.getNickname(),false);
 
         // 판매중인 경매물품 조회
         List<Auction> sellList = auctionRepository
