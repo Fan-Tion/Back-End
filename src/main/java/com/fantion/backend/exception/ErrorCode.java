@@ -28,7 +28,7 @@ public enum ErrorCode {
     INVALID_CANCEL_AMOUNT("취소금액이 잘못되었습니다.", HttpStatus.BAD_REQUEST),
 
     // Auction
-    NOT_FOUND_AUCTION("존재하지 않는 경매입니다", HttpStatus.NOT_FOUND),
+    NOT_FOUND_AUCTION("존재하지 않는 경매입니다.", HttpStatus.NOT_FOUND),
     TOO_OLD_AUCTION("종료일이 지난 경매입니다.", HttpStatus.BAD_REQUEST),
     ENUM_INVALID_FORMAT("경매 카테고리가 존재하지 않습니다.", HttpStatus.BAD_REQUEST),
     AUCTION_NOT_FOUND("경매가 존재하지 않습니다.", HttpStatus.NOT_FOUND),
@@ -36,6 +36,7 @@ public enum ErrorCode {
     NOT_AUCTION_BUYER("구매자가 아닙니다.",HttpStatus.BAD_REQUEST),
     NOT_FINISH_AUCTION("종료된 경매가 아닙니다.",HttpStatus.BAD_REQUEST),
     NOT_FOUND_LINKED_EMAIL("연동한 이메일이 없습니다.", HttpStatus.NOT_FOUND),
+    ALREADY_REPORT_AUCTION("이미 신고한 경매 입니다.", HttpStatus.BAD_REQUEST),
 
     // Bid
     NOT_FOUND_BID("존재하지 않는 입찰입니다.",HttpStatus.BAD_REQUEST),
