@@ -551,32 +551,6 @@ public class AuctionServiceImpl implements AuctionService {
   }
 
   /**
-   * 파일 확장자를 추출
-   */
-  private static String getFileExtension(String filePath) {
-    String fileName = new File(filePath).getName();
-    int dotIndex = fileName.lastIndexOf('.');
-    return (dotIndex == -1) ? "" : fileName.substring(dotIndex + 1).toLowerCase();
-  }
-
-  /**
-   * 폴더 비우기
-   */
-  public void emptyDirectory(Path directory) {
-    if (Files.isDirectory(directory)) {
-      try {
-        DirectoryStream<Path> stream
-            = Files.newDirectoryStream(directory);
-        for (Path entry : stream) {
-          deleteRecursively(entry);
-        }
-      } catch (IOException e) {
-        throw new CustomException(ErrorCode.IMAGE_IO_ERROR);
-      }
-    }
-  }
-
-  /**
    * 페이지 갯수 및 페이지 번호 설정
    */
   private static PageRequest getPageable(int page) {
@@ -604,12 +578,6 @@ public class AuctionServiceImpl implements AuctionService {
       }
     }
     return null;
-  }
-
-  private static boolean ableCategoryCheck(List<CategoryDto> categoryList, String categoryTypeStr) {
-    return categoryList.stream().noneMatch(dto -> dto.getTitle().equals(categoryTypeStr))
-        && !categoryTypeStr.equals(CategoryType.ALL.name())
-        && !categoryTypeStr.equals(CategoryType.OTHER.name());
   }
 
   private List<String> convertAuctionToCategory(List<Auction> endAuctionCategoryList) {
