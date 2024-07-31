@@ -39,6 +39,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -110,7 +111,6 @@ public class AuctionServiceImpl implements AuctionService {
         .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_AUCTION));
 
     return ResultDTO.of("성공적으로 상세보기할 경매가 조회되었습니다.", toResponse(auction));
-
   }
 
   /**
@@ -148,8 +148,13 @@ public class AuctionServiceImpl implements AuctionService {
   @Override
   public ResultDTO<Page<AuctionDto.AuctionResponse>> getList(int page) {
     Pageable pageable = getPageable(page);
-    return ResultDTO.of("경매 전체 페이지를 불러오는데 성공했습니다.",
-        covertToResponseList(auctionRepository.findAll(pageable)));
+
+    Page<Auction> auctionPage = auctionRepository.findAllByStatus(true, pageable);
+    List<Auction> auctionList = new ArrayList<>(auctionPage.getContent());
+    Collections.shuffle(auctionList);
+    auctionPage = new PageImpl<>(auctionList, pageable, auctionPage.getTotalElements());
+
+    return ResultDTO.of("경매 전체 페이지를 불러오는데 성공했습니다.", covertToResponseList(auctionPage));
   }
 
   /**
