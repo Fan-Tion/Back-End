@@ -4,7 +4,6 @@ import static com.fantion.backend.exception.ErrorCode.*;
 import static org.springframework.util.FileSystemUtils.deleteRecursively;
 
 import com.fantion.backend.auction.dto.AuctionDto;
-import com.fantion.backend.auction.dto.AuctionDto.AuctionResponse;
 import com.fantion.backend.auction.dto.AuctionFavoriteDto;
 import com.fantion.backend.auction.dto.CategoryDto;
 import com.fantion.backend.auction.entity.Auction;
@@ -22,18 +21,13 @@ import com.fantion.backend.member.auth.MemberAuthUtil;
 import com.fantion.backend.member.entity.Member;
 import com.fantion.backend.member.repository.MemberRepository;
 import com.fantion.backend.type.CategoryType;
-import com.fantion.backend.type.SearchType;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.Valid;
-import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
-import java.nio.file.DirectoryStream;
-import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -41,7 +35,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -80,7 +73,8 @@ public class AuctionServiceImpl implements AuctionService {
 
   private final S3Uploader s3Uploader;
   private final ObjectMapper objectMapper = new ObjectMapper();
-  private String serverUrl = "https://fantion-bucket.s3.ap-northeast-2.amazonaws.com/auction-images/";
+  private final String imageUrl = "https://fantion-bucket.s3.ap-northeast-2.amazonaws.com/auction-images/";
+  private final String serverUrl = "https://www.fantion.kro.kr/auction/";
 
   @Override
   @Transactional
@@ -249,7 +243,7 @@ public class AuctionServiceImpl implements AuctionService {
     for (int i = 1; i < categoryArray.length; i++) {
       categoryList.add(new CategoryDto(
           categoryArray[i].name(),
-          serverUrl + "search?searchOption=CATEGORY&categoryOption="
+          serverUrl + "search?&categoryOption="
               + categoryArray[i].name() + "&keyword=&page=0"));
     }
 
@@ -267,7 +261,7 @@ public class AuctionServiceImpl implements AuctionService {
         .stream()
         .sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
         .map(entry -> new CategoryDto(
-            entry.getKey(), serverUrl + "search?searchOption=CATEGORY&categoryOption="
+            entry.getKey(), serverUrl + "search?&categoryOption="
             + entry.getKey() + "&keyword=&page=0"))
         .collect(Collectors.toList());
 
@@ -282,7 +276,7 @@ public class AuctionServiceImpl implements AuctionService {
       if (categorySet.add(categoryTypeStr)) {
         categoryList.add(new CategoryDto(
             categoryTypeStr,
-            serverUrl + "search?searchOption=CATEGORY&categoryOption=" + categoryTypeStr
+            serverUrl + "search?&categoryOption=" + categoryTypeStr
                 + "&keyword=&page=0"
         ));
       }
@@ -490,7 +484,7 @@ public class AuctionServiceImpl implements AuctionService {
         .auctionType(auction.isAuctionType())
         .auctionImage(
             Arrays.stream(auction.getAuctionImage().split(","))
-                .map(x -> serverUrl + x).toList())
+                .map(x -> imageUrl + x).toList())
         .description(auction.getDescription())
         .currentBidPrice(auction.getCurrentBidPrice())
         .currentBidder(auction.getCurrentBidder())
@@ -523,7 +517,7 @@ public class AuctionServiceImpl implements AuctionService {
       for (int i = 0; i < images.size(); i++) {
         if (images.get(i) != null && !images.get(i).isEmpty()) {
           String imageUrl = s3Uploader.upload(images.get(i), "auction-images/" + auctionId, i + 1);
-          imageUrls.add(imageUrl.replace(serverUrl, ""));
+          imageUrls.add(imageUrl.replace(this.imageUrl, ""));
         } else {
           throw new CustomException(ErrorCode.IMAGE_EXCEPTION);
         }
