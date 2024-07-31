@@ -233,7 +233,7 @@ public class PaymentServiceImpl implements PaymentService {
     BalanceHistory balanceHistory = BalanceHistory.builder()
         .memberId(member)
         .balance(cancelAmount)
-        .type(BalanceType.CANCEL)
+        .type(BalanceType.PAYMENTS_CANCEL)
         .createDate(LocalDateTime.now())
         .build();
     balanceHistoryRepository.save(balanceHistory);

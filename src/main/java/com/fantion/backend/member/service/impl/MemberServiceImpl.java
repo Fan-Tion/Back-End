@@ -17,6 +17,7 @@ import com.fantion.backend.member.dto.MemberDto;
 import com.fantion.backend.member.dto.MyBalanceDto;
 import com.fantion.backend.member.dto.NaverLinkDto;
 import com.fantion.backend.member.dto.NaverMemberDto;
+import com.fantion.backend.member.dto.ProfileImageResponseDto;
 import com.fantion.backend.member.dto.RatingRequestDto;
 import com.fantion.backend.member.dto.ResetPasswordDto;
 import com.fantion.backend.member.dto.SigninDto;
@@ -573,12 +574,11 @@ public class MemberServiceImpl implements MemberService {
   }
 
   @Override
-  public ResultDTO<CheckDto> profileImageEdit(MultipartFile file) {
+  public ResultDTO<ProfileImageResponseDto> profileImageEdit(MultipartFile file) {
 
     String email = MemberAuthUtil.getCurrentEmail();
     Member member = memberRepository.findByEmail(email)
         .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
-
 
     // 기존 프로필 이미지 삭제
     if (member.getProfileImage() != null) {
@@ -619,7 +619,10 @@ public class MemberServiceImpl implements MemberService {
 
     memberRepository.save(updateMember);
 
-    return ResultDTO.of("프로필 이미지 변경에 성공했습니다.", CheckDto.builder().success(true).build());
+    return ResultDTO.of("프로필 이미지 변경에 성공했습니다.", ProfileImageResponseDto.builder()
+        .success(true)
+        .newProfileImageUrl(updateMember.getProfileImage())
+        .build());
   }
 
   @Override
