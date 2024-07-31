@@ -89,5 +89,6 @@ public class AuctionDto {
     private boolean status;
     @Schema(description = "판매자 평점")
     private Integer rating;
+    private Long BidCount;
   }
 }

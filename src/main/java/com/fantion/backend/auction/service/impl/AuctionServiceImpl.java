@@ -39,6 +39,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -110,7 +111,6 @@ public class AuctionServiceImpl implements AuctionService {
         .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_AUCTION));
 
     return ResultDTO.of("성공적으로 상세보기할 경매가 조회되었습니다.", toResponse(auction));
-
   }
 
   /**
@@ -148,8 +148,13 @@ public class AuctionServiceImpl implements AuctionService {
   @Override
   public ResultDTO<Page<AuctionDto.AuctionResponse>> getList(int page) {
     Pageable pageable = getPageable(page);
-    return ResultDTO.of("경매 전체 페이지를 불러오는데 성공했습니다.",
-        covertToResponseList(auctionRepository.findAll(pageable)));
+
+    Page<Auction> auctionPage = auctionRepository.findAllByStatus(true, pageable);
+    List<Auction> auctionList = new ArrayList<>(auctionPage.getContent());
+    Collections.shuffle(auctionList);
+    auctionPage = new PageImpl<>(auctionList, pageable, auctionPage.getTotalElements());
+
+    return ResultDTO.of("경매 전체 페이지를 불러오는데 성공했습니다.", covertToResponseList(auctionPage));
   }
 
   /**
@@ -205,10 +210,7 @@ public class AuctionServiceImpl implements AuctionService {
   @Override
   public void endAuctionSaveOrUpdate() {
     List<Auction> endAuctionCategoryList
-        = auctionRepository.findByEndDateBetweenAndStatus(
-        LocalDateTime.now().with(LocalTime.MIN),
-        LocalDateTime.now().with(LocalTime.MAX),
-        false);
+        = auctionRepository.findByEndDateAndStatus(LocalDate.now().minusDays(1), false);
 
     List<String> categoryList = convertAuctionToCategory(endAuctionCategoryList);
 
@@ -218,13 +220,6 @@ public class AuctionServiceImpl implements AuctionService {
     }
     for (String categoryName : categoryList) {
       map.put(categoryName, map.getOrDefault(categoryName, 0) + 1);
-    }
-
-    try {
-      String json = objectMapper.writeValueAsString(map);
-      redisTemplate.opsForValue().set(LocalDate.now().toString(), json, Duration.ofDays(1));
-    } catch (JsonProcessingException e) {
-      throw new CustomException(ErrorCode.PARSING_ERROR);
     }
   }
 
@@ -278,10 +273,10 @@ public class AuctionServiceImpl implements AuctionService {
 
     Random random = new Random();
     CategoryType[] categoryArray = CategoryType.values();
+    Set<String> categorySet
+        = categoryList.stream().map(CategoryDto::getTitle).collect(Collectors.toSet());
 
-    Set<String> categorySet = new HashSet<>();
-
-    while (categorySet.size() < categoryArray.length) {
+    while (categoryList.size() < categoryArray.length) {
       String categoryTypeStr = categoryArray[random.nextInt(categoryArray.length)].name();
 
       if (categorySet.add(categoryTypeStr)) {
@@ -505,6 +500,7 @@ public class AuctionServiceImpl implements AuctionService {
         .endDate(LocalDateTime.of(auction.getEndDate(), LocalTime.of(23, 59, 59)))
         .status(auction.isStatus())
         .rating(seller.getRating())
+        .BidCount(bidRepository.countByAuctionId(auction))
         .build();
   }
 
@@ -555,32 +551,6 @@ public class AuctionServiceImpl implements AuctionService {
   }
 
   /**
-   * 파일 확장자를 추출
-   */
-  private static String getFileExtension(String filePath) {
-    String fileName = new File(filePath).getName();
-    int dotIndex = fileName.lastIndexOf('.');
-    return (dotIndex == -1) ? "" : fileName.substring(dotIndex + 1).toLowerCase();
-  }
-
-  /**
-   * 폴더 비우기
-   */
-  public void emptyDirectory(Path directory) {
-    if (Files.isDirectory(directory)) {
-      try {
-        DirectoryStream<Path> stream
-            = Files.newDirectoryStream(directory);
-        for (Path entry : stream) {
-          deleteRecursively(entry);
-        }
-      } catch (IOException e) {
-        throw new CustomException(ErrorCode.IMAGE_IO_ERROR);
-      }
-    }
-  }
-
-  /**
    * 페이지 갯수 및 페이지 번호 설정
    */
   private static PageRequest getPageable(int page) {
@@ -608,12 +578,6 @@ public class AuctionServiceImpl implements AuctionService {
       }
     }
     return null;
-  }
-
-  private static boolean ableCategoryCheck(List<CategoryDto> categoryList, String categoryTypeStr) {
-    return categoryList.stream().noneMatch(dto -> dto.getTitle().equals(categoryTypeStr))
-        && !categoryTypeStr.equals(CategoryType.ALL.name())
-        && !categoryTypeStr.equals(CategoryType.OTHER.name());
   }
 
   private List<String> convertAuctionToCategory(List<Auction> endAuctionCategoryList) {

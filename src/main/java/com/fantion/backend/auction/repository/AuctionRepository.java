@@ -3,6 +3,7 @@ package com.fantion.backend.auction.repository;
 import com.fantion.backend.auction.entity.Auction;
 import com.fantion.backend.member.entity.Member;
 import com.fantion.backend.type.CategoryType;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -23,7 +24,7 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
 
   List<Auction> findByStatus(boolean status);
   
-  List<Auction> findByEndDateBetweenAndStatus(LocalDateTime startDay, LocalDateTime endDay, boolean auctionStatus);
+  List<Auction> findByEndDateAndStatus(LocalDate endDay, boolean auctionStatus);
 
   List<Auction> findByAuctionTypeAndStatus(boolean auctionType,boolean status);
 
@@ -40,4 +41,6 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
   Optional<Auction> findTopByMemberOrderByAuctionIdDesc(Member member);
 
   Page<Auction> findAllByTitleContaining(String keyword, Pageable pageable);
+
+  Page<Auction> findAllByStatus(boolean status, Pageable pageable);
 }
