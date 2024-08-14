@@ -4,12 +4,12 @@ import com.fantion.backend.auction.dto.AuctionDto;
 import com.fantion.backend.auction.dto.AuctionFavoriteDto;
 import com.fantion.backend.auction.dto.AuctionReportDto;
 import com.fantion.backend.auction.dto.AuctionReportDto.AuctionReportResponse;
+import com.fantion.backend.auction.dto.AuctionUpdateDto;
 import com.fantion.backend.auction.dto.CategoryDto;
 import com.fantion.backend.auction.service.AuctionService;
 import com.fantion.backend.common.dto.ResultDTO;
 import com.fantion.backend.exception.ErrorResponse;
 import com.fantion.backend.type.CategoryType;
-import com.fantion.backend.type.SearchType;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -17,7 +17,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotNull;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
@@ -72,7 +71,7 @@ public class AuctionController {
   @PutMapping(value = "/{auctionId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   public ResponseEntity<ResultDTO<AuctionDto.AuctionResponse>> updateAuction(
       @Valid @RequestPart("request") AuctionDto.AuctionRequest request,
-      @RequestPart("auctionImage") List<MultipartFile> auctionImage,
+      @RequestPart("auctionImage") List<AuctionUpdateDto> auctionImage,
       @PathVariable("auctionId") Long auctionId) {
     return ResponseEntity.ok(auctionService.updateAuction(request, auctionImage, auctionId));
   }
