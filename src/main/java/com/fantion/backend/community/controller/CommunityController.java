@@ -7,9 +7,11 @@ import com.fantion.backend.community.service.CommunityService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
@@ -21,18 +23,19 @@ public class CommunityController {
 
   private final CommunityService communityService;
 
-  @PostMapping("/image")
+  @PostMapping("/{communityId}/image")
   public ResponseEntity<ResultDTO<ImageDto>> uploadImage(
-      @RequestPart("file") List<MultipartFile> files, Long postId) {
+      @RequestPart("file") List<MultipartFile> files, @PathVariable Long communityId,
+      @RequestParam Long postId) {
 
-    ResultDTO<ImageDto> result = communityService.uploadImage(files, postId);
+    ResultDTO<ImageDto> result = communityService.uploadImage(files, communityId, postId);
     return ResponseEntity.ok(result);
   }
 
-  @PostMapping("/post")
+  @PostMapping("/{communityId}/post")
   public ResponseEntity<ResultDTO<PostDto.PostResponse>> createPost(
-      @RequestBody PostDto.PostRequest request) {
-    ResultDTO<PostDto.PostResponse> result = communityService.createPost(request);
+      @RequestBody PostDto.PostRequest request, @PathVariable Long communityId) {
+    ResultDTO<PostDto.PostResponse> result = communityService.createPost(request, communityId);
     return ResponseEntity.ok(result);
   }
 }

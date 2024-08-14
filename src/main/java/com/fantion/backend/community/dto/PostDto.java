@@ -1,5 +1,6 @@
 package com.fantion.backend.community.dto;
 
+import com.fantion.backend.community.entity.Community;
 import com.fantion.backend.member.entity.Member;
 import com.fantion.backend.type.PostStatus;
 import java.time.LocalDateTime;
@@ -29,7 +30,8 @@ public class PostDto {
   @Builder
   public static class PostResponse {
     private Long postId;
-    private Member member;
+    private String channelName;
+    private String nickname;
     private String title;
     private String content;
     private Integer likeCnt;

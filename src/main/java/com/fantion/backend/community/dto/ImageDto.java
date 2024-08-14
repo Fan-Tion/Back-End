@@ -16,4 +16,5 @@ public class ImageDto {
 
   private List<String> imageUrl;
   private Long postId;
+  private Long communityId;
 }
