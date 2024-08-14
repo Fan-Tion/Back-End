@@ -32,10 +32,10 @@ public class CommunityController {
     return ResponseEntity.ok(result);
   }
 
-  @PostMapping("/post")
+  @PostMapping("/{communityId}/post")
   public ResponseEntity<ResultDTO<PostDto.PostResponse>> createPost(
-      @RequestBody PostDto.PostRequest request) {
-    ResultDTO<PostDto.PostResponse> result = communityService.createPost(request);
+      @RequestBody PostDto.PostRequest request, @PathVariable Long communityId) {
+    ResultDTO<PostDto.PostResponse> result = communityService.createPost(request, communityId);
     return ResponseEntity.ok(result);
   }
 }

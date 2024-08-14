@@ -4,6 +4,7 @@ import com.fantion.backend.common.component.S3Uploader;
 import com.fantion.backend.common.dto.ResultDTO;
 import com.fantion.backend.community.dto.ImageDto;
 import com.fantion.backend.community.dto.PostDto;
+import com.fantion.backend.community.dto.PostDto.PostRequest;
 import com.fantion.backend.community.entity.Community;
 import com.fantion.backend.community.entity.Post;
 import com.fantion.backend.community.repository.CommunityRepository;
@@ -88,9 +89,9 @@ public class CommunityServiceImpl implements CommunityService {
   }
 
   @Override
-  public ResultDTO<PostDto.PostResponse> createPost(PostDto.PostRequest request) {
+  public ResultDTO<PostDto.PostResponse> createPost(PostRequest request, Long communityId) {
 
-    Community community = communityRepository.findById(request.getCommunityId())
+    Community community = communityRepository.findById(communityId)
         .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_CHANNEL));
 
     if (community.getStatus().equals(CommunityStatus.CLOSE)) {

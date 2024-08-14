@@ -18,7 +18,6 @@ public class PostDto {
   @AllArgsConstructor
   @Builder
   public static class PostRequest {
-    private Long communityId;
     private Long postId;
     private String title;
     private String content;
