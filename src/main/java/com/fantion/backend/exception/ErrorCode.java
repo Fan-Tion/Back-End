@@ -52,6 +52,7 @@ public enum ErrorCode {
     // Community
     NOT_FOUND_POST("존재하지 않은 게시물 입니다.", HttpStatus.NOT_FOUND),
     INVALID_POST_MEMBER("게시글의 작성자가 아닙니다.", HttpStatus.BAD_REQUEST),
+    NOT_FOUND_CHANNEL("존재하지 않은 채널 입니다.", HttpStatus.NOT_FOUND),
 
     // Common
     PARSING_ERROR("파싱 오류가 발생했습니다.", HttpStatus.BAD_REQUEST),

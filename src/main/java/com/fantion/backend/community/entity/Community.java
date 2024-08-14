@@ -1,7 +1,7 @@
 package com.fantion.backend.community.entity;
 
 import com.fantion.backend.member.entity.Member;
-import com.fantion.backend.type.PostStatus;
+import com.fantion.backend.type.CommunityStatus;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -18,31 +18,27 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "post")
+@Table(name = "community")
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder(toBuilder = true)
-public class Post {
+@Builder
+public class Community {
+
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
-  private Long postId;
-
-  @ManyToOne
-  @JoinColumn(name = "community_id")
-  private Community community;
+  private Long communityId;
 
   @ManyToOne
   @JoinColumn(name = "member_id")
   private Member member;
 
   private String title;
-  private String content;
-  private Integer likeCnt;
-  private Integer viewCnt;
-  private LocalDateTime createDate;
-  private LocalDateTime deleteDate;
+  private String description;
+  private String image;
 
   @Enumerated(EnumType.STRING)
-  private PostStatus status;
+  private CommunityStatus status;
+
+  private LocalDateTime createDate;
 }

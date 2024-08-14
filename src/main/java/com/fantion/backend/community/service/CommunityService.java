@@ -10,7 +10,7 @@ import org.springframework.web.multipart.MultipartFile;
 @Service
 public interface CommunityService {
 
-  ResultDTO<ImageDto> uploadImage(List<MultipartFile> files, Long postId);
+  ResultDTO<ImageDto> uploadImage(List<MultipartFile> files, Long communityId, Long postId);
 
   ResultDTO<PostDto.PostResponse> createPost(PostDto.PostRequest request);
 }

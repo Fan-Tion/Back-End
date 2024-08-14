@@ -4,7 +4,9 @@ import com.fantion.backend.common.component.S3Uploader;
 import com.fantion.backend.common.dto.ResultDTO;
 import com.fantion.backend.community.dto.ImageDto;
 import com.fantion.backend.community.dto.PostDto;
+import com.fantion.backend.community.entity.Community;
 import com.fantion.backend.community.entity.Post;
+import com.fantion.backend.community.repository.CommunityRepository;
 import com.fantion.backend.community.repository.PostRepository;
 import com.fantion.backend.community.service.CommunityService;
 import com.fantion.backend.exception.ErrorCode;
@@ -12,6 +14,7 @@ import com.fantion.backend.exception.impl.CustomException;
 import com.fantion.backend.member.auth.MemberAuthUtil;
 import com.fantion.backend.member.entity.Member;
 import com.fantion.backend.member.repository.MemberRepository;
+import com.fantion.backend.type.CommunityStatus;
 import com.fantion.backend.type.PostStatus;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -26,12 +29,20 @@ import org.springframework.web.multipart.MultipartFile;
 @RequiredArgsConstructor
 public class CommunityServiceImpl implements CommunityService {
 
-  private final MemberRepository memberRepository;
+  private final CommunityRepository communityRepository;
   private final PostRepository postRepository;
+  private final MemberRepository memberRepository;
   private final S3Uploader s3Uploader;
 
   @Override
-  public ResultDTO<ImageDto> uploadImage(List<MultipartFile> files, Long postId) {
+  public ResultDTO<ImageDto> uploadImage(List<MultipartFile> files, Long communityId, Long postId) {
+
+    Community community = communityRepository.findById(communityId)
+        .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_CHANNEL));
+
+    if (community.getStatus().equals(CommunityStatus.CLOSE)) {
+      throw new CustomException(ErrorCode.NOT_FOUND_CHANNEL);
+    }
 
     String email = MemberAuthUtil.getLoginUserId();
     Member member = memberRepository.findByEmail(email)
@@ -43,6 +54,12 @@ public class CommunityServiceImpl implements CommunityService {
           .status(PostStatus.DRAFTS)
           .build();
       postId = postRepository.save(post).getPostId();
+    } else {
+      Post post = postRepository.findById(postId)
+          .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_POST));
+      if (post.getStatus().equals(PostStatus.DELETE)) {
+        throw new CustomException(ErrorCode.NOT_FOUND_POST);
+      }
     }
 
     List<String> imageUrl = new ArrayList<>();
@@ -72,6 +89,14 @@ public class CommunityServiceImpl implements CommunityService {
 
   @Override
   public ResultDTO<PostDto.PostResponse> createPost(PostDto.PostRequest request) {
+
+    Community community = communityRepository.findById(request.getCommunityId())
+        .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_CHANNEL));
+
+    if (community.getStatus().equals(CommunityStatus.CLOSE)) {
+      throw new CustomException(ErrorCode.NOT_FOUND_CHANNEL);
+    }
+
     Post post = postRepository.findById(request.getPostId())
         .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_POST));
 
@@ -84,6 +109,7 @@ public class CommunityServiceImpl implements CommunityService {
     }
 
     Post createdPost = post.toBuilder()
+        .community(community)
         .title(request.getTitle())
         .content(request.getContent())
         .likeCnt(0)
@@ -96,7 +122,8 @@ public class CommunityServiceImpl implements CommunityService {
 
     PostDto.PostResponse response = PostDto.PostResponse.builder()
         .postId(createdPost.getPostId())
-        .member(createdPost.getMember())
+        .channelName(createdPost.getCommunity().getTitle())
+        .nickname(createdPost.getMember().getNickname())
         .title(createdPost.getTitle())
         .content(createdPost.getContent())
         .likeCnt(createdPost.getLikeCnt())
