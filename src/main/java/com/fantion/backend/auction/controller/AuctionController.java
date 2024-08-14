@@ -39,6 +39,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.multipart.MultipartHttpServletRequest;
 
 @Slf4j
 @RestController
@@ -69,10 +70,8 @@ public class AuctionController {
   @ApiResponse(responseCode = "200", description = "성공적으로 경매를 변경했습니다.")
   @PutMapping(value = "/{auctionId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   public ResponseEntity<ResultDTO<AuctionDto.AuctionResponse>> updateAuction(
-      @Valid @RequestPart("request") AuctionDto.AuctionRequest request,
-      @RequestPart Map<String, MultipartFile> auctionImage,
-      @PathVariable("auctionId") Long auctionId) {
-    return ResponseEntity.ok(auctionService.updateAuction(request, auctionImage, auctionId));
+      @Valid @RequestPart("request") AuctionDto.AuctionRequest request, MultipartHttpServletRequest file, @PathVariable("auctionId") Long auctionId) {
+    return ResponseEntity.ok(auctionService.updateAuction(request, file, auctionId));
   }
 
   @Operation(summary = "경매 삭제", description = "경매 삭제 할 때 사용하는 API.")
@@ -229,7 +228,8 @@ public class AuctionController {
           content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErrorResponse.class)))
   })
   @PostMapping("/report/{auctionId}")
-  public ResponseEntity<ResultDTO<AuctionReportDto.AuctionReportResponse>> reportAuction(@PathVariable Long auctionId,
+  public ResponseEntity<ResultDTO<AuctionReportDto.AuctionReportResponse>> reportAuction(
+      @PathVariable Long auctionId,
       @RequestBody AuctionReportDto.AuctionReportRequest request) {
     ResultDTO<AuctionReportResponse> result = auctionService.reportAuction(
         auctionId, request);

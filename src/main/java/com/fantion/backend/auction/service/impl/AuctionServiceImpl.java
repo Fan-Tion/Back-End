@@ -31,6 +31,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.Valid;
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.net.URL;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.time.LocalDate;
@@ -65,6 +66,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.multipart.MultipartHttpServletRequest;
 
 @Slf4j
 @Service
@@ -123,11 +125,12 @@ public class AuctionServiceImpl implements AuctionService {
   @Override
   @Transactional
   public ResultDTO<AuctionResponse> updateAuction(@Valid AuctionDto.AuctionRequest request,
-      Map<String, MultipartFile> auctionImage, Long auctionId) {
+      MultipartHttpServletRequest file, Long auctionId) {
 
-    s3Uploader.deleteFolder(auctionId);
+    Map<String, String[]> imageType = file.getParameterMap();
+    Map<String, MultipartFile> auctionImage = file.getFileMap();
 
-    List<String> auctionImgList = updateImages(auctionId, auctionImage);
+    List<String> auctionImgList = updateImages(auctionId, imageType, auctionImage);
 
     Auction auction = updateValue(request, auctionId, auctionImgList);
 
@@ -593,18 +596,30 @@ public class AuctionServiceImpl implements AuctionService {
     }
   }
 
-  public List<String> updateImages(Long auctionId, Map<String, MultipartFile> images) {
+  public List<String> updateImages(Long auctionId, Map<String, String[]> imageType,
+      Map<String, MultipartFile> images) {
+
+    Auction auction = auctionRepository.findById(auctionId)
+        .orElseThrow(() -> new CustomException(NOT_FOUND_AUCTION));
+    String currentImage = auction.getAuctionImage();
+    String[] currentImages = currentImage.split(",");
 
     // URL과 파일을 처리할 리스트 초기화
     List<String> auctionImageUrl = new ArrayList<>();
 
+    int cnt = 1;
+    for (int i = 0; i < imageType.size(); i++) {
+      if (imageType.get("auctionImage[" + i + "].value") != null) {
+        cnt += 1;
+      }
+    }
+
     // 순서와 타입에 따라 데이터를 처리
     try {
-      for (int i = 0; i < images.size(); i++) {
-        String type = images.get("auctionImage[" + i + "].type").getBytes().toString();
+      for (int i = 0; i < imageType.size() - cnt; i++) {
+        String type = imageType.get("auctionImage[" + i + "].type")[0].toString();
         if (type.equals("url")) {
-          String url = new String(
-              images.get("auctionImage[" + i + "].value").getBytes().toString());
+          String url = imageType.get("auctionImage[" + i + "].value")[0].toString();
           auctionImageUrl.add(url);
         } else if (type.equals("file")) {
           MultipartFile file = images.get("auctionImage[" + i + "].value");
@@ -612,31 +627,20 @@ public class AuctionServiceImpl implements AuctionService {
           auctionImageUrl.add(imageUrl);
         }
       }
+
+      // currentImages 중 auctionImageUrl에 없는 이미지를 삭제
+      for (String image : currentImages) {
+        if (!auctionImageUrl.contains(image)) {
+          URL exProfileImageUrl = new URL(image);
+          String exProfileImage = exProfileImageUrl.getPath().substring(1);
+          s3Uploader.deleteFile(exProfileImage);
+        }
+      }
+
       return auctionImageUrl;
     } catch (IOException e) {
       throw new CustomException(IMAGE_IO_ERROR);
     }
-
-//    try {
-//      List<String> imageUrls = new ArrayList<>();
-//      for (int i = 0; i < images.size(); i++) {
-//        if (images.get(i) != null && !images.isEmpty()) {
-//          if (images.get(i) instanceof MultipartFile) {
-//            MultipartFile image = (MultipartFile) images.get(i);
-//            String imageUrl = s3Uploader.upload(image, "auction-images/" + auctionId, i + 1);
-//            imageUrls.add(imageUrl.replace(this.imageUrl, ""));
-//          } else {
-//            imageUrls.add(images.get(i).toString());
-//          }
-//        } else {
-//          throw new CustomException(IMAGE_EXCEPTION);
-//        }
-//      }
-//
-//      return imageUrls;
-//    } catch (IOException e) {
-//      throw new CustomException(IMAGE_IO_ERROR);
-//    }
   }
 
   /**
