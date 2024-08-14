@@ -30,7 +30,8 @@ public class RedisSubscriber implements MessageListener {
 
             // 메세지 전달
             String channel = new String(message.getChannel());
-            sseEmitterService.sendBidToClient(channel, bid);
+            //sseEmitterService.sendBidToClient(channel, bid);
+            sseEmitterService.sendEventToAuction(channel, bid);
 
         } catch (Exception e) {
             log.error(e.getMessage());
