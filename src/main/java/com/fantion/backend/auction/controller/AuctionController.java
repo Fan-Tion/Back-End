@@ -4,7 +4,6 @@ import com.fantion.backend.auction.dto.AuctionDto;
 import com.fantion.backend.auction.dto.AuctionFavoriteDto;
 import com.fantion.backend.auction.dto.AuctionReportDto;
 import com.fantion.backend.auction.dto.AuctionReportDto.AuctionReportResponse;
-import com.fantion.backend.auction.dto.AuctionUpdateDto;
 import com.fantion.backend.auction.dto.CategoryDto;
 import com.fantion.backend.auction.service.AuctionService;
 import com.fantion.backend.common.dto.ResultDTO;
@@ -71,7 +70,7 @@ public class AuctionController {
   @PutMapping(value = "/{auctionId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   public ResponseEntity<ResultDTO<AuctionDto.AuctionResponse>> updateAuction(
       @Valid @RequestPart("request") AuctionDto.AuctionRequest request,
-      @RequestPart("auctionImage") List<AuctionUpdateDto> auctionImage,
+      @RequestPart Map<String, MultipartFile> auctionImage,
       @PathVariable("auctionId") Long auctionId) {
     return ResponseEntity.ok(auctionService.updateAuction(request, auctionImage, auctionId));
   }
