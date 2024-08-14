@@ -45,6 +45,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.data.domain.Page;
@@ -76,8 +77,10 @@ public class AuctionServiceImpl implements AuctionService {
 
   private final S3Uploader s3Uploader;
   private final ObjectMapper objectMapper = new ObjectMapper();
-  private final String imageUrl = "https://fantion-bucket.s3.ap-northeast-2.amazonaws.com/auction-images/";
   private final String serverUrl = "https://www.fantion.kro.kr/auction/";
+
+  @Value("${s3.auction-file-path}")
+  private String imageUrl;
 
   @Override
   @Transactional
@@ -454,25 +457,51 @@ public class AuctionServiceImpl implements AuctionService {
 
   private Auction updateValue(AuctionDto.AuctionRequest request, Long auctionId,
       List<String> auctionImgList) {
+
     Auction auction = auctionRepository.findById(auctionId)
         .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_AUCTION));
 
-    auction.setMember(memberRepository.findById(auctionId)
-        .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER)));
-    auction.setTitle(request.getTitle());
-    auction.setAuctionType(request.isAuctionType());
-    auction.setCategory(request.getCategory());
-    auction.setAuctionImage(setImageUrl(auctionImgList));
-    auction.setDescription(request.getDescription());
-    auction.setCurrentBidPrice(request.getCurrentBidPrice());
-    auction.setCurrentBidder(auction.getCurrentBidder());
-    auction.setBuyNowPrice(request.getBuyNowPrice());
-    auction.setFavoriteCnt(auction.getFavoriteCnt());
-    auction.setCreateDate(LocalDate.now());
-    auction.setEndDate(request.getEndDate());
-    auction.setStatus(auction.isStatus());
+    String email = MemberAuthUtil.getLoginUserId();
+    Member member = memberRepository.findByEmail(email)
+        .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
 
-    return auction;
+    if (member != auction.getMember()) {
+      throw new CustomException(NOT_AUCTION_SELLER);
+    }
+
+//    auction.setMember(memberRepository.findById(auctionId)
+//        .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER)));
+
+    Auction updateAuction = auction.toBuilder()
+        .title(request.getTitle())
+        .auctionType(request.isAuctionType())
+        .category(request.getCategory())
+        .auctionImage(setImageUrl(auctionImgList))
+        .description(request.getDescription())
+        .currentBidPrice(request.getCurrentBidPrice())
+        .currentBidder(auction.getCurrentBidder())
+        .buyNowPrice(request.getBuyNowPrice())
+        .favoriteCnt(auction.getFavoriteCnt())
+        .createDate(LocalDate.now())
+        .endDate(request.getEndDate())
+        .status(auction.isStatus())
+        .build();
+    auctionRepository.save(updateAuction);
+
+//    auction.setTitle(request.getTitle());
+//    auction.setAuctionType(request.isAuctionType());
+//    auction.setCategory(request.getCategory());
+//    auction.setAuctionImage(setImageUrl(auctionImgList));
+//    auction.setDescription(request.getDescription());
+//    auction.setCurrentBidPrice(request.getCurrentBidPrice());
+//    auction.setCurrentBidder(auction.getCurrentBidder());
+//    auction.setBuyNowPrice(request.getBuyNowPrice());
+//    auction.setFavoriteCnt(auction.getFavoriteCnt());
+//    auction.setCreateDate(LocalDate.now());
+//    auction.setEndDate(request.getEndDate());
+//    auction.setStatus(auction.isStatus());
+
+    return updateAuction;
   }
 
   private Auction toAuction(AuctionDto.AuctionRequest request, List<String> auctionImageList) {
