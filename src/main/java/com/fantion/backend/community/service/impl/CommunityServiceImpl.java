@@ -51,6 +51,7 @@ public class CommunityServiceImpl implements CommunityService {
 
     if (postId == null) {
       Post post = Post.builder()
+          .community(community)
           .member(member)
           .status(PostStatus.DRAFTS)
           .build();
@@ -83,6 +84,7 @@ public class CommunityServiceImpl implements CommunityService {
     ImageDto response = ImageDto.builder()
         .imageUrl(imageUrl)
         .postId(postId)
+        .communityId(communityId)
         .build();
 
     return ResultDTO.of("게시글 이미지 저장에 성공했습니다.", response);
