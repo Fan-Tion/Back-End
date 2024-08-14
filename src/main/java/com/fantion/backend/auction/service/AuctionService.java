@@ -2,6 +2,7 @@ package com.fantion.backend.auction.service;
 
 
 import com.fantion.backend.auction.dto.AuctionDto;
+import com.fantion.backend.auction.dto.AuctionDto.AuctionRequest;
 import com.fantion.backend.auction.dto.AuctionFavoriteDto;
 import com.fantion.backend.auction.dto.AuctionReportDto;
 import com.fantion.backend.auction.dto.CategoryDto;
@@ -14,14 +15,15 @@ import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpHeaders;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.multipart.MultipartHttpServletRequest;
 
 public interface AuctionService {
 
   ResultDTO<Map<String, Long>> createAuction(AuctionDto.AuctionRequest request,
       List<MultipartFile> auctionImage);
 
-  ResultDTO<AuctionDto.AuctionResponse> updateAuction(AuctionDto.AuctionRequest request,
-      Map<String, MultipartFile> auctionImage, Long auctionId);
+  ResultDTO<AuctionDto.AuctionResponse> updateAuction(AuctionRequest request,
+      MultipartHttpServletRequest file, Long auctionId);
 
   ResultDTO<Boolean> deleteAuction(Long auctionId);
 
