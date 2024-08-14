@@ -30,7 +30,6 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -38,7 +37,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -47,6 +45,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.data.domain.Page;
@@ -78,7 +77,10 @@ public class AuctionServiceImpl implements AuctionService {
 
   private final S3Uploader s3Uploader;
   private final ObjectMapper objectMapper = new ObjectMapper();
-  private String serverUrl = "https://fantion-bucket.s3.ap-northeast-2.amazonaws.com/auction-images/";
+  private final String serverUrl = "https://www.fantion.kro.kr/auction/";
+
+  @Value("${s3.auction-file-path}")
+  private String imageUrl;
 
   @Override
   @Transactional
@@ -208,10 +210,7 @@ public class AuctionServiceImpl implements AuctionService {
   @Override
   public void endAuctionSaveOrUpdate() {
     List<Auction> endAuctionCategoryList
-        = auctionRepository.findByEndDateBetweenAndStatus(
-        LocalDateTime.now().with(LocalTime.MIN),
-        LocalDateTime.now().with(LocalTime.MAX),
-        false);
+        = auctionRepository.findByEndDateAndStatus(LocalDate.now().minusDays(1), false);
 
     List<String> categoryList = convertAuctionToCategory(endAuctionCategoryList);
 
@@ -221,13 +220,6 @@ public class AuctionServiceImpl implements AuctionService {
     }
     for (String categoryName : categoryList) {
       map.put(categoryName, map.getOrDefault(categoryName, 0) + 1);
-    }
-
-    try {
-      String json = objectMapper.writeValueAsString(map);
-      redisTemplate.opsForValue().set(LocalDate.now().toString(), json, Duration.ofDays(1));
-    } catch (JsonProcessingException e) {
-      throw new CustomException(ErrorCode.PARSING_ERROR);
     }
   }
 
@@ -257,7 +249,7 @@ public class AuctionServiceImpl implements AuctionService {
     for (int i = 1; i < categoryArray.length; i++) {
       categoryList.add(new CategoryDto(
           categoryArray[i].name(),
-          serverUrl + "search?searchOption=CATEGORY&categoryOption="
+          serverUrl + "search?&categoryOption="
               + categoryArray[i].name() + "&keyword=&page=0"));
     }
 
@@ -275,22 +267,22 @@ public class AuctionServiceImpl implements AuctionService {
         .stream()
         .sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
         .map(entry -> new CategoryDto(
-            entry.getKey(), serverUrl + "search?searchOption=CATEGORY&categoryOption="
+            entry.getKey(), serverUrl + "search?&categoryOption="
             + entry.getKey() + "&keyword=&page=0"))
         .collect(Collectors.toList());
 
     Random random = new Random();
     CategoryType[] categoryArray = CategoryType.values();
+    Set<String> categorySet
+        = categoryList.stream().map(CategoryDto::getTitle).collect(Collectors.toSet());
 
-    Set<String> categorySet = new HashSet<>();
-
-    while (categorySet.size() < categoryArray.length) {
+    while (categoryList.size() < categoryArray.length) {
       String categoryTypeStr = categoryArray[random.nextInt(categoryArray.length)].name();
 
       if (categorySet.add(categoryTypeStr)) {
         categoryList.add(new CategoryDto(
             categoryTypeStr,
-            serverUrl + "search?searchOption=CATEGORY&categoryOption=" + categoryTypeStr
+            serverUrl + "search?&categoryOption=" + categoryTypeStr
                 + "&keyword=&page=0"
         ));
       }
@@ -465,25 +457,51 @@ public class AuctionServiceImpl implements AuctionService {
 
   private Auction updateValue(AuctionDto.AuctionRequest request, Long auctionId,
       List<String> auctionImgList) {
+
     Auction auction = auctionRepository.findById(auctionId)
         .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_AUCTION));
 
-    auction.setMember(memberRepository.findById(auctionId)
-        .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER)));
-    auction.setTitle(request.getTitle());
-    auction.setAuctionType(request.isAuctionType());
-    auction.setCategory(request.getCategory());
-    auction.setAuctionImage(setImageUrl(auctionImgList));
-    auction.setDescription(request.getDescription());
-    auction.setCurrentBidPrice(request.getCurrentBidPrice());
-    auction.setCurrentBidder(auction.getCurrentBidder());
-    auction.setBuyNowPrice(request.getBuyNowPrice());
-    auction.setFavoriteCnt(auction.getFavoriteCnt());
-    auction.setCreateDate(LocalDate.now());
-    auction.setEndDate(request.getEndDate());
-    auction.setStatus(auction.isStatus());
+    String email = MemberAuthUtil.getLoginUserId();
+    Member member = memberRepository.findByEmail(email)
+        .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
 
-    return auction;
+    if (member != auction.getMember()) {
+      throw new CustomException(NOT_AUCTION_SELLER);
+    }
+
+//    auction.setMember(memberRepository.findById(auctionId)
+//        .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER)));
+
+    Auction updateAuction = auction.toBuilder()
+        .title(request.getTitle())
+        .auctionType(request.isAuctionType())
+        .category(request.getCategory())
+        .auctionImage(setImageUrl(auctionImgList))
+        .description(request.getDescription())
+        .currentBidPrice(request.getCurrentBidPrice())
+        .currentBidder(auction.getCurrentBidder())
+        .buyNowPrice(request.getBuyNowPrice())
+        .favoriteCnt(auction.getFavoriteCnt())
+        .createDate(LocalDate.now())
+        .endDate(request.getEndDate())
+        .status(auction.isStatus())
+        .build();
+    auctionRepository.save(updateAuction);
+
+//    auction.setTitle(request.getTitle());
+//    auction.setAuctionType(request.isAuctionType());
+//    auction.setCategory(request.getCategory());
+//    auction.setAuctionImage(setImageUrl(auctionImgList));
+//    auction.setDescription(request.getDescription());
+//    auction.setCurrentBidPrice(request.getCurrentBidPrice());
+//    auction.setCurrentBidder(auction.getCurrentBidder());
+//    auction.setBuyNowPrice(request.getBuyNowPrice());
+//    auction.setFavoriteCnt(auction.getFavoriteCnt());
+//    auction.setCreateDate(LocalDate.now());
+//    auction.setEndDate(request.getEndDate());
+//    auction.setStatus(auction.isStatus());
+
+    return updateAuction;
   }
 
   private Auction toAuction(AuctionDto.AuctionRequest request, List<String> auctionImageList) {
@@ -522,7 +540,7 @@ public class AuctionServiceImpl implements AuctionService {
         .auctionType(auction.isAuctionType())
         .auctionImage(
             Arrays.stream(auction.getAuctionImage().split(","))
-                .map(x -> serverUrl + x).toList())
+                .map(x -> imageUrl + x).toList())
         .description(auction.getDescription())
         .currentBidPrice(auction.getCurrentBidPrice())
         .currentBidder(auction.getCurrentBidder())
@@ -555,7 +573,7 @@ public class AuctionServiceImpl implements AuctionService {
       for (int i = 0; i < images.size(); i++) {
         if (images.get(i) != null && !images.get(i).isEmpty()) {
           String imageUrl = s3Uploader.upload(images.get(i), "auction-images/" + auctionId, i + 1);
-          imageUrls.add(imageUrl.replace(serverUrl, ""));
+          imageUrls.add(imageUrl.replace(this.imageUrl, ""));
         } else {
           throw new CustomException(ErrorCode.IMAGE_EXCEPTION);
         }

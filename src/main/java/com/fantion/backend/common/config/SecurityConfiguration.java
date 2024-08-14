@@ -30,12 +30,18 @@ public class SecurityConfiguration {
   public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
     return http
-        .cors(Customizer.withDefaults())
+        .cors(cors -> cors.configurationSource(corsConfigurationSource()))
         .csrf(AbstractHttpConfigurer::disable)
         .authorizeHttpRequests(
-            requests -> requests.requestMatchers("/", "/payments/**", "/members/**", "/auction/**", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
-                    .requestMatchers(HttpMethod.GET,"/bid/**").permitAll()
-                    .anyRequest().authenticated())
+            requests -> requests.requestMatchers("/", "/members/signup", "/members/check-email",
+                    "/members/check-nickname", "/members/signin", "/members/naver/request",
+                    "/members/naver/signin", "/members/reset-password-request", "/members/reset-password",
+                    "/auction/**", "/community/**", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/bid/**").permitAll()
+                .requestMatchers("/payments/**", "/members/naver/link", "/members/naver/unlink",
+                    "/members/signout", "/members/withdrawal", "/members/my-info",
+                    "/members/profile-image", "/members/rating",  "/members/my-balance/**").hasRole("USER")
+                .anyRequest().authenticated())
         .sessionManagement(sessionManagement -> sessionManagement.sessionCreationPolicy(
             SessionCreationPolicy.STATELESS))
         .addFilterBefore(jwtTokenFilter, UsernamePasswordAuthenticationFilter.class)
@@ -46,7 +52,8 @@ public class SecurityConfiguration {
   public CorsConfigurationSource corsConfigurationSource() {
     CorsConfiguration configuration = new CorsConfiguration();
     configuration.addAllowedOriginPattern("*");
-    configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS")); // 허용할 HTTP 메서드를 설정합니다.
+    configuration.setAllowedMethods(
+        Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS")); // 허용할 HTTP 메서드를 설정합니다.
     configuration.setAllowedHeaders(Arrays.asList("*")); // 모든 헤더를 허용합니다.
     configuration.setAllowCredentials(true); // 쿠키 인증을 허용합니다.
     UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
