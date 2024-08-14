@@ -3,8 +3,14 @@ package com.fantion.backend.auction.service.impl;
 import static com.fantion.backend.exception.ErrorCode.*;
 
 import com.fantion.backend.auction.dto.AuctionDto;
+import com.fantion.backend.auction.dto.AuctionDto.AuctionRequest;
+import com.fantion.backend.auction.dto.AuctionDto.AuctionResponse;
 import com.fantion.backend.auction.dto.AuctionFavoriteDto;
+import com.fantion.backend.auction.dto.AuctionFavoriteDto.Response;
 import com.fantion.backend.auction.dto.AuctionReportDto;
+import com.fantion.backend.auction.dto.AuctionReportDto.AuctionReportRequest;
+import com.fantion.backend.auction.dto.AuctionReportDto.AuctionReportResponse;
+import com.fantion.backend.auction.dto.AuctionUpdateDto;
 import com.fantion.backend.auction.dto.CategoryDto;
 import com.fantion.backend.auction.entity.Auction;
 import com.fantion.backend.auction.entity.AuctionReport;
@@ -39,6 +45,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
@@ -105,10 +112,10 @@ public class AuctionServiceImpl implements AuctionService {
 
   // 경매 상세보기
   @Override
-  public ResultDTO<AuctionDto.AuctionResponse> findAuction(Long auctionId) {
+  public ResultDTO<AuctionResponse> findAuction(Long auctionId) {
     // 상세보기할 경매 조회
     Auction auction = auctionRepository.findById(auctionId)
-        .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_AUCTION));
+        .orElseThrow(() -> new CustomException(NOT_FOUND_AUCTION));
 
     return ResultDTO.of("성공적으로 상세보기할 경매가 조회되었습니다.", toResponse(auction));
   }
@@ -118,11 +125,11 @@ public class AuctionServiceImpl implements AuctionService {
    */
   @Override
   @Transactional
-  public ResultDTO<AuctionDto.AuctionResponse> updateAuction(
-      @Valid AuctionDto.AuctionRequest request, List<MultipartFile> auctionImage, Long auctionId) {
+  public ResultDTO<AuctionResponse> updateAuction(
+      @Valid AuctionDto.AuctionRequest request, List<AuctionUpdateDto> auctionImage, Long auctionId) {
     s3Uploader.deleteFolder(auctionId);
 
-    Auction auction = updateValue(request, auctionId, saveImages(auctionId, auctionImage));
+    Auction auction = updateValue(request, auctionId, updateImages(auctionId, auctionImage));
 
     return ResultDTO.of("성공적으로 경매를 변경했습니다.", toResponse(auction));
   }
@@ -134,7 +141,7 @@ public class AuctionServiceImpl implements AuctionService {
   @Transactional
   public ResultDTO<Boolean> deleteAuction(Long auctionId) {
     auctionRepository.findById(auctionId).orElseThrow(
-        () -> new CustomException(ErrorCode.NOT_FOUND_AUCTION));
+        () -> new CustomException(NOT_FOUND_AUCTION));
 
     auctionRepository.deleteById(auctionId);
     s3Uploader.deleteFolder(auctionId);
@@ -146,7 +153,7 @@ public class AuctionServiceImpl implements AuctionService {
    * 경매 리스트
    */
   @Override
-  public ResultDTO<Page<AuctionDto.AuctionResponse>> getList(int page) {
+  public ResultDTO<Page<AuctionResponse>> getList(int page) {
     Pageable pageable = getPageable(page);
 
     Page<Auction> auctionPage = auctionRepository.findAllByStatus(true, pageable);
@@ -161,7 +168,7 @@ public class AuctionServiceImpl implements AuctionService {
    * 경매 검색
    */
   @Override
-  public ResultDTO<Page<AuctionDto.AuctionResponse>> getSearchList(int page, CategoryType category,
+  public ResultDTO<Page<AuctionResponse>> getSearchList(int page, CategoryType category,
       String keyword) {
 
     Pageable pageable = getPageable(page);
@@ -183,7 +190,7 @@ public class AuctionServiceImpl implements AuctionService {
         }
       }
     } catch (Exception e) {
-      throw new CustomException(ErrorCode.ENUM_INVALID_FORMAT);
+      throw new CustomException(ENUM_INVALID_FORMAT);
     }
 
     return ResultDTO.of("경매 검색을 완료했습니다.", covertToResponseList(auctionPage));
@@ -198,9 +205,9 @@ public class AuctionServiceImpl implements AuctionService {
       Resource resource = new UrlResource(imagePath.toUri());
       return resource;
     } catch (MalformedURLException e) {
-      throw new CustomException(ErrorCode.IMAGE_MALFORMED);
+      throw new CustomException(IMAGE_MALFORMED);
     } catch (InternalResourceException e) {
-      throw new CustomException(ErrorCode.IMAGE_INTERNAL_SERVER_ERROR);
+      throw new CustomException(IMAGE_INTERNAL_SERVER_ERROR);
     }
   }
 
@@ -234,7 +241,7 @@ public class AuctionServiceImpl implements AuctionService {
       try {
         return objectMapper.readValue(json, Map.class);
       } catch (JsonProcessingException e) {
-        throw new CustomException(ErrorCode.PARSING_ERROR);
+        throw new CustomException(PARSING_ERROR);
       }
     }
     return null;
@@ -265,7 +272,7 @@ public class AuctionServiceImpl implements AuctionService {
 
     List<CategoryDto> categoryList = map.entrySet()
         .stream()
-        .sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
+        .sorted(Entry.<String, Integer>comparingByValue().reversed())
         .map(entry -> new CategoryDto(
             entry.getKey(), serverUrl + "search?&categoryOption="
             + entry.getKey() + "&keyword=&page=0"))
@@ -293,7 +300,7 @@ public class AuctionServiceImpl implements AuctionService {
 
   @Transactional
   @Override
-  public ResultDTO<AuctionFavoriteDto.Response> favoriteChk(Long auctionId) {
+  public ResultDTO<Response> favoriteChk(Long auctionId) {
     // 찜 여부 확인할 경매 조회
     Auction favoriteChkAuction = auctionRepository.findById(auctionId)
         .orElseThrow(() -> new CustomException(NOT_FOUND_AUCTION));
@@ -309,7 +316,7 @@ public class AuctionServiceImpl implements AuctionService {
     Optional<FavoriteAuction> favoriteAuction = favoriteAuctionRepository
         .findByAuctionAndMember(favoriteChkAuction, member);
 
-    AuctionFavoriteDto.Response response = AuctionFavoriteDto.Response.builder()
+    Response response = Response.builder()
         .favoriteChk(true)
         .title(favoriteChkAuction.getTitle())
         .build();
@@ -324,7 +331,7 @@ public class AuctionServiceImpl implements AuctionService {
 
   @Transactional
   @Override
-  public ResultDTO<AuctionFavoriteDto.Response> favoriteAuction(Long auctionId) {
+  public ResultDTO<Response> favoriteAuction(Long auctionId) {
     // 찜하거나 찜 취소할 경매 조회
     Auction favoriteChkAuction = auctionRepository.findById(auctionId)
         .orElseThrow(() -> new CustomException(NOT_FOUND_AUCTION));
@@ -340,7 +347,7 @@ public class AuctionServiceImpl implements AuctionService {
     Optional<FavoriteAuction> favoriteAuction = favoriteAuctionRepository
         .findByAuctionAndMember(favoriteChkAuction, member);
 
-    AuctionFavoriteDto.Response response = AuctionFavoriteDto.Response.builder()
+    Response response = Response.builder()
         .favoriteChk(true)
         .title(favoriteChkAuction.getTitle())
         .build();
@@ -364,7 +371,7 @@ public class AuctionServiceImpl implements AuctionService {
   }
 
   @Override
-  public ResultDTO<Page<AuctionDto.AuctionResponse>> getSellAuctionList(int page) {
+  public ResultDTO<Page<AuctionResponse>> getSellAuctionList(int page) {
     // 로그인한 사용자 가져오기
     String loginEmail = MemberAuthUtil.getLoginUserId();
 
@@ -375,13 +382,13 @@ public class AuctionServiceImpl implements AuctionService {
     Pageable pageable = getPageable(page);
 
     // 경매 주최자가 본인인 경매 물품 조회
-    Page<AuctionDto.AuctionResponse> response = covertToResponseList(
+    Page<AuctionResponse> response = covertToResponseList(
         auctionRepository.findByMember(seller, pageable));
     return ResultDTO.of("성공적으로 판매한 경매 목룍이 조회되었습니다.", response);
   }
 
   @Override
-  public ResultDTO<Page<AuctionDto.AuctionResponse>> getBuyAuctionList(int page) {
+  public ResultDTO<Page<AuctionResponse>> getBuyAuctionList(int page) {
     // 로그인한 사용자 가져오기
     String loginEmail = MemberAuthUtil.getLoginUserId();
 
@@ -392,13 +399,13 @@ public class AuctionServiceImpl implements AuctionService {
     Pageable pageable = getPageable(page);
 
     // 현재 입찰자가 본인이면서 인수확인이 되어있는 경매 물품 조회
-    Page<AuctionDto.AuctionResponse> response = covertToResponseList(auctionRepository
+    Page<AuctionResponse> response = covertToResponseList(auctionRepository
         .findByStatusAndReceiveChkAndCurrentBidder(false, true, buyer.getNickname(), pageable));
     return ResultDTO.of("성공적으로 구매한 경매 목룍이 조회되었습니다.", response);
   }
 
   @Override
-  public ResultDTO<Page<AuctionDto.AuctionResponse>> getJoinAuctionList(int page) {
+  public ResultDTO<Page<AuctionResponse>> getJoinAuctionList(int page) {
     // 로그인한 사용자 가져오기
     String loginEmail = MemberAuthUtil.getLoginUserId();
 
@@ -409,13 +416,13 @@ public class AuctionServiceImpl implements AuctionService {
     Pageable pageable = getPageable(page);
 
     // 입찰 목록에서 경매목록 추출
-    Page<AuctionDto.AuctionResponse> response = covertToResponseList(
+    Page<AuctionResponse> response = covertToResponseList(
         bidRepository.findByBidder(bidder, pageable).map(Bid::getAuctionId));
     return ResultDTO.of("성공적으로 입찰한 경매 목룍이 조회되었습니다.", response);
   }
 
   @Override
-  public ResultDTO<Page<AuctionDto.AuctionResponse>> getFavoriteAuctionList(int page) {
+  public ResultDTO<Page<AuctionResponse>> getFavoriteAuctionList(int page) {
     // 로그인한 사용자 가져오기
     String loginEmail = MemberAuthUtil.getLoginUserId();
 
@@ -426,14 +433,14 @@ public class AuctionServiceImpl implements AuctionService {
     Pageable pageable = getPageable(page);
 
     // 찜한 목록에서 경매목록 추출
-    Page<AuctionDto.AuctionResponse> response = covertToResponseList(
+    Page<AuctionResponse> response = covertToResponseList(
         favoriteAuctionRepository.findByMember(member, pageable).map(FavoriteAuction::getAuction));
     return ResultDTO.of("성공적으로 찜한 경매 목룍이 조회되었습니다.", response);
   }
 
   @Override
-  public ResultDTO<AuctionReportDto.AuctionReportResponse> reportAuction(Long auctionId,
-      AuctionReportDto.AuctionReportRequest request) {
+  public ResultDTO<AuctionReportResponse> reportAuction(Long auctionId,
+      AuctionReportRequest request) {
     String email = MemberAuthUtil.getLoginUserId();
     Member member = memberRepository.findByEmail(email)
         .orElseThrow(() -> new CustomException(NOT_FOUND_MEMBER));
@@ -452,18 +459,18 @@ public class AuctionServiceImpl implements AuctionService {
     auctionReportRepository.save(auctionReport);
 
     return ResultDTO.of("성공적으로 경매신고가 완료되었습니다.",
-        AuctionReportDto.AuctionReportResponse.builder().title(auction.getTitle()).build());
+        AuctionReportResponse.builder().title(auction.getTitle()).build());
   }
 
-  private Auction updateValue(AuctionDto.AuctionRequest request, Long auctionId,
+  private Auction updateValue(AuctionRequest request, Long auctionId,
       List<String> auctionImgList) {
 
     Auction auction = auctionRepository.findById(auctionId)
-        .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_AUCTION));
+        .orElseThrow(() -> new CustomException(NOT_FOUND_AUCTION));
 
     String email = MemberAuthUtil.getLoginUserId();
     Member member = memberRepository.findByEmail(email)
-        .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
+        .orElseThrow(() -> new CustomException(NOT_FOUND_MEMBER));
 
     if (member != auction.getMember()) {
       throw new CustomException(NOT_AUCTION_SELLER);
@@ -504,10 +511,10 @@ public class AuctionServiceImpl implements AuctionService {
     return updateAuction;
   }
 
-  private Auction toAuction(AuctionDto.AuctionRequest request, List<String> auctionImageList) {
+  private Auction toAuction(AuctionRequest request, List<String> auctionImageList) {
     return Auction.builder()
         .member(memberRepository.findById(getLoginUserId())
-            .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER)))
+            .orElseThrow(() -> new CustomException(NOT_FOUND_MEMBER)))
         .title(request.getTitle())
         .category(request.getCategory())
         .auctionType(request.isAuctionType())
@@ -523,7 +530,7 @@ public class AuctionServiceImpl implements AuctionService {
         .build();
   }
 
-  private AuctionDto.AuctionResponse toResponse(Auction auction) {
+  private AuctionResponse toResponse(Auction auction) {
     Member seller = memberRepository.findById(auction.getMember().getMemberId())
         .orElseThrow(() -> new CustomException(NOT_FOUND_MEMBER));
 
@@ -532,7 +539,7 @@ public class AuctionServiceImpl implements AuctionService {
       throw new CustomException(IMAGE_NOT_FOUND);
     }
 
-    return AuctionDto.AuctionResponse.builder()
+    return AuctionResponse.builder()
         .auctionId(auction.getAuctionId())
         .title(auction.getTitle())
         .auctionUserNickname(seller.getNickname())
@@ -557,8 +564,8 @@ public class AuctionServiceImpl implements AuctionService {
   /**
    * Page<Auction> -> Page<Response>
    */
-  private Page<AuctionDto.AuctionResponse> covertToResponseList(Page<Auction> auctionList) {
-    List<AuctionDto.AuctionResponse> responseList = auctionList.stream().map(this::toResponse)
+  private Page<AuctionResponse> covertToResponseList(Page<Auction> auctionList) {
+    List<AuctionResponse> responseList = auctionList.stream().map(this::toResponse)
         .collect(Collectors.toList());
 
     return new PageImpl<>(responseList, auctionList.getPageable(), auctionList.getTotalElements());
@@ -567,6 +574,7 @@ public class AuctionServiceImpl implements AuctionService {
   /**
    * 이미지 저장
    */
+
   public List<String> saveImages(Long auctionId, List<MultipartFile> images) {
     try {
       List<String> imageUrls = new ArrayList<>();
@@ -585,6 +593,29 @@ public class AuctionServiceImpl implements AuctionService {
     }
   }
 
+  public List<String> updateImages(Long auctionId, List<AuctionUpdateDto> images) {
+    try {
+      List<String> imageUrls = new ArrayList<>();
+      for (int i = 0; i < images.size(); i++) {
+        if (images.get(i) != null && !images.isEmpty()) {
+          if (images.get(i) instanceof MultipartFile) {
+            MultipartFile image = (MultipartFile) images.get(i);
+            String imageUrl = s3Uploader.upload(image, "auction-images/" + auctionId, i + 1);
+            imageUrls.add(imageUrl.replace(this.imageUrl, ""));
+          } else {
+            imageUrls.add(images.get(i).toString());
+          }
+        } else {
+          throw new CustomException(IMAGE_EXCEPTION);
+        }
+      }
+
+      return imageUrls;
+    } catch (IOException e) {
+      throw new CustomException(IMAGE_IO_ERROR);
+    }
+  }
+
   /**
    * 이미지 url세팅
    */
@@ -592,11 +623,11 @@ public class AuctionServiceImpl implements AuctionService {
     try {
       return auctionImgList == null ? null : String.join(",", auctionImgList);
     } catch (SecurityException e) {
-      throw new CustomException(ErrorCode.IMAGE_ACCESS_DENIED);
+      throw new CustomException(IMAGE_ACCESS_DENIED);
     } catch (InvalidPathException e) {
-      throw new CustomException(ErrorCode.IMAGE_NOT_HAVE_PATH);
+      throw new CustomException(IMAGE_NOT_HAVE_PATH);
     } catch (Exception e) {
-      throw new CustomException(ErrorCode.IMAGE_EXCEPTION);
+      throw new CustomException(IMAGE_EXCEPTION);
     }
   }
 
@@ -611,7 +642,7 @@ public class AuctionServiceImpl implements AuctionService {
     String email = getLoginUserEmail();
     if (email != null) {
       return memberRepository.findByEmail(email)
-          .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER))
+          .orElseThrow(() -> new CustomException(NOT_FOUND_MEMBER))
           .getMemberId();
     }
     throw new RuntimeException("User is not authenticated");
