@@ -4,6 +4,7 @@ import com.fantion.backend.auction.entity.Auction;
 import com.fantion.backend.member.entity.Member;
 import com.fantion.backend.type.CategoryType;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
@@ -21,7 +22,7 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
   List<Auction> findByCurrentBidderAndStatus(String currentBidder,boolean status);
 
   List<Auction> findByStatus(boolean status);
-
+  
   List<Auction> findByEndDateAndStatus(LocalDate endDay, boolean auctionStatus);
 
   List<Auction> findByAuctionTypeAndStatus(boolean auctionType,boolean status);
