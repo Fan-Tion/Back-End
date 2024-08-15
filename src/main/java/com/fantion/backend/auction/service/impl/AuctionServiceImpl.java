@@ -479,14 +479,13 @@ public class AuctionServiceImpl implements AuctionService {
       throw new CustomException(NOT_AUCTION_SELLER);
     }
 
-//    auction.setMember(memberRepository.findById(auctionId)
-//        .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER)));
+    String url = setImageUrl(auctionImgList);
 
     Auction updateAuction = auction.toBuilder()
         .title(request.getTitle())
         .auctionType(request.isAuctionType())
         .category(request.getCategory())
-        .auctionImage(setImageUrl(auctionImgList))
+        .auctionImage(url)
         .description(request.getDescription())
         .currentBidPrice(request.getCurrentBidPrice())
         .currentBidder(auction.getCurrentBidder())
@@ -497,19 +496,6 @@ public class AuctionServiceImpl implements AuctionService {
         .status(auction.isStatus())
         .build();
     auctionRepository.save(updateAuction);
-
-//    auction.setTitle(request.getTitle());
-//    auction.setAuctionType(request.isAuctionType());
-//    auction.setCategory(request.getCategory());
-//    auction.setAuctionImage(setImageUrl(auctionImgList));
-//    auction.setDescription(request.getDescription());
-//    auction.setCurrentBidPrice(request.getCurrentBidPrice());
-//    auction.setCurrentBidder(auction.getCurrentBidder());
-//    auction.setBuyNowPrice(request.getBuyNowPrice());
-//    auction.setFavoriteCnt(auction.getFavoriteCnt());
-//    auction.setCreateDate(LocalDate.now());
-//    auction.setEndDate(request.getEndDate());
-//    auction.setStatus(auction.isStatus());
 
     return updateAuction;
   }
@@ -549,8 +535,7 @@ public class AuctionServiceImpl implements AuctionService {
         .category(auction.getCategory())
         .auctionType(auction.isAuctionType())
         .auctionImage(
-            Arrays.stream(auction.getAuctionImage().split(","))
-                .map(x -> imageUrl + x).toList())
+            Arrays.stream(auction.getAuctionImage().split(",")).toList())
         .description(auction.getDescription())
         .currentBidPrice(auction.getCurrentBidPrice())
         .currentBidder(auction.getCurrentBidder())
