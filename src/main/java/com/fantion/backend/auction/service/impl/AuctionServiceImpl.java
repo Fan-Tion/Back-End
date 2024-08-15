@@ -103,8 +103,7 @@ public class AuctionServiceImpl implements AuctionService {
                 .orElseThrow(() -> new CustomException(NOT_FOUND_MEMBER)))
         .orElseThrow(() -> new CustomException(NOT_FOUND_AUCTION));
 
-    auction.setAuctionImage(
-        setImageUrl(saveImages(auction.getAuctionId(), auctionImage)));
+    auction.setAuctionImage(setImageUrl(saveImages(auction.getAuctionId(), auctionImage)));
 
     return ResultDTO.of("경매 생성에 성공했습니다.", Map.of("auctionId", auction.getAuctionId()));
   }
@@ -535,7 +534,7 @@ public class AuctionServiceImpl implements AuctionService {
         .category(auction.getCategory())
         .auctionType(auction.isAuctionType())
         .auctionImage(
-            Arrays.stream(auction.getAuctionImage().split(",")).toList())
+            Arrays.stream(auction.getAuctionImage().split(",")).map(x -> imageUrl + x).toList())
         .description(auction.getDescription())
         .currentBidPrice(auction.getCurrentBidPrice())
         .currentBidder(auction.getCurrentBidder())
@@ -605,18 +604,18 @@ public class AuctionServiceImpl implements AuctionService {
         String type = imageType.get("auctionImage[" + i + "].type")[0].toString();
         if (type.equals("url")) {
           String url = imageType.get("auctionImage[" + i + "].value")[0].toString();
-          auctionImageUrl.add(url);
+          auctionImageUrl.add(url.replace(this.imageUrl, ""));
         } else if (type.equals("file")) {
           MultipartFile file = images.get("auctionImage[" + i + "].value");
           String imageUrl = s3Uploader.upload(file, "auction-images/" + auctionId, i + 1);
-          auctionImageUrl.add(imageUrl);
+          auctionImageUrl.add(imageUrl.replace(this.imageUrl, ""));
         }
       }
 
       // currentImages 중 auctionImageUrl에 없는 이미지를 삭제
       for (String image : currentImages) {
         if (!auctionImageUrl.contains(image)) {
-          URL exProfileImageUrl = new URL(image);
+          URL exProfileImageUrl = new URL(imageUrl+image);
           String exProfileImage = exProfileImageUrl.getPath().substring(1);
           s3Uploader.deleteFile(exProfileImage);
         }
