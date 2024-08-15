@@ -103,8 +103,7 @@ public class AuctionServiceImpl implements AuctionService {
                 .orElseThrow(() -> new CustomException(NOT_FOUND_MEMBER)))
         .orElseThrow(() -> new CustomException(NOT_FOUND_AUCTION));
 
-    auction.setAuctionImage(
-        setImageUrl(saveImages(auction.getAuctionId(), auctionImage)));
+    auction.setAuctionImage(setImageUrl(saveImages(auction.getAuctionId(), auctionImage)));
 
     return ResultDTO.of("경매 생성에 성공했습니다.", Map.of("auctionId", auction.getAuctionId()));
   }
@@ -479,14 +478,13 @@ public class AuctionServiceImpl implements AuctionService {
       throw new CustomException(NOT_AUCTION_SELLER);
     }
 
-//    auction.setMember(memberRepository.findById(auctionId)
-//        .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER)));
+    String url = setImageUrl(auctionImgList);
 
     Auction updateAuction = auction.toBuilder()
         .title(request.getTitle())
         .auctionType(request.isAuctionType())
         .category(request.getCategory())
-        .auctionImage(setImageUrl(auctionImgList))
+        .auctionImage(url)
         .description(request.getDescription())
         .currentBidPrice(request.getCurrentBidPrice())
         .currentBidder(auction.getCurrentBidder())
@@ -497,19 +495,6 @@ public class AuctionServiceImpl implements AuctionService {
         .status(auction.isStatus())
         .build();
     auctionRepository.save(updateAuction);
-
-//    auction.setTitle(request.getTitle());
-//    auction.setAuctionType(request.isAuctionType());
-//    auction.setCategory(request.getCategory());
-//    auction.setAuctionImage(setImageUrl(auctionImgList));
-//    auction.setDescription(request.getDescription());
-//    auction.setCurrentBidPrice(request.getCurrentBidPrice());
-//    auction.setCurrentBidder(auction.getCurrentBidder());
-//    auction.setBuyNowPrice(request.getBuyNowPrice());
-//    auction.setFavoriteCnt(auction.getFavoriteCnt());
-//    auction.setCreateDate(LocalDate.now());
-//    auction.setEndDate(request.getEndDate());
-//    auction.setStatus(auction.isStatus());
 
     return updateAuction;
   }
@@ -549,8 +534,7 @@ public class AuctionServiceImpl implements AuctionService {
         .category(auction.getCategory())
         .auctionType(auction.isAuctionType())
         .auctionImage(
-            Arrays.stream(auction.getAuctionImage().split(","))
-                .map(x -> imageUrl + x).toList())
+            Arrays.stream(auction.getAuctionImage().split(",")).map(x -> imageUrl + x).toList())
         .description(auction.getDescription())
         .currentBidPrice(auction.getCurrentBidPrice())
         .currentBidder(auction.getCurrentBidder())
@@ -620,18 +604,18 @@ public class AuctionServiceImpl implements AuctionService {
         String type = imageType.get("auctionImage[" + i + "].type")[0].toString();
         if (type.equals("url")) {
           String url = imageType.get("auctionImage[" + i + "].value")[0].toString();
-          auctionImageUrl.add(url);
+          auctionImageUrl.add(url.replace(this.imageUrl, ""));
         } else if (type.equals("file")) {
           MultipartFile file = images.get("auctionImage[" + i + "].value");
           String imageUrl = s3Uploader.upload(file, "auction-images/" + auctionId, i + 1);
-          auctionImageUrl.add(imageUrl);
+          auctionImageUrl.add(imageUrl.replace(this.imageUrl, ""));
         }
       }
 
       // currentImages 중 auctionImageUrl에 없는 이미지를 삭제
       for (String image : currentImages) {
         if (!auctionImageUrl.contains(image)) {
-          URL exProfileImageUrl = new URL(image);
+          URL exProfileImageUrl = new URL(imageUrl+image);
           String exProfileImage = exProfileImageUrl.getPath().substring(1);
           s3Uploader.deleteFile(exProfileImage);
         }
