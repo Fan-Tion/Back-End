@@ -591,7 +591,7 @@ public class AuctionServiceImpl implements AuctionService {
     // URL과 파일을 처리할 리스트 초기화
     List<String> auctionImageUrl = new ArrayList<>();
 
-    int cnt = 1;
+    int cnt = 0;
     for (int i = 0; i < imageType.size(); i++) {
       if (imageType.get("auctionImage[" + i + "].value") != null) {
         cnt += 1;
