@@ -2,9 +2,9 @@ package com.fantion.backend.community.service.impl;
 
 import com.fantion.backend.common.component.S3Uploader;
 import com.fantion.backend.common.dto.ResultDTO;
+import com.fantion.backend.community.dto.CheckDto;
 import com.fantion.backend.community.dto.ImageDto;
 import com.fantion.backend.community.dto.PostDto;
-import com.fantion.backend.community.dto.PostDto.PostRequest;
 import com.fantion.backend.community.entity.Community;
 import com.fantion.backend.community.entity.Post;
 import com.fantion.backend.community.repository.CommunityRepository;
@@ -91,7 +91,7 @@ public class CommunityServiceImpl implements CommunityService {
   }
 
   @Override
-  public ResultDTO<PostDto.PostResponse> createPost(PostRequest request, Long communityId) {
+  public ResultDTO<CheckDto> createPost(Long communityId, Long postId, PostDto.PostRequest request) {
 
     Community community = communityRepository.findById(communityId)
         .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_CHANNEL));
@@ -100,7 +100,7 @@ public class CommunityServiceImpl implements CommunityService {
       throw new CustomException(ErrorCode.NOT_FOUND_CHANNEL);
     }
 
-    Post post = postRepository.findById(request.getPostId())
+    Post post = postRepository.findByPostIdAndStatus(postId, PostStatus.DRAFTS)
         .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_POST));
 
     String email = MemberAuthUtil.getLoginUserId();
@@ -123,17 +123,10 @@ public class CommunityServiceImpl implements CommunityService {
         .build();
     postRepository.save(createdPost);
 
-    PostDto.PostResponse response = PostDto.PostResponse.builder()
-        .postId(createdPost.getPostId())
-        .channelName(createdPost.getCommunity().getTitle())
-        .nickname(createdPost.getMember().getNickname())
-        .title(createdPost.getTitle())
-        .content(createdPost.getContent())
-        .likeCnt(createdPost.getLikeCnt())
-        .viewCnt(createdPost.getViewCnt())
-        .createDate(createdPost.getCreateDate())
-        .deleteDate(createdPost.getDeleteDate())
-        .status(createdPost.getStatus())
+    CheckDto response = CheckDto.builder()
+        .success(true)
+        .communityId(communityId)
+        .postId(postId)
         .build();
 
     return ResultDTO.of("게시글 작성에 성공했습니다.", response);
@@ -156,19 +149,44 @@ public class CommunityServiceImpl implements CommunityService {
         .build();
     postRepository.save(updateViewCnt);
 
-    PostDto.PostResponse response = PostDto.PostResponse.builder()
-        .postId(updateViewCnt.getPostId())
-        .channelName(updateViewCnt.getCommunity().getTitle())
-        .nickname(updateViewCnt.getMember().getNickname())
-        .title(updateViewCnt.getTitle())
-        .content(updateViewCnt.getContent())
-        .likeCnt(updateViewCnt.getLikeCnt())
-        .viewCnt(updateViewCnt.getViewCnt())
-        .createDate(updateViewCnt.getCreateDate())
-        .deleteDate(updateViewCnt.getDeleteDate())
-        .status(updateViewCnt.getStatus())
-        .build();
+    PostDto.PostResponse response = PostDto.toResponse(updateViewCnt);
 
     return ResultDTO.of("게시글 조회에 성공했습니다.", response);
+  }
+
+  @Override
+  public ResultDTO<CheckDto> updatePost(Long communityId, Long postId, PostDto.PostRequest request) {
+
+    Community community = communityRepository.findById(communityId)
+        .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_CHANNEL));
+
+    if (community.getStatus().equals(CommunityStatus.CLOSE)) {
+      throw new CustomException(ErrorCode.NOT_FOUND_CHANNEL);
+    }
+
+    Post post = postRepository.findByPostIdAndStatus(postId, PostStatus.ACTIVE)
+        .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_POST));
+
+    String email = MemberAuthUtil.getLoginUserId();
+    Member member = memberRepository.findByEmail(email)
+        .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
+
+    if (!post.getMember().equals(member)) {
+      throw new CustomException(ErrorCode.INVALID_POST_MEMBER);
+    }
+
+    Post updatePost = post.toBuilder()
+        .title(request.getTitle())
+        .content(request.getContent())
+        .build();
+    postRepository.save(updatePost);
+
+    CheckDto response = CheckDto.builder()
+        .success(true)
+        .communityId(communityId)
+        .postId(postId)
+        .build();
+
+    return ResultDTO.of("게시글 수정에 성공했습니다.", response);
   }
 }

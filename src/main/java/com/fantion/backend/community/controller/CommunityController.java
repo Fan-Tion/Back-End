@@ -1,6 +1,7 @@
 package com.fantion.backend.community.controller;
 
 import com.fantion.backend.common.dto.ResultDTO;
+import com.fantion.backend.community.dto.CheckDto;
 import com.fantion.backend.community.dto.ImageDto;
 import com.fantion.backend.community.dto.PostDto;
 import com.fantion.backend.community.service.CommunityService;
@@ -11,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -34,16 +36,25 @@ public class CommunityController {
     return ResponseEntity.ok(result);
   }
 
-  @PostMapping("/{communityId}/post")
-  public ResponseEntity<ResultDTO<PostDto.PostResponse>> createPost(
-      @PathVariable Long communityId, @RequestBody @Valid PostDto.PostRequest request) {
-    ResultDTO<PostDto.PostResponse> result = communityService.createPost(request, communityId);
+  @PostMapping("/{communityId}/post/{postId}")
+  public ResponseEntity<ResultDTO<CheckDto>> createPost(
+      @PathVariable Long communityId, @PathVariable Long postId,
+      @RequestBody @Valid PostDto.PostRequest request) {
+    ResultDTO<CheckDto> result = communityService.createPost(communityId, postId, request);
     return ResponseEntity.ok(result);
   }
 
   @GetMapping("/{communityId}/post/{postId}")
-  public ResponseEntity<ResultDTO<PostDto.PostResponse>> getPost(@PathVariable Long communityId, @PathVariable Long postId) {
+  public ResponseEntity<ResultDTO<PostDto.PostResponse>> getPost(@PathVariable Long communityId,
+      @PathVariable Long postId) {
     ResultDTO<PostDto.PostResponse> result = communityService.getPost(communityId, postId);
+    return ResponseEntity.ok(result);
+  }
+
+  @PutMapping("/{communityId}/post/{postId}")
+  public ResponseEntity<ResultDTO<CheckDto>> updatePost(@PathVariable Long communityId,
+      @PathVariable Long postId, @RequestBody @Valid PostDto.PostRequest request) {
+    ResultDTO<CheckDto> result = communityService.updatePost(communityId, postId, request);
     return ResponseEntity.ok(result);
   }
 }
