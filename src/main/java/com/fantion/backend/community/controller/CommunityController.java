@@ -67,7 +67,8 @@ public class CommunityController {
   }
 
   @GetMapping("/{communityId}")
-  public ResponseEntity<ResultDTO<Page<PostDto.PostResponse>>> getPostList(@PathVariable Long communityId, Integer page) {
+  public ResponseEntity<ResultDTO<Page<PostDto.PostResponse>>> getPostList(
+      @PathVariable Long communityId, @RequestParam(name = "page", defaultValue = "0") Integer page) {
     ResultDTO<Page<PostDto.PostResponse>> result = communityService.getPostList(communityId, page);
     return ResponseEntity.ok(result);
   }
