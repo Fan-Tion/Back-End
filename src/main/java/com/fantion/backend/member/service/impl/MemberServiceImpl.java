@@ -5,6 +5,8 @@ import com.fantion.backend.auction.repository.AuctionRepository;
 import com.fantion.backend.common.component.MailComponents;
 import com.fantion.backend.common.component.S3Uploader;
 import com.fantion.backend.common.dto.ResultDTO;
+import com.fantion.backend.community.entity.Post;
+import com.fantion.backend.community.repository.PostRepository;
 import com.fantion.backend.exception.ErrorCode;
 import com.fantion.backend.exception.impl.CustomException;
 import com.fantion.backend.member.auth.MemberAuthUtil;
@@ -33,6 +35,7 @@ import com.fantion.backend.member.repository.MoneyRepository;
 import com.fantion.backend.member.repository.RatingHistoryRepository;
 import com.fantion.backend.member.service.MemberService;
 import com.fantion.backend.type.MemberStatus;
+import com.fantion.backend.type.PostStatus;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
 import java.net.MalformedURLException;
@@ -76,6 +79,12 @@ public class MemberServiceImpl implements MemberService {
   private static final Pattern NICKNAME_PATTERN = Pattern.compile("^[a-zA-Z0-9가-힣]{1,12}$");
 
   private final MemberRepository memberRepository;
+  private final AuctionRepository auctionRepository;
+  private final MoneyRepository moneyRepository;
+  private final RatingHistoryRepository ratingHistoryRepository;
+  private final BalanceHistoryRepository balanceHistoryRepository;
+  private final PostRepository postRepository;
+
   private final JwtTokenProvider jwtTokenProvider;
   private final RedisTemplate<String, String> redisTemplate;
   private final NaverLoginClient naverLoginClient;
@@ -85,12 +94,9 @@ public class MemberServiceImpl implements MemberService {
   private final Random random = new Random();
   private final HttpServletRequest httpServletRequest;
   private final S3Uploader s3Uploader;
-  private final MoneyRepository moneyRepository;
   private final PasswordEncoder passwordEncoder;
   private final MailComponents mailComponents;
-  private final AuctionRepository auctionRepository;
-  private final RatingHistoryRepository ratingHistoryRepository;
-  private final BalanceHistoryRepository balanceHistoryRepository;
+
 
   @Override
   @Transactional
@@ -314,7 +320,8 @@ public class MemberServiceImpl implements MemberService {
           .build();
       moneyRepository.save(money);
 
-      TokenDto.Local tokens = jwtTokenProvider.createTokens(member.getEmail(), member.getNickname());
+      TokenDto.Local tokens = jwtTokenProvider.createTokens(member.getEmail(),
+          member.getNickname());
 
       // Redis에 RefreshToken 저장
       String refreshToken = tokens.getRefreshToken();
@@ -414,7 +421,7 @@ public class MemberServiceImpl implements MemberService {
     Member member = memberRepository.findByEmail(currentEmail)
         .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
 
-    if (member.getLinkedEmail() != null || member.getLinkedEmail().isEmpty()) {
+    if (member.getLinkedEmail() == null || member.getLinkedEmail().isEmpty()) {
       throw new CustomException(ErrorCode.NOT_FOUND_LINKED_EMAIL);
     }
 
@@ -473,11 +480,8 @@ public class MemberServiceImpl implements MemberService {
       throw new CustomException(ErrorCode.NOT_FOUND_MEMBER);
     }
 
-    Member updateMember;
-
     // 연동 SNS가 있는지 확인
     if (member.getIsNaver()) { // 네이버 연동 해제
-
       String naverAccessToken = redisTemplate.opsForValue()
           .get("naverAcessTokenEmail: " + member.getEmail());
       ResponseEntity<NaverLinkDto> delete = naverLoginClient.unLink(
@@ -489,11 +493,32 @@ public class MemberServiceImpl implements MemberService {
       }
     }
 
-    updateMember = member.toBuilder()
+    Member updateMember = member.toBuilder()
+        .nickname("탈퇴한 회원" + member.getNickname())
         .status(MemberStatus.WITHDRAWN)
         .withdrawalDate(LocalDateTime.now())
         .build();
     memberRepository.save(updateMember);
+
+    // 등록한 경매 삭제
+    List<Auction> auctionList = auctionRepository.findAllByMemberId(member);
+    if (!auctionList.isEmpty()) {
+      for (Auction auction : auctionList) {
+        auctionRepository.delete(auction);
+      }
+    }
+
+    // 작성한 게시글 삭제
+    List<Post> postList = postRepository.findAllByMemberId(member);
+    if (!postList.isEmpty()) {
+      for (Post post : postList) {
+        if (!post.getStatus().equals(PostStatus.DELETE)) {
+          postRepository.save(post.toBuilder()
+              .status(PostStatus.DELETE)
+              .build());
+        }
+      }
+    }
 
     // 예치금 삭제
     Money money = moneyRepository.findByMemberId(member.getMemberId())
@@ -629,7 +654,7 @@ public class MemberServiceImpl implements MemberService {
         .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
 
     String email = request.getEmail();
-    String baseUrl = "https://fan-tion-fe.vercel.app";
+    String baseUrl = "https://fan-tion.vercel.app";
     String title = "Fan-Tion 계정 비빌번호 변경 이메일";
     String uuid = UUID.randomUUID().toString();
     String message = "<h3>Fan-Tion 계정 비빌번호 변경 링크입니다. 아래의 링크를 클릭하셔서 비밀번호 변경을 완료해주세요.</h3>" +
