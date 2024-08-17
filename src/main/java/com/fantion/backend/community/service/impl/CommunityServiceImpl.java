@@ -138,4 +138,37 @@ public class CommunityServiceImpl implements CommunityService {
 
     return ResultDTO.of("게시글 작성에 성공했습니다.", response);
   }
+
+  @Override
+  public ResultDTO<PostDto.PostResponse> getPost(Long communityId, Long postId) {
+    Community community = communityRepository.findById(communityId)
+        .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_CHANNEL));
+
+    if (community.getStatus().equals(CommunityStatus.CLOSE)) {
+      throw new CustomException(ErrorCode.NOT_FOUND_CHANNEL);
+    }
+
+    Post post = postRepository.findByPostIdAndStatus(postId, PostStatus.ACTIVE)
+        .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_POST));
+
+    Post updateViewCnt = post.toBuilder()
+        .viewCnt(post.getViewCnt() + 1)
+        .build();
+    postRepository.save(updateViewCnt);
+
+    PostDto.PostResponse response = PostDto.PostResponse.builder()
+        .postId(updateViewCnt.getPostId())
+        .channelName(updateViewCnt.getCommunity().getTitle())
+        .nickname(updateViewCnt.getMember().getNickname())
+        .title(updateViewCnt.getTitle())
+        .content(updateViewCnt.getContent())
+        .likeCnt(updateViewCnt.getLikeCnt())
+        .viewCnt(updateViewCnt.getViewCnt())
+        .createDate(updateViewCnt.getCreateDate())
+        .deleteDate(updateViewCnt.getDeleteDate())
+        .status(updateViewCnt.getStatus())
+        .build();
+
+    return ResultDTO.of("게시글 조회에 성공했습니다.", response);
+  }
 }

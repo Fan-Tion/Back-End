@@ -14,4 +14,6 @@ public interface CommunityService {
   ResultDTO<ImageDto> uploadImage(List<MultipartFile> files, Long communityId, Long postId);
 
   ResultDTO<PostDto.PostResponse> createPost(PostRequest request, Long communityId);
+
+  ResultDTO<PostDto.PostResponse> getPost(Long communityId, Long postId);
 }
