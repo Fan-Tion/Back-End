@@ -43,5 +43,5 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
 
   Page<Auction> findAllByStatus(boolean status, Pageable pageable);
 
-  List<Auction> findAllByMemberId(Member member);
+  List<Auction> findAllByMember(Member member);
 }

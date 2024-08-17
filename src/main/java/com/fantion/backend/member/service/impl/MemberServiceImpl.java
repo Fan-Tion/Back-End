@@ -501,7 +501,7 @@ public class MemberServiceImpl implements MemberService {
     memberRepository.save(updateMember);
 
     // 등록한 경매 삭제
-    List<Auction> auctionList = auctionRepository.findAllByMemberId(member);
+    List<Auction> auctionList = auctionRepository.findAllByMember(member);
     if (!auctionList.isEmpty()) {
       for (Auction auction : auctionList) {
         auctionRepository.delete(auction);
@@ -509,7 +509,7 @@ public class MemberServiceImpl implements MemberService {
     }
 
     // 작성한 게시글 삭제
-    List<Post> postList = postRepository.findAllByMemberId(member);
+    List<Post> postList = postRepository.findAllByMember(member);
     if (!postList.isEmpty()) {
       for (Post post : postList) {
         if (!post.getStatus().equals(PostStatus.DELETE)) {

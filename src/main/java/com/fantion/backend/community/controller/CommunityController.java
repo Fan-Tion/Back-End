@@ -8,6 +8,7 @@ import com.fantion.backend.community.service.CommunityService;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -62,6 +63,12 @@ public class CommunityController {
   public ResponseEntity<ResultDTO<CheckDto>> deletePost(@PathVariable Long communityId,
       @PathVariable Long postId) {
     ResultDTO<CheckDto> result = communityService.deletePost(communityId, postId);
+    return ResponseEntity.ok(result);
+  }
+
+  @GetMapping("/{communityId}")
+  public ResponseEntity<ResultDTO<Page<PostDto.PostResponse>>> getPostList(@PathVariable Long communityId, Integer page) {
+    ResultDTO<Page<PostDto.PostResponse>> result = communityService.getPostList(communityId, page);
     return ResponseEntity.ok(result);
   }
 }
