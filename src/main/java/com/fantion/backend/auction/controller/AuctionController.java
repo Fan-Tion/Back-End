@@ -18,6 +18,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -70,7 +71,8 @@ public class AuctionController {
   @ApiResponse(responseCode = "200", description = "성공적으로 경매를 변경했습니다.")
   @PutMapping(value = "/{auctionId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   public ResponseEntity<ResultDTO<AuctionDto.AuctionResponse>> updateAuction(
-      @Valid @RequestPart("request") AuctionDto.AuctionRequest request, MultipartHttpServletRequest file, @PathVariable("auctionId") Long auctionId) {
+      @Valid @RequestPart("request") AuctionDto.AuctionRequest request,
+      MultipartHttpServletRequest file, @PathVariable("auctionId") Long auctionId) {
     return ResponseEntity.ok(auctionService.updateAuction(request, file, auctionId));
   }
 
