@@ -27,8 +27,8 @@ public interface PaymentClient {
       @PathVariable("paymentKey") String paymentKey,
       @RequestBody CancelDto cancelReason);
 
-  @GetMapping(value = "/${payment.orders-endpoint}/{orderId}")
+  @GetMapping(value = "/{paymentKey}")
   ResponseEntity<PaymentResponseDto.PaymentSuccess> getPayment(
       @RequestHeader("Authorization") String authorizationHeader,
-      @PathVariable("orderId") String orderId);
+      @PathVariable("paymentKey") String paymentKey);
 }

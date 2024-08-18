@@ -62,7 +62,7 @@ public class PaymentServiceImpl implements PaymentService {
 
     String orderId = UUID.randomUUID().toString();
 
-    String email = MemberAuthUtil.getCurrentEmail();
+    String email = MemberAuthUtil.getLoginUserId();
     Member member = memberRepository.findByEmail(email)
         .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
 
@@ -163,14 +163,13 @@ public class PaymentServiceImpl implements PaymentService {
     // 현재는 결제 취소 금액이 현재 가지고 있는 예치금보다 적은지와
     // 토스 결제 조회 API를 통해 결제 정보가 정말 있는지만 체크
 
-    String email = MemberAuthUtil.getCurrentEmail();
+    String email = MemberAuthUtil.getLoginUserId();
     Member member = memberRepository.findByEmail(email)
         .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
 
-    Payment payment = paymentRepository.findById(cancelDto.getPaymentId())
+    Payment payment = paymentRepository.findByAmountAndPaymentDate(cancelDto.getBalance(), cancelDto.getCreateTime())
         .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_PAYMENT_INFO));
     String paymentKey = payment.getPaymentKey();
-    String orderId = payment.getOrderId();
 
     // payment의 유저정보와 accessToken의 유저 정보가 틀릴경우
     if (payment.getMemberId() != member || !payment.getMemberId().equals(member)) {
@@ -185,7 +184,7 @@ public class PaymentServiceImpl implements PaymentService {
 
     try {
       // 토스 결제 조회
-      paymentClient.getPayment(authorizationHeader, orderId).getBody();
+      paymentClient.getPayment(authorizationHeader, paymentKey).getBody();
 
       // 취소금액이 현재 예치금보다 많을 경우
       if (balance < payment.getAmount()) {
@@ -233,7 +232,7 @@ public class PaymentServiceImpl implements PaymentService {
     BalanceHistory balanceHistory = BalanceHistory.builder()
         .memberId(member)
         .balance(cancelAmount)
-        .type(BalanceType.CANCEL)
+        .type(BalanceType.PAYMENTS_CANCEL)
         .createDate(LocalDateTime.now())
         .build();
     balanceHistoryRepository.save(balanceHistory);

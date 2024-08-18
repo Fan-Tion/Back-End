@@ -1,11 +1,12 @@
 package com.fantion.backend.member.service.impl;
 
-import com.fantion.backend.auction.dto.AuctionDto;
 import com.fantion.backend.auction.entity.Auction;
 import com.fantion.backend.auction.repository.AuctionRepository;
 import com.fantion.backend.common.component.MailComponents;
 import com.fantion.backend.common.component.S3Uploader;
 import com.fantion.backend.common.dto.ResultDTO;
+import com.fantion.backend.community.entity.Post;
+import com.fantion.backend.community.repository.PostRepository;
 import com.fantion.backend.exception.ErrorCode;
 import com.fantion.backend.exception.impl.CustomException;
 import com.fantion.backend.member.auth.MemberAuthUtil;
@@ -17,6 +18,7 @@ import com.fantion.backend.member.dto.MemberDto;
 import com.fantion.backend.member.dto.MyBalanceDto;
 import com.fantion.backend.member.dto.NaverLinkDto;
 import com.fantion.backend.member.dto.NaverMemberDto;
+import com.fantion.backend.member.dto.ProfileImageResponseDto;
 import com.fantion.backend.member.dto.RatingRequestDto;
 import com.fantion.backend.member.dto.ResetPasswordDto;
 import com.fantion.backend.member.dto.SigninDto;
@@ -33,6 +35,7 @@ import com.fantion.backend.member.repository.MoneyRepository;
 import com.fantion.backend.member.repository.RatingHistoryRepository;
 import com.fantion.backend.member.service.MemberService;
 import com.fantion.backend.type.MemberStatus;
+import com.fantion.backend.type.PostStatus;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
 import java.net.MalformedURLException;
@@ -76,6 +79,12 @@ public class MemberServiceImpl implements MemberService {
   private static final Pattern NICKNAME_PATTERN = Pattern.compile("^[a-zA-Z0-9가-힣]{1,12}$");
 
   private final MemberRepository memberRepository;
+  private final AuctionRepository auctionRepository;
+  private final MoneyRepository moneyRepository;
+  private final RatingHistoryRepository ratingHistoryRepository;
+  private final BalanceHistoryRepository balanceHistoryRepository;
+  private final PostRepository postRepository;
+
   private final JwtTokenProvider jwtTokenProvider;
   private final RedisTemplate<String, String> redisTemplate;
   private final NaverLoginClient naverLoginClient;
@@ -85,12 +94,9 @@ public class MemberServiceImpl implements MemberService {
   private final Random random = new Random();
   private final HttpServletRequest httpServletRequest;
   private final S3Uploader s3Uploader;
-  private final MoneyRepository moneyRepository;
   private final PasswordEncoder passwordEncoder;
   private final MailComponents mailComponents;
-  private final AuctionRepository auctionRepository;
-  private final RatingHistoryRepository ratingHistoryRepository;
-  private final BalanceHistoryRepository balanceHistoryRepository;
+
 
   @Override
   @Transactional
@@ -231,8 +237,7 @@ public class MemberServiceImpl implements MemberService {
     }
 
     // 토큰 생성
-    TokenDto.Local tokens = jwtTokenProvider.createTokens(member.getEmail(), member.getMemberId(),
-        member.getNickname());
+    TokenDto.Local tokens = jwtTokenProvider.createTokens(member.getEmail(), member.getNickname());
 
     // Redis에 RefreshToken 저장
     String refreshToken = tokens.getRefreshToken();
@@ -288,9 +293,10 @@ public class MemberServiceImpl implements MemberService {
 
       // 신규 회원 가입 진행
       String password = UUID.randomUUID().toString();
+      String encPassword = BCrypt.hashpw(password, BCrypt.gensalt());
       Member member = Member.builder()
           .email(profileDto.getEmail())
-          .password(password)
+          .password(encPassword)
           .nickname(nickname)
           .auth(true)
           .isKakao(false)
@@ -314,7 +320,7 @@ public class MemberServiceImpl implements MemberService {
           .build();
       moneyRepository.save(money);
 
-      TokenDto.Local tokens = jwtTokenProvider.createTokens(member.getEmail(), member.getMemberId(),
+      TokenDto.Local tokens = jwtTokenProvider.createTokens(member.getEmail(),
           member.getNickname());
 
       // Redis에 RefreshToken 저장
@@ -342,9 +348,7 @@ public class MemberServiceImpl implements MemberService {
     }
 
     // 연동한 회원인 경우
-    TokenDto.Local tokens = jwtTokenProvider.createTokens(member.getEmail(),
-        member.getMemberId(),
-        member.getNickname());
+    TokenDto.Local tokens = jwtTokenProvider.createTokens(member.getEmail(), member.getNickname());
 
     // Redis에 RefreshToken 저장
     String refreshToken = tokens.getRefreshToken();
@@ -373,7 +377,7 @@ public class MemberServiceImpl implements MemberService {
     }
 
     // 현재 토큰에 저장된 email 가져오기
-    String currentEmail = MemberAuthUtil.getCurrentEmail();
+    String currentEmail = MemberAuthUtil.getLoginUserId();
     Member member = memberRepository.findByEmail(currentEmail)
         .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
 
@@ -413,11 +417,11 @@ public class MemberServiceImpl implements MemberService {
   @Override
   public ResultDTO<CheckDto> naverUnlink() {
 
-    String currentEmail = MemberAuthUtil.getCurrentEmail();
+    String currentEmail = MemberAuthUtil.getLoginUserId();
     Member member = memberRepository.findByEmail(currentEmail)
         .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
 
-    if (member.getLinkedEmail() != null || member.getLinkedEmail().isEmpty()) {
+    if (member.getLinkedEmail() == null || member.getLinkedEmail().isEmpty()) {
       throw new CustomException(ErrorCode.NOT_FOUND_LINKED_EMAIL);
     }
 
@@ -445,7 +449,7 @@ public class MemberServiceImpl implements MemberService {
   @Transactional
   public ResultDTO<CheckDto> signout() {
 
-    String email = MemberAuthUtil.getCurrentEmail();
+    String email = MemberAuthUtil.getLoginUserId();
     String accessToken = jwtTokenProvider.resolveToken(httpServletRequest);
 
     // Redis에 해당 유저의 email로 저장된 refreshToken이 있는지 확인 후 있으면 삭제
@@ -468,7 +472,7 @@ public class MemberServiceImpl implements MemberService {
   @Transactional
   public ResultDTO<CheckDto> withdrawal() {
 
-    String email = MemberAuthUtil.getCurrentEmail();
+    String email = MemberAuthUtil.getLoginUserId();
     Member member = memberRepository.findByEmail(email)
         .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
 
@@ -476,11 +480,8 @@ public class MemberServiceImpl implements MemberService {
       throw new CustomException(ErrorCode.NOT_FOUND_MEMBER);
     }
 
-    Member updateMember;
-
     // 연동 SNS가 있는지 확인
     if (member.getIsNaver()) { // 네이버 연동 해제
-
       String naverAccessToken = redisTemplate.opsForValue()
           .get("naverAcessTokenEmail: " + member.getEmail());
       ResponseEntity<NaverLinkDto> delete = naverLoginClient.unLink(
@@ -492,11 +493,32 @@ public class MemberServiceImpl implements MemberService {
       }
     }
 
-    updateMember = member.toBuilder()
+    Member updateMember = member.toBuilder()
+        .nickname("탈퇴한 회원" + member.getNickname())
         .status(MemberStatus.WITHDRAWN)
         .withdrawalDate(LocalDateTime.now())
         .build();
     memberRepository.save(updateMember);
+
+    // 등록한 경매 삭제
+    List<Auction> auctionList = auctionRepository.findAllByMember(member);
+    if (!auctionList.isEmpty()) {
+      for (Auction auction : auctionList) {
+        auctionRepository.delete(auction);
+      }
+    }
+
+    // 작성한 게시글 삭제
+    List<Post> postList = postRepository.findAllByMember(member);
+    if (!postList.isEmpty()) {
+      for (Post post : postList) {
+        if (!post.getStatus().equals(PostStatus.DELETE)) {
+          postRepository.save(post.toBuilder()
+              .status(PostStatus.DELETE)
+              .build());
+        }
+      }
+    }
 
     // 예치금 삭제
     Money money = moneyRepository.findByMemberId(member.getMemberId())
@@ -509,7 +531,7 @@ public class MemberServiceImpl implements MemberService {
   @Override
   public ResultDTO<MemberDto.MemberResponse> myInfo() {
 
-    String email = MemberAuthUtil.getCurrentEmail();
+    String email = MemberAuthUtil.getLoginUserId();
     Member member = memberRepository.findByEmail(email)
         .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
 
@@ -530,6 +552,7 @@ public class MemberServiceImpl implements MemberService {
 
     if (member.getIsNaver()) {
       memberDto.setAuthType("NAVER");
+      memberDto.setLinkedEmail(member.getLinkedEmail());
     } else if (member.getIsKakao()) {
       memberDto.setAuthType("KAKAO");
     }
@@ -541,7 +564,7 @@ public class MemberServiceImpl implements MemberService {
   @Transactional
   public ResultDTO<CheckDto> myInfoEdit(MemberDto.MemberUpdateRequest request) {
 
-    String email = MemberAuthUtil.getCurrentEmail();
+    String email = MemberAuthUtil.getLoginUserId();
     Member member = memberRepository.findByEmail(email)
         .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
 
@@ -573,21 +596,23 @@ public class MemberServiceImpl implements MemberService {
   }
 
   @Override
-  public ResultDTO<CheckDto> profileImageEdit(MultipartFile file) {
+  public ResultDTO<ProfileImageResponseDto> profileImageEdit(MultipartFile file) {
 
-    String email = MemberAuthUtil.getCurrentEmail();
+    String email = MemberAuthUtil.getLoginUserId();
     Member member = memberRepository.findByEmail(email)
         .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
 
     // 기존 프로필 이미지 삭제
-    try {
-      URL exProfileImageUrl = new URL(member.getProfileImage());
-      String exProfileImage = exProfileImageUrl.getPath().substring(1);
-      if (exProfileImage != null) {
-        s3Uploader.deleteFile(exProfileImage);
+    if (member.getProfileImage() != null) {
+      try {
+        URL exProfileImageUrl = new URL(member.getProfileImage());
+        String exProfileImage = exProfileImageUrl.getPath().substring(1);
+        if (exProfileImage != null) {
+          s3Uploader.deleteFile(exProfileImage);
+        }
+      } catch (MalformedURLException e) {
+        throw new CustomException(ErrorCode.IMAGE_NOT_HAVE_PATH);
       }
-    } catch (MalformedURLException e) {
-      throw new CustomException(ErrorCode.IMAGE_NOT_HAVE_PATH);
     }
 
     Member updateMember;
@@ -616,7 +641,10 @@ public class MemberServiceImpl implements MemberService {
 
     memberRepository.save(updateMember);
 
-    return ResultDTO.of("프로필 이미지 변경에 성공했습니다.", CheckDto.builder().success(true).build());
+    return ResultDTO.of("프로필 이미지 변경에 성공했습니다.", ProfileImageResponseDto.builder()
+        .success(true)
+        .newProfileImageUrl(updateMember.getProfileImage())
+        .build());
   }
 
   @Override
@@ -626,7 +654,7 @@ public class MemberServiceImpl implements MemberService {
         .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
 
     String email = request.getEmail();
-    String baseUrl = "https://fan-tion-fe.vercel.app";
+    String baseUrl = "https://fan-tion.vercel.app";
     String title = "Fan-Tion 계정 비빌번호 변경 이메일";
     String uuid = UUID.randomUUID().toString();
     String message = "<h3>Fan-Tion 계정 비빌번호 변경 링크입니다. 아래의 링크를 클릭하셔서 비밀번호 변경을 완료해주세요.</h3>" +
@@ -671,7 +699,7 @@ public class MemberServiceImpl implements MemberService {
   @Transactional
   public ResultDTO<CheckDto> rating(RatingRequestDto request) {
 
-    String email = MemberAuthUtil.getCurrentEmail();
+    String email = MemberAuthUtil.getLoginUserId();
     Member buyer = memberRepository.findByEmail(email)
         .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
 
@@ -719,7 +747,7 @@ public class MemberServiceImpl implements MemberService {
   @Override
   public ResultDTO<Page<MyBalanceDto>> myBalance(String searchOption, Integer pageNumber) {
 
-    String email = MemberAuthUtil.getCurrentEmail();
+    String email = MemberAuthUtil.getLoginUserId();
     Member member = memberRepository.findByEmail(email)
         .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
 

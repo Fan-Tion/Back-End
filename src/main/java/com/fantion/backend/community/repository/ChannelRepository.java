@@ -10,5 +10,4 @@ import java.util.Optional;
 public interface ChannelRepository extends JpaRepository<Channel,Long> {
     @Query(nativeQuery=true, value="SELECT *  FROM channel ORDER BY RAND() LIMIT 2")
     List<Channel> findChannelRandom();
-
 }
