@@ -2,9 +2,7 @@ package com.fantion.backend.community.controller;
 
 import com.fantion.backend.common.dto.ResultDTO;
 
-import com.fantion.backend.community.dto.ChannelDto;
-import com.fantion.backend.community.dto.ChannelEditDto;
-import com.fantion.backend.community.dto.ChannelRemoveDto;
+import com.fantion.backend.community.dto.*;
 import com.fantion.backend.community.service.CommunityService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -12,9 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
-import com.fantion.backend.community.dto.CheckDto;
-import com.fantion.backend.community.dto.ImageDto;
-import com.fantion.backend.community.dto.PostDto;
+
 import com.fantion.backend.community.service.CommunityService;
 import com.fantion.backend.type.PostSearchOption;
 import jakarta.validation.Valid;
@@ -41,6 +37,13 @@ import org.springframework.web.multipart.MultipartFile;
 public class CommunityController {
 
     private final CommunityService communityService;
+
+    @Operation(summary = "채널 전체 조회", description = "전체 채널 조회할 때 사용하는 API")
+    @ApiResponse(responseCode = "200", description = "성공적으로 전체 채널 조회되었습니다.")
+    @GetMapping("/channel/all")
+    private ResultDTO<List<ChannelAllDto.Response>> readChannelAll(){
+        return communityService.readChannelAll();
+    }
 
     @Operation(summary = "채널 랜덤 조회", description = "랜덤으로 채널 조회할 때 사용하는 API")
     @ApiResponse(responseCode = "200", description = "성공적으로 채널이 랜덤으로 조회되었습니다.")
