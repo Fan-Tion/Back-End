@@ -11,6 +11,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 @Slf4j
 @Service
@@ -18,6 +23,7 @@ import java.io.IOException;
 public class SseEmitterServiceImpl implements SseEmitterService {
 
     private final SseEmitterRepository sseEmitterRepository;
+    private static ConcurrentHashMap<String, HashSet<String>> auctionChannels = new ConcurrentHashMap<>();
 
     @Value("${sse.timeout}")
     private Long timeout;
@@ -50,4 +56,43 @@ public class SseEmitterServiceImpl implements SseEmitterService {
             sseEmitterRepository.deleteById(emitterKey);
         }
     }
+
+
+    // 경매 물품 ID별로 사용자 구독 관리
+    @Override
+    public void subscribeToAuction(String auctionId, String memberId) {
+        log.info("subscribeToAuction");
+        log.info("auctionId : {}, memberId : {}",auctionId,memberId);
+        auctionChannels.computeIfAbsent(auctionId, k -> new HashSet<>()).add(memberId);
+    }
+
+    @Override
+    public void endSsemitter(String auctionId, String memberId){
+        HashSet<String> memberIds = auctionChannels.get(auctionId);
+        memberIds.remove(memberId);
+
+    }
+    // 특정 경매 물품의 구독자들에게 이벤트 전파
+    @Override
+    public void sendEventToAuction(String auctionId,Object data) {
+        log.info("sendEventToAuction!!");
+        log.info("auctionId : {}, Object : {}",auctionId,data);
+        HashSet<String> subscribers = auctionChannels.get(auctionId);
+        if (subscribers != null) {
+            subscribers.forEach(memberId -> {
+                Optional<SseEmitter> memberSseEmitter = sseEmitterRepository.findById(memberId);
+                if (memberSseEmitter.isPresent()) {
+                    try {
+                        memberSseEmitter.get().send(SseEmitter.event()
+                                .id(memberId)
+                                .name("addBid")
+                                .data(data, MediaType.APPLICATION_JSON));
+                    } catch (IOException e) {
+                        sseEmitterRepository.deleteById(memberId);
+                    }
+                }
+            });
+        }
+    }
+
 }
