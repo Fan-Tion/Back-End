@@ -79,14 +79,6 @@ public class CommunityServiceImpl implements CommunityService {
       return ResultDTO.of("성공적으로 채널이 랜덤으로 조회되었습니다.", responseList);
     }
 
-  @Override
-  public ResultDTO<List<Response>> readChannelRandom() {
-    List<Channel> channelRandomList = channelRepository.findChannelRandom();
-    List<Response> responseList = channelRandomList.stream().map(ChannelDto::response)
-        .toList();
-    return ResultDTO.of("성공적으로 채널이 랜덤으로 조회되었습니다.", responseList);
-  }
-
   @Transactional
   @Override
   public ResultDTO<Response> createChannel(ChannelDto.Request request,
