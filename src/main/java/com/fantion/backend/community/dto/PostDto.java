@@ -1,7 +1,6 @@
 package com.fantion.backend.community.dto;
 
-import com.fantion.backend.community.entity.Community;
-import com.fantion.backend.member.entity.Member;
+import com.fantion.backend.community.entity.Post;
 import com.fantion.backend.type.PostStatus;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
@@ -18,7 +17,6 @@ public class PostDto {
   @AllArgsConstructor
   @Builder
   public static class PostRequest {
-    private Long postId;
     private String title;
     private String content;
   }
@@ -37,7 +35,20 @@ public class PostDto {
     private Integer likeCnt;
     private Integer viewCnt;
     private LocalDateTime createDate;
-    private LocalDateTime deleteDate;
     private PostStatus status;
+  }
+
+  public static PostDto.PostResponse toResponse(Post post) {
+    return PostDto.PostResponse.builder()
+        .postId(post.getPostId())
+        .channelName(post.getCommunity().getTitle())
+        .nickname(post.getMember().getNickname())
+        .title(post.getTitle())
+        .content(post.getContent())
+        .likeCnt(post.getLikeCnt())
+        .viewCnt(post.getViewCnt())
+        .createDate(post.getCreateDate())
+        .status(post.getStatus())
+        .build();
   }
 }
