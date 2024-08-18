@@ -13,9 +13,11 @@ public interface CommunityService {
 
   ResultDTO<ImageDto> uploadImage(List<MultipartFile> files, Long communityId, Long postId);
 
-  ResultDTO<CheckDto> createPost(Long communityId, Long postId, PostDto.PostRequest request);
+  ResultDTO<CheckDto> createPost(Long communityId, PostDto.PostCreateRequest request);
 
   ResultDTO<PostDto.PostResponse> getPost(Long communityId, Long postId);
 
-  ResultDTO<CheckDto> updatePost(Long communityId, Long postId, PostDto.PostRequest request);
+  ResultDTO<CheckDto> updatePost(Long communityId, Long postId, PostDto.PostUpdateRequest request);
+
+  ResultDTO<CheckDto> deletePost(Long communityId, Long postId);
 }

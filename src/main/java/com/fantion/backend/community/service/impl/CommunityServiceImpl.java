@@ -91,7 +91,7 @@ public class CommunityServiceImpl implements CommunityService {
   }
 
   @Override
-  public ResultDTO<CheckDto> createPost(Long communityId, Long postId, PostDto.PostRequest request) {
+  public ResultDTO<CheckDto> createPost(Long communityId, PostDto.PostCreateRequest request) {
 
     Community community = communityRepository.findById(communityId)
         .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_CHANNEL));
@@ -100,8 +100,15 @@ public class CommunityServiceImpl implements CommunityService {
       throw new CustomException(ErrorCode.NOT_FOUND_CHANNEL);
     }
 
-    Post post = postRepository.findByPostIdAndStatus(postId, PostStatus.DRAFTS)
-        .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_POST));
+    Post post = new Post();
+    if (request.getPostId() != null) {
+      post = postRepository.findByPostIdAndStatus(request.getPostId(), PostStatus.DRAFTS)
+          .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_POST));
+    } else {
+      post = postRepository.save(post.toBuilder()
+          .status(PostStatus.DRAFTS)
+          .build());
+    }
 
     String email = MemberAuthUtil.getLoginUserId();
     Member member = memberRepository.findByEmail(email)
@@ -126,7 +133,7 @@ public class CommunityServiceImpl implements CommunityService {
     CheckDto response = CheckDto.builder()
         .success(true)
         .communityId(communityId)
-        .postId(postId)
+        .postId(createdPost.getPostId())
         .build();
 
     return ResultDTO.of("게시글 작성에 성공했습니다.", response);
@@ -155,7 +162,8 @@ public class CommunityServiceImpl implements CommunityService {
   }
 
   @Override
-  public ResultDTO<CheckDto> updatePost(Long communityId, Long postId, PostDto.PostRequest request) {
+  public ResultDTO<CheckDto> updatePost(Long communityId, Long postId,
+      PostDto.PostUpdateRequest request) {
 
     Community community = communityRepository.findById(communityId)
         .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_CHANNEL));
@@ -188,5 +196,40 @@ public class CommunityServiceImpl implements CommunityService {
         .build();
 
     return ResultDTO.of("게시글 수정에 성공했습니다.", response);
+  }
+
+  @Override
+  public ResultDTO<CheckDto> deletePost(Long communityId, Long postId) {
+    Community community = communityRepository.findById(communityId)
+        .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_CHANNEL));
+
+    if (community.getStatus().equals(CommunityStatus.CLOSE)) {
+      throw new CustomException(ErrorCode.NOT_FOUND_CHANNEL);
+    }
+
+    Post post = postRepository.findByPostIdAndStatus(postId, PostStatus.ACTIVE)
+        .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_POST));
+
+    String email = MemberAuthUtil.getLoginUserId();
+    Member member = memberRepository.findByEmail(email)
+        .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
+
+    if (!post.getMember().equals(member)) {
+      throw new CustomException(ErrorCode.INVALID_POST_MEMBER);
+    }
+
+    Post deletePost = post.toBuilder()
+        .deleteDate(LocalDateTime.now())
+        .status(PostStatus.DELETE)
+        .build();
+    postRepository.save(deletePost);
+
+    CheckDto response = CheckDto.builder()
+        .success(true)
+        .communityId(communityId)
+        .postId(postId)
+        .build();
+
+    return ResultDTO.of("게시글 삭제에 성공했습니다.", response);
   }
 }

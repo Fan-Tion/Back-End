@@ -9,6 +9,7 @@ import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -36,11 +37,10 @@ public class CommunityController {
     return ResponseEntity.ok(result);
   }
 
-  @PostMapping("/{communityId}/post/{postId}")
+  @PostMapping("/{communityId}/post")
   public ResponseEntity<ResultDTO<CheckDto>> createPost(
-      @PathVariable Long communityId, @PathVariable Long postId,
-      @RequestBody @Valid PostDto.PostRequest request) {
-    ResultDTO<CheckDto> result = communityService.createPost(communityId, postId, request);
+      @PathVariable Long communityId, @RequestBody @Valid PostDto.PostCreateRequest request) {
+    ResultDTO<CheckDto> result = communityService.createPost(communityId, request);
     return ResponseEntity.ok(result);
   }
 
@@ -53,8 +53,15 @@ public class CommunityController {
 
   @PutMapping("/{communityId}/post/{postId}")
   public ResponseEntity<ResultDTO<CheckDto>> updatePost(@PathVariable Long communityId,
-      @PathVariable Long postId, @RequestBody @Valid PostDto.PostRequest request) {
+      @PathVariable Long postId, @RequestBody @Valid PostDto.PostUpdateRequest request) {
     ResultDTO<CheckDto> result = communityService.updatePost(communityId, postId, request);
+    return ResponseEntity.ok(result);
+  }
+
+  @DeleteMapping("/{communityId}/post/{postId}")
+  public ResponseEntity<ResultDTO<CheckDto>> deletePost(@PathVariable Long communityId,
+      @PathVariable Long postId) {
+    ResultDTO<CheckDto> result = communityService.deletePost(communityId, postId);
     return ResponseEntity.ok(result);
   }
 }

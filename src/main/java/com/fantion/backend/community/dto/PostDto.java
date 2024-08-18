@@ -16,7 +16,18 @@ public class PostDto {
   @NoArgsConstructor
   @AllArgsConstructor
   @Builder
-  public static class PostRequest {
+  public static class PostCreateRequest {
+    private Long postId;
+    private String title;
+    private String content;
+  }
+
+  @Getter
+  @Setter
+  @NoArgsConstructor
+  @AllArgsConstructor
+  @Builder
+  public static class PostUpdateRequest {
     private String title;
     private String content;
   }
