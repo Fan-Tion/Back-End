@@ -5,6 +5,9 @@ import com.fantion.backend.common.dto.ResultDTO;
 import com.fantion.backend.community.dto.CheckDto;
 import com.fantion.backend.community.dto.ImageDto;
 import com.fantion.backend.community.dto.PostDto;
+import com.fantion.backend.community.dto.PostDto.PostCreateRequest;
+import com.fantion.backend.community.dto.PostDto.PostResponse;
+import com.fantion.backend.community.dto.PostDto.PostUpdateRequest;
 import com.fantion.backend.community.entity.Community;
 import com.fantion.backend.community.entity.Post;
 import com.fantion.backend.community.repository.CommunityRepository;
@@ -16,16 +19,19 @@ import com.fantion.backend.member.auth.MemberAuthUtil;
 import com.fantion.backend.member.entity.Member;
 import com.fantion.backend.member.repository.MemberRepository;
 import com.fantion.backend.type.CommunityStatus;
+import com.fantion.backend.type.PostSearchOption;
 import com.fantion.backend.type.PostStatus;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Sort.Direction;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
@@ -95,7 +101,7 @@ public class CommunityServiceImpl implements CommunityService {
   }
 
   @Override
-  public ResultDTO<CheckDto> createPost(Long communityId, PostDto.PostCreateRequest request) {
+  public ResultDTO<CheckDto> createPost(Long communityId, PostCreateRequest request) {
 
     Community community = communityRepository.findById(communityId)
         .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_CHANNEL));
@@ -144,7 +150,7 @@ public class CommunityServiceImpl implements CommunityService {
   }
 
   @Override
-  public ResultDTO<PostDto.PostResponse> getPost(Long communityId, Long postId) {
+  public ResultDTO<PostResponse> getPost(Long communityId, Long postId) {
     Community community = communityRepository.findById(communityId)
         .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_CHANNEL));
 
@@ -160,14 +166,14 @@ public class CommunityServiceImpl implements CommunityService {
         .build();
     postRepository.save(updateViewCnt);
 
-    PostDto.PostResponse response = PostDto.toResponse(updateViewCnt);
+    PostResponse response = PostDto.toResponse(updateViewCnt);
 
     return ResultDTO.of("게시글 조회에 성공했습니다.", response);
   }
 
   @Override
   public ResultDTO<CheckDto> updatePost(Long communityId, Long postId,
-      PostDto.PostUpdateRequest request) {
+      PostUpdateRequest request) {
 
     Community community = communityRepository.findById(communityId)
         .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_CHANNEL));
@@ -238,7 +244,7 @@ public class CommunityServiceImpl implements CommunityService {
   }
 
   @Override
-  public ResultDTO<Page<PostDto.PostResponse>> getPostList(Long communityId, Integer page) {
+  public ResultDTO<Page<PostResponse>> getPostList(Long communityId, Integer page) {
     Community community = communityRepository.findById(communityId)
         .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_CHANNEL));
 
@@ -247,14 +253,56 @@ public class CommunityServiceImpl implements CommunityService {
     }
 
     // 페이지 요청 설정 (한 페이지에 20개, 최신순 정렬)
-    Pageable pageable = PageRequest.of(page, 20, Sort.by(Sort.Direction.DESC, "createDate"));
+    Pageable pageable = PageRequest.of(page, 20, Sort.by(Direction.DESC, "createDate"));
 
     // 해당 커뮤니티의 활성 상태인 게시글만 조회
-    Page<Post> posts = postRepository.findByCommunityAndStatus(community, PostStatus.ACTIVE, pageable);
+    Page<Post> posts = postRepository.findByCommunityAndStatus(community, PostStatus.ACTIVE,
+        pageable);
 
     // 조회된 게시글을 PostResponse DTO로 변환
-    Page<PostDto.PostResponse> response = posts.map(post -> PostDto.toResponse(post));
+    Page<PostResponse> response = posts.map(post -> PostDto.toResponse(post));
 
     return ResultDTO.of("게시글 목록을 불러오는데 성공했습니다.", response);
+  }
+
+  @Override
+  public ResultDTO<Page<PostResponse>> searchPost(Long communityId, PostSearchOption searchOption,
+      String keyword, Integer page) {
+
+    Community community = communityRepository.findById(communityId)
+        .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_CHANNEL));
+
+    if (community.getStatus().equals(CommunityStatus.CLOSE)) {
+      throw new CustomException(ErrorCode.NOT_FOUND_CHANNEL);
+    }
+
+    Pageable pageable = PageRequest.of(page, 20, Sort.by(Direction.DESC, "createDate"));
+
+    Page<Post> posts = Page.empty(pageable);
+
+    if (searchOption.equals(PostSearchOption.TITLE)) {
+      posts = postRepository.findByCommunityAndTitleContainingAndStatus(community, keyword,
+          PostStatus.ACTIVE, pageable);
+    } else if (searchOption.equals(PostSearchOption.CONTENT)) {
+      // 내용에서 키워드를 포함하는 게시물 검색
+      posts = postRepository.findByCommunityAndContentContainingAndStatus(community, keyword,
+          PostStatus.ACTIVE, pageable);
+    } else if (searchOption.equals(PostSearchOption.TITLE_AND_CONTENT)) {
+      // 제목이나 내용에서 키워드를 포함하는 게시물 검색
+      posts = postRepository.findByCommunityAndTitleContainingOrContentContainingAndStatus(
+          community, keyword, keyword, PostStatus.ACTIVE, pageable);
+    } else if (searchOption.equals(PostSearchOption.NICKNAME)) {
+      // 닉네임으로 게시물 검색, 닉네임 검색은 닉네임이 정확해야 검색 가능.
+      Optional<Member> byNickname = memberRepository.findByNickname(keyword);
+      if (byNickname.isPresent()) {
+        Member member = byNickname.get();
+        posts = postRepository.findByCommunityAndMemberAndStatus(community, member,
+            PostStatus.ACTIVE, pageable);
+      }
+    }
+
+    Page<PostResponse> response = posts.map(post -> PostDto.toResponse(post));
+
+    return ResultDTO.of("게시글 검색을 성공했습니다.", response);
   }
 }

@@ -5,6 +5,7 @@ import com.fantion.backend.community.dto.CheckDto;
 import com.fantion.backend.community.dto.ImageDto;
 import com.fantion.backend.community.dto.PostDto;
 import com.fantion.backend.community.service.CommunityService;
+import com.fantion.backend.type.PostSearchOption;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -32,7 +33,7 @@ public class CommunityController {
   @PostMapping("/{communityId}/image")
   public ResponseEntity<ResultDTO<ImageDto>> uploadImage(
       @PathVariable Long communityId, @RequestPart("file") List<MultipartFile> files,
-      @RequestParam Long postId) {
+      @RequestParam(required = false) Long postId) {
 
     ResultDTO<ImageDto> result = communityService.uploadImage(files, communityId, postId);
     return ResponseEntity.ok(result);
@@ -68,8 +69,17 @@ public class CommunityController {
 
   @GetMapping("/{communityId}")
   public ResponseEntity<ResultDTO<Page<PostDto.PostResponse>>> getPostList(
-      @PathVariable Long communityId, @RequestParam(name = "page", defaultValue = "0") Integer page) {
+      @PathVariable Long communityId,
+      @RequestParam(name = "page", defaultValue = "0") Integer page) {
     ResultDTO<Page<PostDto.PostResponse>> result = communityService.getPostList(communityId, page);
+    return ResponseEntity.ok(result);
+  }
+
+  @GetMapping("/{communityId}/search")
+  public ResponseEntity<ResultDTO<Page<PostDto.PostResponse>>> searchPost(
+      @PathVariable Long communityId, @RequestParam PostSearchOption searchOption,
+      @RequestParam String keyword, @RequestParam(defaultValue = "0") Integer page) {
+    ResultDTO<Page<PostDto.PostResponse>> result = communityService.searchPost(communityId, searchOption, keyword, page);
     return ResponseEntity.ok(result);
   }
 }

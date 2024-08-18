@@ -4,6 +4,7 @@ import com.fantion.backend.common.dto.ResultDTO;
 import com.fantion.backend.community.dto.CheckDto;
 import com.fantion.backend.community.dto.ImageDto;
 import com.fantion.backend.community.dto.PostDto;
+import com.fantion.backend.type.PostSearchOption;
 import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
@@ -23,4 +24,6 @@ public interface CommunityService {
   ResultDTO<CheckDto> deletePost(Long communityId, Long postId);
 
   ResultDTO<Page<PostDto.PostResponse>> getPostList(Long communityId, Integer page);
+
+  ResultDTO<Page<PostDto.PostResponse>> searchPost(Long communityId, PostSearchOption searchOption, String keyword, Integer page);
 }
