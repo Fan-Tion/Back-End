@@ -33,8 +33,6 @@ public interface CommunityService {
 
   ResultDTO<Page<PostDto.PostResponse>> getPostList(Long channelId, Integer page);
 
-  ResultDTO<Page<PostDto.PostResponse>> searchPost(Long channelId, PostSearchOption searchOption, String keyword, Integer page);
-
   ResultDTO<List<ChannelAllDto.Response>> readChannelAll();
 
   ResultDTO<Page<PostDto.PostResponse>> searchPost(Long channelId, PostSearchOption searchOption,
