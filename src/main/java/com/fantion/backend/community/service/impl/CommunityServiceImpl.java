@@ -35,16 +35,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
-
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.time.LocalDateTime;
+import java.util.*;
+import java.util.stream.Collectors;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.web.multipart.MultipartHttpServletRequest;
-
 import static com.fantion.backend.exception.ErrorCode.IMAGE_IO_ERROR;
 import static com.fantion.backend.exception.ErrorCode.NOT_FOUND_CHANNEL;
 import static com.fantion.backend.exception.ErrorCode.NOT_FOUND_MEMBER;
@@ -453,4 +453,39 @@ public class CommunityServiceImpl implements CommunityService {
 
     return ResultDTO.of("게시글 검색을 성공했습니다.", response);
   }
+
+  @Override
+  public ResultDTO<List<ChannelAllDto.Response>> readChannelAll() {
+    Map<Character, List<Channel>> groupedData = getGroupedData();
+    List<ChannelAllDto.Response> response = groupedData.entrySet().stream()
+            .map(entry -> new ChannelAllDto.Response(entry.getKey(),
+                    entry.getValue().stream()
+                            .map(ChannelDto::response)
+                            .collect(Collectors.toList())))
+            .collect(Collectors.toList());
+
+    return ResultDTO.of("성공적으로 전체 채널 조회되었습니다.", response);
+  }
+
+  private Map<Character, List<Channel>> getGroupedData() {
+    List<Channel> channelList = channelRepository.findAll();
+    return channelList.stream().collect(Collectors.groupingBy(this::getFirstConsonant));
+  }
+
+  // 초성을 가져오는 메소드
+  private Character getFirstConsonant(Channel channel) {
+    char firstChar = channel.getTitle().charAt(0); // 예: 엔티티에서 이름 필드의 첫 글자 사용
+    return getKoreanInitialSound(firstChar);
+  }
+
+  // 한글 초성 추출 로직
+  private char getKoreanInitialSound(char c) {
+    if (c >= '가' && c <= '힣') {
+      int unicodeValue = c - 0xAC00;
+      int initialSoundIndex = unicodeValue / (21 * 28);
+      return (char) (initialSoundIndex + 0x1100); // 초성 유니코드
+    }
+    return c;
+  }
+
 }

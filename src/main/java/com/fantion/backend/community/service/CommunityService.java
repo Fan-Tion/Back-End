@@ -1,15 +1,11 @@
 package com.fantion.backend.community.service;
 
 import com.fantion.backend.common.dto.ResultDTO;
-import com.fantion.backend.community.dto.ChannelDto;
-import com.fantion.backend.community.dto.ChannelEditDto;
-import com.fantion.backend.community.dto.ChannelRemoveDto;
+import com.fantion.backend.community.dto.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
-import com.fantion.backend.community.dto.CheckDto;
-import com.fantion.backend.community.dto.ImageDto;
-import com.fantion.backend.community.dto.PostDto;
+
 import com.fantion.backend.type.PostSearchOption;
 import org.springframework.data.domain.Page;
 import org.springframework.web.multipart.MultipartHttpServletRequest;
@@ -36,6 +32,10 @@ public interface CommunityService {
   ResultDTO<CheckDto> deletePost(Long channelId, Long postId);
 
   ResultDTO<Page<PostDto.PostResponse>> getPostList(Long channelId, Integer page);
+
+  ResultDTO<Page<PostDto.PostResponse>> searchPost(Long channelId, PostSearchOption searchOption, String keyword, Integer page);
+
+  ResultDTO<List<ChannelAllDto.Response>> readChannelAll();
 
   ResultDTO<Page<PostDto.PostResponse>> searchPost(Long channelId, PostSearchOption searchOption,
       String keyword, Integer page);
