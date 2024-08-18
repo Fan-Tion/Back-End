@@ -47,6 +47,8 @@ public class MemberDto {
     private Boolean auth;
     @Schema(description = "본인인증 타입")
     private String authType;
+    @Schema(description = "연동한 이메일")
+    private String linkedEmail;
     @Schema(description = "사용자 평점")
     private Integer rating;
     @Schema(description = "프로필 이미지")

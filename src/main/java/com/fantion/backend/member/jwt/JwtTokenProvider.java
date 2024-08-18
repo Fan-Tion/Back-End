@@ -31,11 +31,10 @@ public class JwtTokenProvider {
     this.key = Keys.hmacShaKeyFor(keyBytes);
   }
 
-  public TokenDto.Local createTokens(String email, Long memberId, String nickname) {
+  public TokenDto.Local createTokens(String email, String nickname) {
 
     // AccessToken 클레임 설정
     Claims accessTokenClaims = Jwts.claims().setSubject(email);
-    accessTokenClaims.put("memberId", memberId);
     accessTokenClaims.put("nickname", nickname);
     accessTokenClaims.put("roles", Collections.singletonList("ROLE_USER"));
 

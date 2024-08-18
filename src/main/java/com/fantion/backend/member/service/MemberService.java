@@ -4,6 +4,7 @@ import com.fantion.backend.common.dto.ResultDTO;
 import com.fantion.backend.member.dto.CheckDto;
 import com.fantion.backend.member.dto.MemberDto;
 import com.fantion.backend.member.dto.MyBalanceDto;
+import com.fantion.backend.member.dto.ProfileImageResponseDto;
 import com.fantion.backend.member.dto.RatingRequestDto;
 import com.fantion.backend.member.dto.ResetPasswordDto;
 import com.fantion.backend.member.dto.SigninDto;
@@ -42,7 +43,7 @@ public interface MemberService {
 
   ResultDTO<CheckDto> myInfoEdit(MemberDto.MemberUpdateRequest request);
 
-  ResultDTO<CheckDto> profileImageEdit(MultipartFile file);
+  ResultDTO<ProfileImageResponseDto> profileImageEdit(MultipartFile file);
 
   ResultDTO<CheckDto> resetPasswordEmail(ResetPasswordDto.MailRequest request);
 

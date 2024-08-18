@@ -36,7 +36,7 @@ public enum ErrorCode {
     NOT_AUCTION_BUYER("구매자가 아닙니다.",HttpStatus.BAD_REQUEST),
     NOT_FINISH_AUCTION("종료된 경매가 아닙니다.",HttpStatus.BAD_REQUEST),
     NOT_FOUND_LINKED_EMAIL("연동한 이메일이 없습니다.", HttpStatus.NOT_FOUND),
-
+    ALREADY_REPORT_AUCTION("이미 신고한 경매 입니다.", HttpStatus.BAD_REQUEST),
     // Bid
     NOT_FOUND_BID("존재하지 않는 입찰입니다.",HttpStatus.BAD_REQUEST),
     NOT_PRIVATE_BID_CANCEL("비공개 입찰만 입찰 취소가 가능합니다.",HttpStatus.BAD_REQUEST),
@@ -49,7 +49,9 @@ public enum ErrorCode {
     NOT_CONFIRMED_RECEIVE("인수확인이 아직 완료되지 않았습니다.", HttpStatus.BAD_REQUEST),
 
     // Community
-    NOT_FOUND_CHANNEL("존재하지 않는 채널입니다.",HttpStatus.BAD_REQUEST),
+    NOT_FOUND_POST("존재하지 않은 게시물 입니다.", HttpStatus.NOT_FOUND),
+    INVALID_POST_MEMBER("게시글의 작성자가 아닙니다.", HttpStatus.BAD_REQUEST),
+    NOT_FOUND_CHANNEL("존재하지 않은 채널 입니다.", HttpStatus.NOT_FOUND),
 
     // Common
     PARSING_ERROR("파싱 오류가 발생했습니다.", HttpStatus.BAD_REQUEST),
