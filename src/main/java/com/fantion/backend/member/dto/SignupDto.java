@@ -77,6 +77,7 @@ public class SignupDto {
         .address(request.getAddress())
         .phoneNumber(request.getPhoneNumber())
         .totalRating(0)
+        .ratingCnt(0)
         .rating(0)
         .status(MemberStatus.ACTIVE)
         .profileImage(imageUrl)
