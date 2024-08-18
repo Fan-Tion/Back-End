@@ -20,12 +20,16 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
   Page<Post> findByChannelAndStatus(Channel channel, PostStatus postStatus, Pageable pageable);
 
-  Page<Post> findByChannelAndTitleContainingAndStatus(Channel channel, String keyword, PostStatus postStatus, Pageable pageable);
-
-  Page<Post> findByChannelAndContentContainingAndStatus(Channel channel, String keyword, PostStatus postStatus, Pageable pageable);
-
-  Page<Post> findByChannelAndTitleContainingOrContentContainingAndStatus(Channel channel, String keyword, String keyword1,
+  Page<Post> findByChannelAndTitleContainingAndStatus(Channel channel, String keyword,
       PostStatus postStatus, Pageable pageable);
 
-  Page<Post> findByChannelAndMemberAndStatus(Channel channel, Member member, PostStatus postStatus, Pageable pageable);
+  Page<Post> findByChannelAndContentContainingAndStatus(Channel channel, String keyword,
+      PostStatus postStatus, Pageable pageable);
+
+  Page<Post> findByChannelAndTitleContainingOrContentContainingAndStatus(Channel channel,
+      String keyword, String keyword1,
+      PostStatus postStatus, Pageable pageable);
+
+  Page<Post> findByChannelAndMemberAndStatus(Channel channel, Member member, PostStatus postStatus,
+      Pageable pageable);
 }

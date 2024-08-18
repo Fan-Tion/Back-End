@@ -11,22 +11,19 @@ import com.fantion.backend.community.dto.CheckDto;
 import com.fantion.backend.community.dto.ImageDto;
 import com.fantion.backend.community.dto.PostDto;
 import com.fantion.backend.type.PostSearchOption;
-import java.util.List;
 import org.springframework.data.domain.Page;
-import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.multipart.MultipartHttpServletRequest;
 
 @Service
 public interface CommunityService {
 
+  ResultDTO<ChannelDto.Response> createChannel(ChannelDto.Request request, MultipartFile file);
 
-    ResultDTO<ChannelDto.Response> createChannel(ChannelDto.Request request, MultipartFile file);
+  ResultDTO<List<ChannelDto.Response>> readChannelRandom();
 
-    ResultDTO<List<ChannelDto.Response>>readChannelRandom();
+  ResultDTO<ChannelDto.Response> editChannel(ChannelEditDto.Request request, MultipartHttpServletRequest file);
 
-    ResultDTO<ChannelDto.Response> editChannel(ChannelEditDto.Request request);
-
-    ResultDTO<ChannelDto.Response> removeChannel(ChannelRemoveDto.Request request);
+  ResultDTO<ChannelDto.Response> removeChannel(ChannelRemoveDto.Request request);
 
   ResultDTO<ImageDto> uploadImage(List<MultipartFile> files, Long communityId, Long postId);
 
@@ -40,6 +37,6 @@ public interface CommunityService {
 
   ResultDTO<Page<PostDto.PostResponse>> getPostList(Long channelId, Integer page);
 
-  ResultDTO<Page<PostDto.PostResponse>> searchPost(Long channelId, PostSearchOption searchOption, String keyword, Integer page);
-
+  ResultDTO<Page<PostDto.PostResponse>> searchPost(Long channelId, PostSearchOption searchOption,
+      String keyword, Integer page);
 }

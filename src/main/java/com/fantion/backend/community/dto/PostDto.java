@@ -17,6 +17,7 @@ public class PostDto {
   @AllArgsConstructor
   @Builder
   public static class PostCreateRequest {
+
     private Long postId;
     private String title;
     private String content;
@@ -28,6 +29,7 @@ public class PostDto {
   @AllArgsConstructor
   @Builder
   public static class PostUpdateRequest {
+
     private String title;
     private String content;
   }
@@ -38,6 +40,7 @@ public class PostDto {
   @AllArgsConstructor
   @Builder
   public static class PostResponse {
+
     private Long postId;
     private String channelName;
     private String nickname;
