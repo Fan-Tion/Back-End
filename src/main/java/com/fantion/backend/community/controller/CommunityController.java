@@ -6,16 +6,16 @@ import com.fantion.backend.community.dto.*;
 import com.fantion.backend.community.service.CommunityService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
-
 import com.fantion.backend.community.service.CommunityService;
+import com.fantion.backend.community.dto.CheckDto;
+import com.fantion.backend.community.dto.ImageDto;
+import com.fantion.backend.community.dto.PostDto;
 import com.fantion.backend.type.PostSearchOption;
 import jakarta.validation.Valid;
-import java.util.List;
-import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -28,12 +28,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.multipart.MultipartHttpServletRequest;
 
 
 @RestController
 @RequestMapping("/community")
 @RequiredArgsConstructor
+@Tag(name = "Community", description = "Community Service API")
 public class CommunityController {
 
     private final CommunityService communityService;
@@ -123,7 +124,8 @@ public class CommunityController {
   public ResponseEntity<ResultDTO<Page<PostDto.PostResponse>>> searchPost(
       @PathVariable Long channelId, @RequestParam PostSearchOption searchOption,
       @RequestParam String keyword, @RequestParam(defaultValue = "0") Integer page) {
-    ResultDTO<Page<PostDto.PostResponse>> result = communityService.searchPost(channelId, searchOption, keyword, page);
+    ResultDTO<Page<PostDto.PostResponse>> result = communityService.searchPost(channelId,
+        searchOption, keyword, page);
     return ResponseEntity.ok(result);
   }
 
