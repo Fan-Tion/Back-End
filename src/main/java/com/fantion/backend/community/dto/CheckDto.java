@@ -13,6 +13,7 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 public class CheckDto {
+
   private Boolean success;
   private Long channelId;
   private Long postId;

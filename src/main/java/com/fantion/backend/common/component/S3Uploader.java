@@ -35,7 +35,7 @@ public class S3Uploader {
   }
 
   public String upload(MultipartFile file, String dirName) throws IOException {
-    String fileName = dirName + "/" + UUID.randomUUID() + "_" + file.getOriginalFilename();
+    String fileName = dirName + "/" + UUID.randomUUID();
     ObjectMetadata metadata = new ObjectMetadata();
     metadata.setContentLength(file.getSize());
     metadata.setContentType(file.getContentType());

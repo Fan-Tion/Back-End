@@ -3,6 +3,8 @@ package com.fantion.backend.community.service.impl;
 import com.fantion.backend.common.component.S3Uploader;
 import com.fantion.backend.common.dto.ResultDTO;
 import com.fantion.backend.community.dto.*;
+import com.fantion.backend.community.dto.ChannelDto.Response;
+import com.fantion.backend.community.dto.ChannelEditDto.Request;
 import com.fantion.backend.community.dto.PostDto.PostCreateRequest;
 import com.fantion.backend.community.dto.PostDto.PostResponse;
 import com.fantion.backend.community.dto.PostDto.PostUpdateRequest;
@@ -19,6 +21,10 @@ import com.fantion.backend.member.repository.MemberRepository;
 import com.fantion.backend.type.ChannelStatus;
 import com.fantion.backend.type.PostSearchOption;
 import com.fantion.backend.type.PostStatus;
+import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -37,7 +43,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.web.multipart.MultipartHttpServletRequest;
 
+import static com.fantion.backend.exception.ErrorCode.IMAGE_IO_ERROR;
 import static com.fantion.backend.exception.ErrorCode.NOT_FOUND_CHANNEL;
 import static com.fantion.backend.exception.ErrorCode.NOT_FOUND_MEMBER;
 
@@ -71,100 +79,142 @@ public class CommunityServiceImpl implements CommunityService {
       return ResultDTO.of("성공적으로 채널이 랜덤으로 조회되었습니다.", responseList);
     }
 
-    @Transactional
-    @Override
-    public ResultDTO<ChannelDto.Response> createChannel(ChannelDto.Request request, MultipartFile file) {
-        // 로그인한 사용자 가져오기
-        String loginEmail = MemberAuthUtil.getLoginUserId();
+  @Override
+  public ResultDTO<List<Response>> readChannelRandom() {
+    List<Channel> channelRandomList = channelRepository.findChannelRandom();
+    List<Response> responseList = channelRandomList.stream().map(ChannelDto::response)
+        .toList();
+    return ResultDTO.of("성공적으로 채널이 랜덤으로 조회되었습니다.", responseList);
+  }
 
-        // 사용자 조회
-        Member organizer = memberRepository.findByEmail(loginEmail)
-                .orElseThrow(()-> new CustomException(NOT_FOUND_MEMBER));
+  @Transactional
+  @Override
+  public ResultDTO<Response> createChannel(ChannelDto.Request request,
+      MultipartFile file) {
+    // 로그인한 사용자 가져오기
+    String loginEmail = MemberAuthUtil.getLoginUserId();
 
-        // 채널 생성
-        Channel newChannel = Channel.builder()
-                .organizer(organizer)
-                .title(request.getTitle())
-                .description(request.getDescription())
-                .status(ChannelStatus.APPROVAL)
-                .createDate(LocalDateTime.now())
-                .build();
+    // 사용자 조회
+    Member organizer = memberRepository.findByEmail(loginEmail)
+        .orElseThrow(() -> new CustomException(NOT_FOUND_MEMBER));
 
-        if (!(file == null || file.isEmpty())) { // 이미지 파일이 있으면
-            // 파일 이름에서 확장자 추출
-            String fileExtension = StringUtils.getFilenameExtension(file.getOriginalFilename());
+    // 채널 생성
+    Channel newChannel = Channel.builder()
+        .organizer(organizer)
+        .title(request.getTitle())
+        .description(request.getDescription())
+        .status(ChannelStatus.APPROVAL)
+        .createDate(LocalDateTime.now())
+        .build();
 
-            // 지원하는 이미지 파일 확장자 목록
-            List<String> allowedExtensions = Arrays.asList("jpg", "jpeg", "png", "gif");
+    if (!(file == null || file.isEmpty())) { // 이미지 파일이 있으면
+      // 파일 이름에서 확장자 추출
+      String fileExtension = StringUtils.getFilenameExtension(file.getOriginalFilename());
 
-            String imageUrl;
-            // 확장자가 이미지 파일인지 확인
-            if (fileExtension != null && allowedExtensions.contains(fileExtension.toLowerCase())) {
-                try {
-                    imageUrl = s3Uploader.upload(file, "channel-images");
-                } catch (Exception e) {
-                    throw new CustomException(ErrorCode.FAILED_IMAGE_SAVE);
-                }
-            } else {
-                // 이미지 파일이 아닌 경우에 대한 처리
-                throw new CustomException(ErrorCode.UN_SUPPORTED_IMAGE_TYPE);
-            }
+      // 지원하는 이미지 파일 확장자 목록
+      List<String> allowedExtensions = Arrays.asList("jpg", "jpeg", "png", "gif");
 
-            // 이미지 url 세팅
-            newChannel.setImage(imageUrl);
-
+      String imageUrl;
+      // 확장자가 이미지 파일인지 확인
+      if (fileExtension != null && allowedExtensions.contains(fileExtension.toLowerCase())) {
+        try {
+          imageUrl = s3Uploader.upload(file, "channel-images");
+        } catch (Exception e) {
+          throw new CustomException(ErrorCode.FAILED_IMAGE_SAVE);
         }
+      } else {
+        // 이미지 파일이 아닌 경우에 대한 처리
+        throw new CustomException(ErrorCode.UN_SUPPORTED_IMAGE_TYPE);
+      }
 
-        return ResultDTO.of("성공적으로 채널이 생성되었습니다.", ChannelDto.response(channelRepository.save(newChannel)));
+      // 이미지 url 세팅
+      newChannel.setImage(imageUrl);
+
     }
-    @Transactional
-    @Override
-    public ResultDTO<ChannelDto.Response> editChannel(ChannelEditDto.Request request) {
-        // 수정하려는 채널 조회
-        Channel channel = channelRepository.findById(request.getChannelId())
-                .orElseThrow(()-> new CustomException(NOT_FOUND_CHANNEL));
 
-        return ResultDTO.of("성공적으로 채널이 수정되었습니다.", ChannelDto.response(channel.editChannel(request)));
+    return ResultDTO.of("성공적으로 채널이 생성되었습니다.",
+        ChannelDto.response(channelRepository.save(newChannel)));
+  }
+
+  @Transactional
+  @Override
+  public ResultDTO<Response> editChannel(Request request,
+      MultipartHttpServletRequest file) {
+
+    // 수정하려는 채널 조회
+    Channel channel = channelRepository.findById(request.getChannelId())
+        .orElseThrow(() -> new CustomException(NOT_FOUND_CHANNEL));
+
+    String currentImage = channel.getImage();
+
+    Map<String, String[]> parameterMap = file.getParameterMap();
+    Map<String, MultipartFile> fileMap = file.getFileMap();
+
+    String imageUrl = "";
+    try {
+      String type = parameterMap.get("channelImageType")[0].toString();
+      if (type.equals("url")) {
+        String url = parameterMap.get("channelImageValue")[0].toString();
+        imageUrl = url;
+      } else if (type.equals("file")) {
+        MultipartFile imageFile = fileMap.get("channelImageValue");
+        String url = s3Uploader.upload(imageFile, "channel-images");
+        imageUrl = url;
+      }
+
+      // currentImages 중 auctionImageUrl에 없는 이미지를 삭제
+      if (!imageUrl.contains(currentImage)) {
+        URL exProfileImageUrl = new URL(currentImage);
+        String exProfileImage = exProfileImageUrl.getPath().substring(1);
+        s3Uploader.deleteFile(exProfileImage);
+      }
+
+    } catch (IOException e) {
+      throw new CustomException(IMAGE_IO_ERROR);
     }
-    @Transactional
-    @Override
-    public ResultDTO<ChannelDto.Response> removeChannel(ChannelRemoveDto.Request request) {
-        // 삭제하려는 채널 조회
-        Channel channel = channelRepository.findById(request.getChannelId())
-                .orElseThrow(()-> new CustomException(NOT_FOUND_CHANNEL));
 
-        // 채널 이미지가 있는 경우
-        if (channel.getImage() != null){
-            // 채널 이미지 삭제
-            try {
-                URL exProfileImageUrl = new URL(channel.getImage());
-                String exProfileImage = exProfileImageUrl.getPath().substring(1);
-                s3Uploader.deleteFile(exProfileImage);
-            } catch (MalformedURLException e) {
-                throw new CustomException(ErrorCode.IMAGE_NOT_HAVE_PATH);
-            }
-        }
+    return ResultDTO.of("성공적으로 채널이 수정되었습니다.", ChannelDto.response(channel.editChannel(request, imageUrl)));
+  }
 
-        // 채널 삭제
-        channelRepository.delete(channel);
+  @Transactional
+  @Override
+  public ResultDTO<Response> removeChannel(ChannelRemoveDto.Request request) {
+    // 삭제하려는 채널 조회
+    Channel channel = channelRepository.findById(request.getChannelId())
+        .orElseThrow(() -> new CustomException(NOT_FOUND_CHANNEL));
 
-        ChannelDto.Response response = ChannelDto.response(channel);
-        return ResultDTO.of("성공적으로 채널이 삭제되었습니다.", response);
+    // 채널 이미지가 있는 경우
+    if (channel.getImage() != null) {
+      // 채널 이미지 삭제
+      try {
+        URL exProfileImageUrl = new URL(channel.getImage());
+        String exProfileImage = exProfileImageUrl.getPath().substring(1);
+        s3Uploader.deleteFile(exProfileImage);
+      } catch (MalformedURLException e) {
+        throw new CustomException(ErrorCode.IMAGE_NOT_HAVE_PATH);
+      }
     }
+
+    // 채널 삭제
+    channelRepository.delete(channel);
+
+    Response response = ChannelDto.response(channel);
+    return ResultDTO.of("성공적으로 채널이 삭제되었습니다.", response);
+  }
 
   @Override
   public ResultDTO<ImageDto> uploadImage(List<MultipartFile> files, Long channelId, Long postId) {
 
     Channel channel = channelRepository.findById(channelId)
-        .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_CHANNEL));
+        .orElseThrow(() -> new CustomException(NOT_FOUND_CHANNEL));
 
     if (channel.getStatus().equals(ChannelStatus.CLOSING)) {
-      throw new CustomException(ErrorCode.NOT_FOUND_CHANNEL);
+      throw new CustomException(NOT_FOUND_CHANNEL);
     }
 
     String email = MemberAuthUtil.getLoginUserId();
     Member member = memberRepository.findByEmail(email)
-        .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
+        .orElseThrow(() -> new CustomException(NOT_FOUND_MEMBER));
 
     if (postId == null) {
       Post post = Post.builder()
@@ -211,10 +261,10 @@ public class CommunityServiceImpl implements CommunityService {
   public ResultDTO<CheckDto> createPost(Long channelId, PostCreateRequest request) {
 
     Channel channel = channelRepository.findById(channelId)
-        .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_CHANNEL));
+        .orElseThrow(() -> new CustomException(NOT_FOUND_CHANNEL));
 
     if (channel.getStatus().equals(ChannelStatus.CLOSING)) {
-      throw new CustomException(ErrorCode.NOT_FOUND_CHANNEL);
+      throw new CustomException(NOT_FOUND_CHANNEL);
     }
 
     Post post = new Post();
@@ -229,7 +279,7 @@ public class CommunityServiceImpl implements CommunityService {
 
     String email = MemberAuthUtil.getLoginUserId();
     Member member = memberRepository.findByEmail(email)
-        .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
+        .orElseThrow(() -> new CustomException(NOT_FOUND_MEMBER));
 
     if (!post.getMember().equals(member)) {
       throw new CustomException(ErrorCode.INVALID_POST_MEMBER);
@@ -259,10 +309,10 @@ public class CommunityServiceImpl implements CommunityService {
   @Override
   public ResultDTO<PostResponse> getPost(Long channelId, Long postId) {
     Channel channel = channelRepository.findById(channelId)
-        .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_CHANNEL));
+        .orElseThrow(() -> new CustomException(NOT_FOUND_CHANNEL));
 
     if (channel.getStatus().equals(ChannelStatus.CLOSING)) {
-      throw new CustomException(ErrorCode.NOT_FOUND_CHANNEL);
+      throw new CustomException(NOT_FOUND_CHANNEL);
     }
     Post post = postRepository.findByPostIdAndStatus(postId, PostStatus.ACTIVE)
         .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_POST));
@@ -282,10 +332,10 @@ public class CommunityServiceImpl implements CommunityService {
       PostUpdateRequest request) {
 
     Channel channel = channelRepository.findById(channelId)
-        .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_CHANNEL));
+        .orElseThrow(() -> new CustomException(NOT_FOUND_CHANNEL));
 
     if (channel.getStatus().equals(ChannelStatus.CLOSING)) {
-      throw new CustomException(ErrorCode.NOT_FOUND_CHANNEL);
+      throw new CustomException(NOT_FOUND_CHANNEL);
     }
 
     Post post = postRepository.findByPostIdAndStatus(postId, PostStatus.ACTIVE)
@@ -293,7 +343,7 @@ public class CommunityServiceImpl implements CommunityService {
 
     String email = MemberAuthUtil.getLoginUserId();
     Member member = memberRepository.findByEmail(email)
-        .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
+        .orElseThrow(() -> new CustomException(NOT_FOUND_MEMBER));
 
     if (!post.getMember().equals(member)) {
       throw new CustomException(ErrorCode.INVALID_POST_MEMBER);
@@ -317,10 +367,10 @@ public class CommunityServiceImpl implements CommunityService {
   @Override
   public ResultDTO<CheckDto> deletePost(Long channelId, Long postId) {
     Channel channel = channelRepository.findById(channelId)
-        .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_CHANNEL));
+        .orElseThrow(() -> new CustomException(NOT_FOUND_CHANNEL));
 
     if (channel.getStatus().equals(ChannelStatus.CLOSING)) {
-      throw new CustomException(ErrorCode.NOT_FOUND_CHANNEL);
+      throw new CustomException(NOT_FOUND_CHANNEL);
     }
 
     Post post = postRepository.findByPostIdAndStatus(postId, PostStatus.ACTIVE)
@@ -328,7 +378,7 @@ public class CommunityServiceImpl implements CommunityService {
 
     String email = MemberAuthUtil.getLoginUserId();
     Member member = memberRepository.findByEmail(email)
-        .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
+        .orElseThrow(() -> new CustomException(NOT_FOUND_MEMBER));
 
     if (!post.getMember().equals(member)) {
       throw new CustomException(ErrorCode.INVALID_POST_MEMBER);
@@ -352,10 +402,10 @@ public class CommunityServiceImpl implements CommunityService {
   @Override
   public ResultDTO<Page<PostResponse>> getPostList(Long communityId, Integer page) {
     Channel channel = channelRepository.findById(communityId)
-        .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_CHANNEL));
+        .orElseThrow(() -> new CustomException(NOT_FOUND_CHANNEL));
 
     if (channel.getStatus().equals(ChannelStatus.CLOSING)) {
-      throw new CustomException(ErrorCode.NOT_FOUND_CHANNEL);
+      throw new CustomException(NOT_FOUND_CHANNEL);
     }
 
     // 페이지 요청 설정 (한 페이지에 20개, 최신순 정렬)
@@ -376,10 +426,10 @@ public class CommunityServiceImpl implements CommunityService {
       String keyword, Integer page) {
 
     Channel channel = channelRepository.findById(channelId)
-        .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_CHANNEL));
+        .orElseThrow(() -> new CustomException(NOT_FOUND_CHANNEL));
 
     if (channel.getStatus().equals(ChannelStatus.CLOSING)) {
-      throw new CustomException(ErrorCode.NOT_FOUND_CHANNEL);
+      throw new CustomException(NOT_FOUND_CHANNEL);
     }
     Pageable pageable = PageRequest.of(page, 20, Sort.by(Direction.DESC, "createDate"));
 

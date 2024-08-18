@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public class ChannelDto {
-
+  
     @Getter
     @Setter
     @Builder
@@ -52,5 +52,4 @@ public class ChannelDto {
                 .createDate(channel.getCreateDate())
                 .build();
     }
-
 }
