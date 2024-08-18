@@ -58,6 +58,26 @@ public class CommunityServiceImpl implements CommunityService {
   private final PostRepository postRepository;
   private final MemberRepository memberRepository;
   private final S3Uploader s3Uploader;
+  
+    @Override
+    public ResultDTO<List<ChannelDto.Response>> readChannelRandom() {
+      // 채널 랜덤 조회
+      List<Channel> channelRandomList = channelRepository.findChannelRandom();
+      List<ChannelDto.Response> responseList = new ArrayList<>();
+
+      for (int i = 0; i < channelRandomList.size(); i++) {
+        Channel channel = channelRandomList.get(i);
+        // 해당 채널의 최근 게시글 조회
+        List<Post> latestPostList = postRepository.findTop10ByChannelOrderByCreateDateDesc(channelRandomList.get(i));
+
+        List<PostResponse> latestPostDtoList = latestPostList.stream().map(PostDto::toResponse).toList();
+        ChannelDto.Response response = ChannelDto.response(channel);
+        response.setPostList(latestPostDtoList);
+        responseList.add(response);
+      }
+
+      return ResultDTO.of("성공적으로 채널이 랜덤으로 조회되었습니다.", responseList);
+    }
 
   @Override
   public ResultDTO<List<Response>> readChannelRandom() {
