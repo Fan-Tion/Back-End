@@ -259,19 +259,20 @@ public class CommunityServiceImpl implements CommunityService {
       throw new CustomException(NOT_FOUND_CHANNEL);
     }
 
+    String email = MemberAuthUtil.getLoginUserId();
+    Member member = memberRepository.findByEmail(email)
+        .orElseThrow(() -> new CustomException(NOT_FOUND_MEMBER));
+
     Post post = new Post();
     if (request.getPostId() != null) {
       post = postRepository.findByPostIdAndStatus(request.getPostId(), PostStatus.DRAFTS)
           .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_POST));
     } else {
       post = postRepository.save(post.toBuilder()
+          .member(member)
           .status(PostStatus.DRAFTS)
           .build());
     }
-
-    String email = MemberAuthUtil.getLoginUserId();
-    Member member = memberRepository.findByEmail(email)
-        .orElseThrow(() -> new CustomException(NOT_FOUND_MEMBER));
 
     if (!post.getMember().equals(member)) {
       throw new CustomException(ErrorCode.INVALID_POST_MEMBER);
