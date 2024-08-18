@@ -9,4 +9,7 @@ public interface SseEmitterService {
     void deleteEmitter(String emitterKey);
     void sendBidToClient(String emitterKey, BidDto.Response bid);
     void send(Object data, String emitterKey, SseEmitter sseEmitter);
+    void subscribeToAuction(String auctionId,String memberId);
+    void sendEventToAuction(String auctionId,Object data);
+    void endSsemitter(String auctionId, String memberId);
 }

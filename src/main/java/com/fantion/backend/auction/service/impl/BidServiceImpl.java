@@ -183,12 +183,24 @@ public class BidServiceImpl implements BidService {
     @Transactional
     @Override
     public SseEmitter subscribeBid(Long auctionId) {
+        // 로그인한 사용자 가져오기
+        String loginEmail = MemberAuthUtil.getLoginUserId();
+
+        // 사용자 조회
+        Member member = memberRepository.findByEmail(loginEmail)
+                .orElseThrow(()-> new CustomException(NOT_FOUND_MEMBER));
+
+        // 채널명 설정
         String channel = String.valueOf(auctionId);
+
         // SSE 통신 객체 생성
-        SseEmitter sseEmitter = sseEmitterService.createEmitter(channel);
+        SseEmitter sseEmitter = sseEmitterService.createEmitter(String.valueOf(member.getMemberId()));
 
         // 더미데이터 전송
         sseEmitterService.send("ReceivedData", channel, sseEmitter);
+
+        // 특정 경매 물품 별로 사용자 구독 관리
+        sseEmitterService.subscribeToAuction("auctionChannel : "+auctionId,String.valueOf(member.getMemberId()));
 
         // 채널 구독
         redisMessageService.subscribe(channel);
@@ -199,6 +211,7 @@ public class BidServiceImpl implements BidService {
         sseEmitter.onCompletion(() -> {
             sseEmitterService.deleteEmitter(channel);
             redisMessageService.removeSubscribe(channel);
+            sseEmitterService.endSsemitter("auctionChannel : "+auctionId,String.valueOf(member.getMemberId()));
         });
 
         return sseEmitter;

@@ -42,7 +42,7 @@ public class RedisMessageServiceImpl implements RedisMessageService {
     }
 
     private String getChannelName(String id) {
-        return  id;
+        return  "auctionChannel : "+id;
     }
 
 }
