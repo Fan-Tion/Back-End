@@ -26,7 +26,7 @@ public class CommunityController {
   @PostMapping("/{communityId}/image")
   public ResponseEntity<ResultDTO<ImageDto>> uploadImage(
       @RequestPart("file") List<MultipartFile> files, @PathVariable Long communityId,
-      @RequestParam Long postId) {
+      @RequestParam(required = false) Long postId) {
 
     ResultDTO<ImageDto> result = communityService.uploadImage(files, communityId, postId);
     return ResponseEntity.ok(result);
