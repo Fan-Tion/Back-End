@@ -6,6 +6,7 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public class ChannelDto {
 
@@ -35,8 +36,9 @@ public class ChannelDto {
         private String title;                   // 채널 제목
         private String description;             // 채널 설명
         private String image;                   // 채널 이미지
-        private ChannelStatus status;         // 채널 상태
+        private ChannelStatus status;           // 채널 상태
         private LocalDateTime createDate;       // 채널 생성일
+        private List<PostDto.PostResponse> postList;         // 채널의 최근 게시글
     }
 
     public static ChannelDto.Response response(Channel channel) {
