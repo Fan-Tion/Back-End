@@ -2,14 +2,7 @@ package com.fantion.backend.community.service.impl;
 
 import com.fantion.backend.common.component.S3Uploader;
 import com.fantion.backend.common.dto.ResultDTO;
-import com.fantion.backend.community.dto.ChannelDto;
-import com.fantion.backend.community.dto.ChannelEditDto;
-import com.fantion.backend.community.dto.ChannelRemoveDto;
-import com.fantion.backend.community.entity.Channel;
-import com.fantion.backend.community.repository.ChannelRepository;
-import com.fantion.backend.community.dto.CheckDto;
-import com.fantion.backend.community.dto.ImageDto;
-import com.fantion.backend.community.dto.PostDto;
+import com.fantion.backend.community.dto.*;
 import com.fantion.backend.community.dto.PostDto.PostCreateRequest;
 import com.fantion.backend.community.dto.PostDto.PostResponse;
 import com.fantion.backend.community.dto.PostDto.PostUpdateRequest;
@@ -24,7 +17,14 @@ import com.fantion.backend.member.auth.MemberAuthUtil;
 import com.fantion.backend.member.entity.Member;
 import com.fantion.backend.member.repository.MemberRepository;
 import com.fantion.backend.type.ChannelStatus;
+import com.fantion.backend.type.PostSearchOption;
+import com.fantion.backend.type.PostStatus;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Sort.Direction;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -33,27 +33,13 @@ import org.springframework.web.multipart.MultipartFile;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.List;
-
-import static com.fantion.backend.exception.ErrorCode.NOT_FOUND_CHANNEL;
-import static com.fantion.backend.exception.ErrorCode.NOT_FOUND_MEMBER;
-import com.fantion.backend.type.PostSearchOption;
-import com.fantion.backend.type.PostStatus;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.domain.Sort.Direction;
-import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
-import org.springframework.web.multipart.MultipartFile;
+
+import static com.fantion.backend.exception.ErrorCode.NOT_FOUND_CHANNEL;
+import static com.fantion.backend.exception.ErrorCode.NOT_FOUND_MEMBER;
 
 
 @Service
@@ -152,11 +138,6 @@ public class CommunityServiceImpl implements CommunityService {
         ChannelDto.Response response = ChannelDto.response(channel);
         return ResultDTO.of("성공적으로 채널이 삭제되었습니다.", response);
     }
-
-  private final ChannelRepository channelRepository;
-  private final PostRepository postRepository;
-  private final MemberRepository memberRepository;
-  private final S3Uploader s3Uploader;
 
   @Override
   public ResultDTO<ImageDto> uploadImage(List<MultipartFile> files, Long channelId, Long postId) {

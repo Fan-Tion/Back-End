@@ -36,7 +36,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 
 @RestController
-@RequiredArgsConstructor
 @RequestMapping("/community")
 @RequiredArgsConstructor
 public class CommunityController {
