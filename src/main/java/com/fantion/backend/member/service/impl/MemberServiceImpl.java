@@ -1,6 +1,5 @@
 package com.fantion.backend.member.service.impl;
 
-import com.fantion.backend.auction.dto.AuctionDto;
 import com.fantion.backend.auction.entity.Auction;
 import com.fantion.backend.auction.repository.AuctionRepository;
 import com.fantion.backend.common.component.MailComponents;
@@ -232,8 +231,7 @@ public class MemberServiceImpl implements MemberService {
     }
 
     // 토큰 생성
-    TokenDto.Local tokens = jwtTokenProvider.createTokens(member.getEmail(), member.getMemberId(),
-        member.getNickname());
+    TokenDto.Local tokens = jwtTokenProvider.createTokens(member.getEmail(), member.getNickname());
 
     // Redis에 RefreshToken 저장
     String refreshToken = tokens.getRefreshToken();
@@ -289,9 +287,10 @@ public class MemberServiceImpl implements MemberService {
 
       // 신규 회원 가입 진행
       String password = UUID.randomUUID().toString();
+      String encPassword = BCrypt.hashpw(password, BCrypt.gensalt());
       Member member = Member.builder()
           .email(profileDto.getEmail())
-          .password(password)
+          .password(encPassword)
           .nickname(nickname)
           .auth(true)
           .isKakao(false)
@@ -315,8 +314,7 @@ public class MemberServiceImpl implements MemberService {
           .build();
       moneyRepository.save(money);
 
-      TokenDto.Local tokens = jwtTokenProvider.createTokens(member.getEmail(), member.getMemberId(),
-          member.getNickname());
+      TokenDto.Local tokens = jwtTokenProvider.createTokens(member.getEmail(), member.getNickname());
 
       // Redis에 RefreshToken 저장
       String refreshToken = tokens.getRefreshToken();
@@ -343,9 +341,7 @@ public class MemberServiceImpl implements MemberService {
     }
 
     // 연동한 회원인 경우
-    TokenDto.Local tokens = jwtTokenProvider.createTokens(member.getEmail(),
-        member.getMemberId(),
-        member.getNickname());
+    TokenDto.Local tokens = jwtTokenProvider.createTokens(member.getEmail(), member.getNickname());
 
     // Redis에 RefreshToken 저장
     String refreshToken = tokens.getRefreshToken();
@@ -374,7 +370,7 @@ public class MemberServiceImpl implements MemberService {
     }
 
     // 현재 토큰에 저장된 email 가져오기
-    String currentEmail = MemberAuthUtil.getCurrentEmail();
+    String currentEmail = MemberAuthUtil.getLoginUserId();
     Member member = memberRepository.findByEmail(currentEmail)
         .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
 
@@ -414,7 +410,7 @@ public class MemberServiceImpl implements MemberService {
   @Override
   public ResultDTO<CheckDto> naverUnlink() {
 
-    String currentEmail = MemberAuthUtil.getCurrentEmail();
+    String currentEmail = MemberAuthUtil.getLoginUserId();
     Member member = memberRepository.findByEmail(currentEmail)
         .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
 
@@ -446,7 +442,7 @@ public class MemberServiceImpl implements MemberService {
   @Transactional
   public ResultDTO<CheckDto> signout() {
 
-    String email = MemberAuthUtil.getCurrentEmail();
+    String email = MemberAuthUtil.getLoginUserId();
     String accessToken = jwtTokenProvider.resolveToken(httpServletRequest);
 
     // Redis에 해당 유저의 email로 저장된 refreshToken이 있는지 확인 후 있으면 삭제
@@ -469,7 +465,7 @@ public class MemberServiceImpl implements MemberService {
   @Transactional
   public ResultDTO<CheckDto> withdrawal() {
 
-    String email = MemberAuthUtil.getCurrentEmail();
+    String email = MemberAuthUtil.getLoginUserId();
     Member member = memberRepository.findByEmail(email)
         .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
 
@@ -510,7 +506,7 @@ public class MemberServiceImpl implements MemberService {
   @Override
   public ResultDTO<MemberDto.MemberResponse> myInfo() {
 
-    String email = MemberAuthUtil.getCurrentEmail();
+    String email = MemberAuthUtil.getLoginUserId();
     Member member = memberRepository.findByEmail(email)
         .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
 
@@ -531,6 +527,7 @@ public class MemberServiceImpl implements MemberService {
 
     if (member.getIsNaver()) {
       memberDto.setAuthType("NAVER");
+      memberDto.setLinkedEmail(member.getLinkedEmail());
     } else if (member.getIsKakao()) {
       memberDto.setAuthType("KAKAO");
     }
@@ -542,7 +539,7 @@ public class MemberServiceImpl implements MemberService {
   @Transactional
   public ResultDTO<CheckDto> myInfoEdit(MemberDto.MemberUpdateRequest request) {
 
-    String email = MemberAuthUtil.getCurrentEmail();
+    String email = MemberAuthUtil.getLoginUserId();
     Member member = memberRepository.findByEmail(email)
         .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
 
@@ -576,7 +573,7 @@ public class MemberServiceImpl implements MemberService {
   @Override
   public ResultDTO<ProfileImageResponseDto> profileImageEdit(MultipartFile file) {
 
-    String email = MemberAuthUtil.getCurrentEmail();
+    String email = MemberAuthUtil.getLoginUserId();
     Member member = memberRepository.findByEmail(email)
         .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
 
@@ -677,7 +674,7 @@ public class MemberServiceImpl implements MemberService {
   @Transactional
   public ResultDTO<CheckDto> rating(RatingRequestDto request) {
 
-    String email = MemberAuthUtil.getCurrentEmail();
+    String email = MemberAuthUtil.getLoginUserId();
     Member buyer = memberRepository.findByEmail(email)
         .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
 
@@ -725,7 +722,7 @@ public class MemberServiceImpl implements MemberService {
   @Override
   public ResultDTO<Page<MyBalanceDto>> myBalance(String searchOption, Integer pageNumber) {
 
-    String email = MemberAuthUtil.getCurrentEmail();
+    String email = MemberAuthUtil.getLoginUserId();
     Member member = memberRepository.findByEmail(email)
         .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
 

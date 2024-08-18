@@ -17,7 +17,6 @@ import com.fantion.backend.payment.dto.CancelDto;
 import com.fantion.backend.payment.dto.ConfirmDto;
 import com.fantion.backend.payment.dto.PaymentDto;
 import com.fantion.backend.payment.dto.PaymentResponseDto;
-import com.fantion.backend.payment.dto.PaymentResponseDto.PaymentSuccess;
 import com.fantion.backend.payment.entity.Payment;
 import com.fantion.backend.payment.repository.PaymentRepository;
 import com.fantion.backend.payment.service.PaymentService;
@@ -63,7 +62,7 @@ public class PaymentServiceImpl implements PaymentService {
 
     String orderId = UUID.randomUUID().toString();
 
-    String email = MemberAuthUtil.getCurrentEmail();
+    String email = MemberAuthUtil.getLoginUserId();
     Member member = memberRepository.findByEmail(email)
         .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
 
@@ -164,7 +163,7 @@ public class PaymentServiceImpl implements PaymentService {
     // 현재는 결제 취소 금액이 현재 가지고 있는 예치금보다 적은지와
     // 토스 결제 조회 API를 통해 결제 정보가 정말 있는지만 체크
 
-    String email = MemberAuthUtil.getCurrentEmail();
+    String email = MemberAuthUtil.getLoginUserId();
     Member member = memberRepository.findByEmail(email)
         .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
 

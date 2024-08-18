@@ -9,7 +9,6 @@ import com.fantion.backend.auction.service.AuctionService;
 import com.fantion.backend.common.dto.ResultDTO;
 import com.fantion.backend.exception.ErrorResponse;
 import com.fantion.backend.type.CategoryType;
-import com.fantion.backend.type.SearchType;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -17,9 +16,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotNull;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -41,6 +40,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.multipart.MultipartHttpServletRequest;
 
 @Slf4j
 @RestController
@@ -72,9 +72,8 @@ public class AuctionController {
   @PutMapping(value = "/{auctionId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   public ResponseEntity<ResultDTO<AuctionDto.AuctionResponse>> updateAuction(
       @Valid @RequestPart("request") AuctionDto.AuctionRequest request,
-      @RequestPart("auctionImage") List<MultipartFile> auctionImage,
-      @PathVariable("auctionId") Long auctionId) {
-    return ResponseEntity.ok(auctionService.updateAuction(request, auctionImage, auctionId));
+      MultipartHttpServletRequest file, @PathVariable("auctionId") Long auctionId) {
+    return ResponseEntity.ok(auctionService.updateAuction(request, file, auctionId));
   }
 
   @Operation(summary = "경매 삭제", description = "경매 삭제 할 때 사용하는 API.")
@@ -231,7 +230,8 @@ public class AuctionController {
           content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErrorResponse.class)))
   })
   @PostMapping("/report/{auctionId}")
-  public ResponseEntity<ResultDTO<AuctionReportDto.AuctionReportResponse>> reportAuction(@PathVariable Long auctionId,
+  public ResponseEntity<ResultDTO<AuctionReportDto.AuctionReportResponse>> reportAuction(
+      @PathVariable Long auctionId,
       @RequestBody AuctionReportDto.AuctionReportRequest request) {
     ResultDTO<AuctionReportResponse> result = auctionService.reportAuction(
         auctionId, request);

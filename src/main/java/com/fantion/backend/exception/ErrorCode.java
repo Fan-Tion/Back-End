@@ -49,6 +49,11 @@ public enum ErrorCode {
     ALREADY_CANCEL_CHK("이미 거래취소가 되어있습니다.",HttpStatus.BAD_REQUEST),
     NOT_CONFIRMED_RECEIVE("인수확인이 아직 완료되지 않았습니다.", HttpStatus.BAD_REQUEST),
 
+    // Community
+    NOT_FOUND_POST("존재하지 않은 게시물 입니다.", HttpStatus.NOT_FOUND),
+    INVALID_POST_MEMBER("게시글의 작성자가 아닙니다.", HttpStatus.BAD_REQUEST),
+    NOT_FOUND_CHANNEL("존재하지 않은 채널 입니다.", HttpStatus.NOT_FOUND),
+
     // Common
     PARSING_ERROR("파싱 오류가 발생했습니다.", HttpStatus.BAD_REQUEST),
     FAILED_IMAGE_SAVE("이미지 저장에 실패 했습니다.", HttpStatus.INTERNAL_SERVER_ERROR),
