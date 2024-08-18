@@ -1,7 +1,7 @@
 package com.fantion.backend.community.entity;
 
 import com.fantion.backend.member.entity.Member;
-import com.fantion.backend.type.CommunityStatus;
+import com.fantion.backend.type.ChannelStatus;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -16,29 +16,31 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 
 @Entity
-@Table(name = "community")
+@Table(name = "channel")
 @Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Community {
-
+public class Channel {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
-  private Long communityId;
+  private Long channelId;                 // 채널 식별자
 
   @ManyToOne
-  @JoinColumn(name = "member_id")
-  private Member member;
+  @JoinColumn(name = "organizer")
+  private Member organizer;               // 주최자
 
-  private String title;
-  private String description;
-  private String image;
+  private String title;                   // 채널 제목
+  private String description;             // 채널 설명
+  private String image;                   // 채널 이미지
 
   @Enumerated(EnumType.STRING)
-  private CommunityStatus status;
+  private ChannelStatus status;           // 채널 상태
 
-  private LocalDateTime createDate;
+  private LocalDateTime createDate;       // 채널 생성일
 }

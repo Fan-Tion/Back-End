@@ -14,6 +14,6 @@ import lombok.Setter;
 @Builder
 public class CheckDto {
   private Boolean success;
-  private Long communityId;
+  private Long channelId;
   private Long postId;
 }
