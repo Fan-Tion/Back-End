@@ -22,6 +22,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
@@ -231,5 +235,26 @@ public class CommunityServiceImpl implements CommunityService {
         .build();
 
     return ResultDTO.of("게시글 삭제에 성공했습니다.", response);
+  }
+
+  @Override
+  public ResultDTO<Page<PostDto.PostResponse>> getPostList(Long communityId, Integer page) {
+    Community community = communityRepository.findById(communityId)
+        .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_CHANNEL));
+
+    if (community.getStatus().equals(CommunityStatus.CLOSE)) {
+      throw new CustomException(ErrorCode.NOT_FOUND_CHANNEL);
+    }
+
+    // 페이지 요청 설정 (한 페이지에 20개, 최신순 정렬)
+    Pageable pageable = PageRequest.of(page, 20, Sort.by(Sort.Direction.DESC, "createDate"));
+
+    // 해당 커뮤니티의 활성 상태인 게시글만 조회
+    Page<Post> posts = postRepository.findByCommunityAndStatus(community, PostStatus.ACTIVE, pageable);
+
+    // 조회된 게시글을 PostResponse DTO로 변환
+    Page<PostDto.PostResponse> response = posts.map(post -> PostDto.toResponse(post));
+
+    return ResultDTO.of("게시글 목록을 불러오는데 성공했습니다.", response);
   }
 }

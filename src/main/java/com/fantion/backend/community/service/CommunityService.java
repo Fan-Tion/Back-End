@@ -5,6 +5,7 @@ import com.fantion.backend.community.dto.CheckDto;
 import com.fantion.backend.community.dto.ImageDto;
 import com.fantion.backend.community.dto.PostDto;
 import java.util.List;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -20,4 +21,6 @@ public interface CommunityService {
   ResultDTO<CheckDto> updatePost(Long communityId, Long postId, PostDto.PostUpdateRequest request);
 
   ResultDTO<CheckDto> deletePost(Long communityId, Long postId);
+
+  ResultDTO<Page<PostDto.PostResponse>> getPostList(Long communityId, Integer page);
 }
