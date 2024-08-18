@@ -30,56 +30,56 @@ public class CommunityController {
 
   private final CommunityService communityService;
 
-  @PostMapping("/{communityId}/image")
+  @PostMapping("/{channelId}/image")
   public ResponseEntity<ResultDTO<ImageDto>> uploadImage(
-      @PathVariable Long communityId, @RequestPart("file") List<MultipartFile> files,
+      @PathVariable Long channelId, @RequestPart("file") List<MultipartFile> files,
       @RequestParam(required = false) Long postId) {
 
-    ResultDTO<ImageDto> result = communityService.uploadImage(files, communityId, postId);
+    ResultDTO<ImageDto> result = communityService.uploadImage(files, channelId, postId);
     return ResponseEntity.ok(result);
   }
 
-  @PostMapping("/{communityId}/post")
+  @PostMapping("/{channelId}/post")
   public ResponseEntity<ResultDTO<CheckDto>> createPost(
-      @PathVariable Long communityId, @RequestBody @Valid PostDto.PostCreateRequest request) {
-    ResultDTO<CheckDto> result = communityService.createPost(communityId, request);
+      @PathVariable Long channelId, @RequestBody @Valid PostDto.PostCreateRequest request) {
+    ResultDTO<CheckDto> result = communityService.createPost(channelId, request);
     return ResponseEntity.ok(result);
   }
 
-  @GetMapping("/{communityId}/post/{postId}")
-  public ResponseEntity<ResultDTO<PostDto.PostResponse>> getPost(@PathVariable Long communityId,
+  @GetMapping("/{channelId}/post/{postId}")
+  public ResponseEntity<ResultDTO<PostDto.PostResponse>> getPost(@PathVariable Long channelId,
       @PathVariable Long postId) {
-    ResultDTO<PostDto.PostResponse> result = communityService.getPost(communityId, postId);
+    ResultDTO<PostDto.PostResponse> result = communityService.getPost(channelId, postId);
     return ResponseEntity.ok(result);
   }
 
-  @PutMapping("/{communityId}/post/{postId}")
-  public ResponseEntity<ResultDTO<CheckDto>> updatePost(@PathVariable Long communityId,
+  @PutMapping("/{channelId}/post/{postId}")
+  public ResponseEntity<ResultDTO<CheckDto>> updatePost(@PathVariable Long channelId,
       @PathVariable Long postId, @RequestBody @Valid PostDto.PostUpdateRequest request) {
-    ResultDTO<CheckDto> result = communityService.updatePost(communityId, postId, request);
+    ResultDTO<CheckDto> result = communityService.updatePost(channelId, postId, request);
     return ResponseEntity.ok(result);
   }
 
-  @DeleteMapping("/{communityId}/post/{postId}")
-  public ResponseEntity<ResultDTO<CheckDto>> deletePost(@PathVariable Long communityId,
+  @DeleteMapping("/{channelId}/post/{postId}")
+  public ResponseEntity<ResultDTO<CheckDto>> deletePost(@PathVariable Long channelId,
       @PathVariable Long postId) {
-    ResultDTO<CheckDto> result = communityService.deletePost(communityId, postId);
+    ResultDTO<CheckDto> result = communityService.deletePost(channelId, postId);
     return ResponseEntity.ok(result);
   }
 
-  @GetMapping("/{communityId}")
+  @GetMapping("/{channelId}")
   public ResponseEntity<ResultDTO<Page<PostDto.PostResponse>>> getPostList(
-      @PathVariable Long communityId,
+      @PathVariable Long channelId,
       @RequestParam(name = "page", defaultValue = "0") Integer page) {
-    ResultDTO<Page<PostDto.PostResponse>> result = communityService.getPostList(communityId, page);
+    ResultDTO<Page<PostDto.PostResponse>> result = communityService.getPostList(channelId, page);
     return ResponseEntity.ok(result);
   }
 
-  @GetMapping("/{communityId}/search")
+  @GetMapping("/{channelId}/search")
   public ResponseEntity<ResultDTO<Page<PostDto.PostResponse>>> searchPost(
-      @PathVariable Long communityId, @RequestParam PostSearchOption searchOption,
+      @PathVariable Long channelId, @RequestParam PostSearchOption searchOption,
       @RequestParam String keyword, @RequestParam(defaultValue = "0") Integer page) {
-    ResultDTO<Page<PostDto.PostResponse>> result = communityService.searchPost(communityId, searchOption, keyword, page);
+    ResultDTO<Page<PostDto.PostResponse>> result = communityService.searchPost(channelId, searchOption, keyword, page);
     return ResponseEntity.ok(result);
   }
 }

@@ -15,15 +15,15 @@ public interface CommunityService {
 
   ResultDTO<ImageDto> uploadImage(List<MultipartFile> files, Long communityId, Long postId);
 
-  ResultDTO<CheckDto> createPost(Long communityId, PostDto.PostCreateRequest request);
+  ResultDTO<CheckDto> createPost(Long channelId, PostDto.PostCreateRequest request);
 
-  ResultDTO<PostDto.PostResponse> getPost(Long communityId, Long postId);
+  ResultDTO<PostDto.PostResponse> getPost(Long channelId, Long postId);
 
-  ResultDTO<CheckDto> updatePost(Long communityId, Long postId, PostDto.PostUpdateRequest request);
+  ResultDTO<CheckDto> updatePost(Long channelId, Long postId, PostDto.PostUpdateRequest request);
 
-  ResultDTO<CheckDto> deletePost(Long communityId, Long postId);
+  ResultDTO<CheckDto> deletePost(Long channelId, Long postId);
 
-  ResultDTO<Page<PostDto.PostResponse>> getPostList(Long communityId, Integer page);
+  ResultDTO<Page<PostDto.PostResponse>> getPostList(Long channelId, Integer page);
 
-  ResultDTO<Page<PostDto.PostResponse>> searchPost(Long communityId, PostSearchOption searchOption, String keyword, Integer page);
+  ResultDTO<Page<PostDto.PostResponse>> searchPost(Long channelId, PostSearchOption searchOption, String keyword, Integer page);
 }

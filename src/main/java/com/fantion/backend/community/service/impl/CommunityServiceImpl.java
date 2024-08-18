@@ -8,9 +8,9 @@ import com.fantion.backend.community.dto.PostDto;
 import com.fantion.backend.community.dto.PostDto.PostCreateRequest;
 import com.fantion.backend.community.dto.PostDto.PostResponse;
 import com.fantion.backend.community.dto.PostDto.PostUpdateRequest;
-import com.fantion.backend.community.entity.Community;
+import com.fantion.backend.community.entity.Channel;
 import com.fantion.backend.community.entity.Post;
-import com.fantion.backend.community.repository.CommunityRepository;
+import com.fantion.backend.community.repository.ChannelRepository;
 import com.fantion.backend.community.repository.PostRepository;
 import com.fantion.backend.community.service.CommunityService;
 import com.fantion.backend.exception.ErrorCode;
@@ -18,7 +18,7 @@ import com.fantion.backend.exception.impl.CustomException;
 import com.fantion.backend.member.auth.MemberAuthUtil;
 import com.fantion.backend.member.entity.Member;
 import com.fantion.backend.member.repository.MemberRepository;
-import com.fantion.backend.type.CommunityStatus;
+import com.fantion.backend.type.ChannelStatus;
 import com.fantion.backend.type.PostSearchOption;
 import com.fantion.backend.type.PostStatus;
 import java.time.LocalDateTime;
@@ -40,18 +40,18 @@ import org.springframework.web.multipart.MultipartFile;
 @RequiredArgsConstructor
 public class CommunityServiceImpl implements CommunityService {
 
-  private final CommunityRepository communityRepository;
+  private final ChannelRepository channelRepository;
   private final PostRepository postRepository;
   private final MemberRepository memberRepository;
   private final S3Uploader s3Uploader;
 
   @Override
-  public ResultDTO<ImageDto> uploadImage(List<MultipartFile> files, Long communityId, Long postId) {
+  public ResultDTO<ImageDto> uploadImage(List<MultipartFile> files, Long channelId, Long postId) {
 
-    Community community = communityRepository.findById(communityId)
+    Channel channel = channelRepository.findById(channelId)
         .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_CHANNEL));
 
-    if (community.getStatus().equals(CommunityStatus.CLOSE)) {
+    if (channel.getStatus().equals(ChannelStatus.CLOSING)) {
       throw new CustomException(ErrorCode.NOT_FOUND_CHANNEL);
     }
 
@@ -61,7 +61,7 @@ public class CommunityServiceImpl implements CommunityService {
 
     if (postId == null) {
       Post post = Post.builder()
-          .community(community)
+          .channel(channel)
           .member(member)
           .status(PostStatus.DRAFTS)
           .build();
@@ -94,19 +94,19 @@ public class CommunityServiceImpl implements CommunityService {
     ImageDto response = ImageDto.builder()
         .imageUrl(imageUrl)
         .postId(postId)
-        .communityId(communityId)
+        .channelId(channelId)
         .build();
 
     return ResultDTO.of("게시글 이미지 저장에 성공했습니다.", response);
   }
 
   @Override
-  public ResultDTO<CheckDto> createPost(Long communityId, PostCreateRequest request) {
+  public ResultDTO<CheckDto> createPost(Long channelId, PostCreateRequest request) {
 
-    Community community = communityRepository.findById(communityId)
+    Channel channel = channelRepository.findById(channelId)
         .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_CHANNEL));
 
-    if (community.getStatus().equals(CommunityStatus.CLOSE)) {
+    if (channel.getStatus().equals(ChannelStatus.CLOSING)) {
       throw new CustomException(ErrorCode.NOT_FOUND_CHANNEL);
     }
 
@@ -129,7 +129,7 @@ public class CommunityServiceImpl implements CommunityService {
     }
 
     Post createdPost = post.toBuilder()
-        .community(community)
+        .channel(channel)
         .title(request.getTitle())
         .content(request.getContent())
         .likeCnt(0)
@@ -142,7 +142,7 @@ public class CommunityServiceImpl implements CommunityService {
 
     CheckDto response = CheckDto.builder()
         .success(true)
-        .communityId(communityId)
+        .channelId(channelId)
         .postId(createdPost.getPostId())
         .build();
 
@@ -150,14 +150,13 @@ public class CommunityServiceImpl implements CommunityService {
   }
 
   @Override
-  public ResultDTO<PostResponse> getPost(Long communityId, Long postId) {
-    Community community = communityRepository.findById(communityId)
+  public ResultDTO<PostResponse> getPost(Long channelId, Long postId) {
+    Channel channel = channelRepository.findById(channelId)
         .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_CHANNEL));
 
-    if (community.getStatus().equals(CommunityStatus.CLOSE)) {
+    if (channel.getStatus().equals(ChannelStatus.CLOSING)) {
       throw new CustomException(ErrorCode.NOT_FOUND_CHANNEL);
     }
-
     Post post = postRepository.findByPostIdAndStatus(postId, PostStatus.ACTIVE)
         .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_POST));
 
@@ -172,13 +171,13 @@ public class CommunityServiceImpl implements CommunityService {
   }
 
   @Override
-  public ResultDTO<CheckDto> updatePost(Long communityId, Long postId,
+  public ResultDTO<CheckDto> updatePost(Long channelId, Long postId,
       PostUpdateRequest request) {
 
-    Community community = communityRepository.findById(communityId)
+    Channel channel = channelRepository.findById(channelId)
         .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_CHANNEL));
 
-    if (community.getStatus().equals(CommunityStatus.CLOSE)) {
+    if (channel.getStatus().equals(ChannelStatus.CLOSING)) {
       throw new CustomException(ErrorCode.NOT_FOUND_CHANNEL);
     }
 
@@ -201,7 +200,7 @@ public class CommunityServiceImpl implements CommunityService {
 
     CheckDto response = CheckDto.builder()
         .success(true)
-        .communityId(communityId)
+        .channelId(channelId)
         .postId(postId)
         .build();
 
@@ -209,11 +208,11 @@ public class CommunityServiceImpl implements CommunityService {
   }
 
   @Override
-  public ResultDTO<CheckDto> deletePost(Long communityId, Long postId) {
-    Community community = communityRepository.findById(communityId)
+  public ResultDTO<CheckDto> deletePost(Long channelId, Long postId) {
+    Channel channel = channelRepository.findById(channelId)
         .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_CHANNEL));
 
-    if (community.getStatus().equals(CommunityStatus.CLOSE)) {
+    if (channel.getStatus().equals(ChannelStatus.CLOSING)) {
       throw new CustomException(ErrorCode.NOT_FOUND_CHANNEL);
     }
 
@@ -236,7 +235,7 @@ public class CommunityServiceImpl implements CommunityService {
 
     CheckDto response = CheckDto.builder()
         .success(true)
-        .communityId(communityId)
+        .channelId(channelId)
         .postId(postId)
         .build();
 
@@ -245,10 +244,10 @@ public class CommunityServiceImpl implements CommunityService {
 
   @Override
   public ResultDTO<Page<PostResponse>> getPostList(Long communityId, Integer page) {
-    Community community = communityRepository.findById(communityId)
+    Channel channel = channelRepository.findById(communityId)
         .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_CHANNEL));
 
-    if (community.getStatus().equals(CommunityStatus.CLOSE)) {
+    if (channel.getStatus().equals(ChannelStatus.CLOSING)) {
       throw new CustomException(ErrorCode.NOT_FOUND_CHANNEL);
     }
 
@@ -256,7 +255,7 @@ public class CommunityServiceImpl implements CommunityService {
     Pageable pageable = PageRequest.of(page, 20, Sort.by(Direction.DESC, "createDate"));
 
     // 해당 커뮤니티의 활성 상태인 게시글만 조회
-    Page<Post> posts = postRepository.findByCommunityAndStatus(community, PostStatus.ACTIVE,
+    Page<Post> posts = postRepository.findByChannelAndStatus(channel, PostStatus.ACTIVE,
         pageable);
 
     // 조회된 게시글을 PostResponse DTO로 변환
@@ -266,37 +265,36 @@ public class CommunityServiceImpl implements CommunityService {
   }
 
   @Override
-  public ResultDTO<Page<PostResponse>> searchPost(Long communityId, PostSearchOption searchOption,
+  public ResultDTO<Page<PostResponse>> searchPost(Long channelId, PostSearchOption searchOption,
       String keyword, Integer page) {
 
-    Community community = communityRepository.findById(communityId)
+    Channel channel = channelRepository.findById(channelId)
         .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_CHANNEL));
 
-    if (community.getStatus().equals(CommunityStatus.CLOSE)) {
+    if (channel.getStatus().equals(ChannelStatus.CLOSING)) {
       throw new CustomException(ErrorCode.NOT_FOUND_CHANNEL);
     }
-
     Pageable pageable = PageRequest.of(page, 20, Sort.by(Direction.DESC, "createDate"));
 
     Page<Post> posts = Page.empty(pageable);
 
     if (searchOption.equals(PostSearchOption.TITLE)) {
-      posts = postRepository.findByCommunityAndTitleContainingAndStatus(community, keyword,
+      posts = postRepository.findByChannelAndTitleContainingAndStatus(channel, keyword,
           PostStatus.ACTIVE, pageable);
     } else if (searchOption.equals(PostSearchOption.CONTENT)) {
       // 내용에서 키워드를 포함하는 게시물 검색
-      posts = postRepository.findByCommunityAndContentContainingAndStatus(community, keyword,
+      posts = postRepository.findByChannelAndContentContainingAndStatus(channel, keyword,
           PostStatus.ACTIVE, pageable);
     } else if (searchOption.equals(PostSearchOption.TITLE_AND_CONTENT)) {
       // 제목이나 내용에서 키워드를 포함하는 게시물 검색
-      posts = postRepository.findByCommunityAndTitleContainingOrContentContainingAndStatus(
-          community, keyword, keyword, PostStatus.ACTIVE, pageable);
+      posts = postRepository.findByChannelAndTitleContainingOrContentContainingAndStatus(
+          channel, keyword, keyword, PostStatus.ACTIVE, pageable);
     } else if (searchOption.equals(PostSearchOption.NICKNAME)) {
       // 닉네임으로 게시물 검색, 닉네임 검색은 닉네임이 정확해야 검색 가능.
       Optional<Member> byNickname = memberRepository.findByNickname(keyword);
       if (byNickname.isPresent()) {
         Member member = byNickname.get();
-        posts = postRepository.findByCommunityAndMemberAndStatus(community, member,
+        posts = postRepository.findByChannelAndMemberAndStatus(channel, member,
             PostStatus.ACTIVE, pageable);
       }
     }

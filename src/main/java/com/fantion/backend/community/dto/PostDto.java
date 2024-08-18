@@ -52,7 +52,7 @@ public class PostDto {
   public static PostDto.PostResponse toResponse(Post post) {
     return PostDto.PostResponse.builder()
         .postId(post.getPostId())
-        .channelName(post.getCommunity().getTitle())
+        .channelName(post.getChannel().getTitle())
         .nickname(post.getMember().getNickname())
         .title(post.getTitle())
         .content(post.getContent())

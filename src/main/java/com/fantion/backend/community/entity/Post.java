@@ -29,8 +29,8 @@ public class Post {
   private Long postId;
 
   @ManyToOne
-  @JoinColumn(name = "community_id")
-  private Community community;
+  @JoinColumn(name = "channel_id")
+  private Channel channel;
 
   @ManyToOne
   @JoinColumn(name = "member_id")
