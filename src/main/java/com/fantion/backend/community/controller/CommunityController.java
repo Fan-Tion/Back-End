@@ -56,7 +56,7 @@ public class CommunityController {
     @Operation(summary = "채널 생성", description = "채널을 생성할 때 사용하는 API")
     @ApiResponse(responseCode = "200", description = "성공적으로 채널이 생성되었습니다.")
     @PostMapping("/channel")
-    private ResultDTO<ChannelDto.Response> createChannel(@RequestBody ChannelDto.Request request,
+    private ResultDTO<ChannelDto.Response> createChannel(@RequestPart(value = "request") ChannelDto.Request request,
                                                          @RequestPart(value = "file",required = false) MultipartFile file){
         return communityService.createChannel(request,file);
     }
@@ -64,8 +64,9 @@ public class CommunityController {
     @Operation(summary = "채널 수정", description = "채널을 수정할 때 사용하는 API")
     @ApiResponse(responseCode = "200", description = "성공적으로 채널이 수정되었습니다.")
     @PutMapping("/channel")
-    private ResultDTO<ChannelDto.Response> editChannel(@RequestBody ChannelEditDto.Request request){
-        return communityService.editChannel(request);
+    private ResultDTO<ChannelDto.Response> editChannel(@RequestPart(value = "request") ChannelEditDto.Request request,
+                                                       MultipartHttpServletRequest file){
+        return communityService.editChannel(request,file);
     }
 
     @Operation(summary = "채널 삭제", description = "채널을 삭제할 때 사용하는 API")
