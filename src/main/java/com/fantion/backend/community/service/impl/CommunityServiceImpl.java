@@ -21,10 +21,6 @@ import com.fantion.backend.member.repository.MemberRepository;
 import com.fantion.backend.type.ChannelStatus;
 import com.fantion.backend.type.PostSearchOption;
 import com.fantion.backend.type.PostStatus;
-import java.io.IOException;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -35,19 +31,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.multipart.MultipartHttpServletRequest;
+
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-import org.springframework.web.multipart.MultipartHttpServletRequest;
-import static com.fantion.backend.exception.ErrorCode.IMAGE_IO_ERROR;
-import static com.fantion.backend.exception.ErrorCode.NOT_FOUND_CHANNEL;
-import static com.fantion.backend.exception.ErrorCode.NOT_FOUND_MEMBER;
+
+import static com.fantion.backend.exception.ErrorCode.*;
 
 
 @Service
@@ -459,7 +452,7 @@ public class CommunityServiceImpl implements CommunityService {
     Map<Character, List<Channel>> groupedData = getGroupedData();
     List<ChannelAllDto.Response> response = groupedData.entrySet().stream()
             .map(entry -> new ChannelAllDto.Response(entry.getKey(),
-                    entry.getValue().stream()
+                    entry.getValue().stream().sorted(Comparator.comparing(Channel::getTitle))
                             .map(ChannelDto::response)
                             .collect(Collectors.toList())))
             .collect(Collectors.toList());
