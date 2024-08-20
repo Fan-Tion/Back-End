@@ -2,6 +2,7 @@ package com.fantion.backend.community.dto;
 
 import com.fantion.backend.community.entity.Post;
 import com.fantion.backend.type.PostStatus;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -43,12 +44,17 @@ public class PostDto {
 
     private Long postId;
     private String channelName;
+    private String channelImage;
+    private String channelDescription;
     private String nickname;
     private String title;
     private String content;
     private Integer likeCnt;
     private Integer viewCnt;
+
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Seoul")
     private LocalDateTime createDate;
+
     private PostStatus status;
   }
 
@@ -56,6 +62,8 @@ public class PostDto {
     return PostDto.PostResponse.builder()
         .postId(post.getPostId())
         .channelName(post.getChannel().getTitle())
+        .channelImage(post.getChannel().getImage())
+        .channelDescription(post.getChannel().getDescription())
         .nickname(post.getMember().getNickname())
         .title(post.getTitle())
         .content(post.getContent())

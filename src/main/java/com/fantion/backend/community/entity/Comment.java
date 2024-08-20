@@ -1,8 +1,7 @@
 package com.fantion.backend.community.entity;
 
 import com.fantion.backend.member.entity.Member;
-import com.fantion.backend.type.PostStatus;
-import jakarta.persistence.Column;
+import com.fantion.backend.type.CommentStatus;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -19,35 +18,29 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "post")
+@Table(name = "comment")
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder(toBuilder = true)
-public class Post {
+public class Comment {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
-  private Long postId;
+  private Long commentId;
 
   @ManyToOne
-  @JoinColumn(name = "channel_id")
-  private Channel channel;
+  @JoinColumn(name = "post_id")
+  private Post post;
 
   @ManyToOne
   @JoinColumn(name = "member_id")
   private Member member;
 
-  private String title;
-
-  @Column(columnDefinition = "TEXT")
   private String content;
 
-  private Integer likeCnt;
-  private Integer viewCnt;
+  @Enumerated(EnumType.STRING)
+  private CommentStatus status;
   private LocalDateTime createDate;
   private LocalDateTime deleteDate;
-
-  @Enumerated(EnumType.STRING)
-  private PostStatus status;
 }
