@@ -1,4 +1,4 @@
-package com.fantion.backend.community.dto;
+package com.fantion.backend.common.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
@@ -12,9 +12,8 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@Schema(description = "API 성공여부를 알려주는 정보")
 public class CheckDto {
-
+  @Schema(description = "API 성공여부")
   private Boolean success;
-  private Long channelId;
-  private Long postId;
 }

@@ -1,7 +1,7 @@
 package com.fantion.backend.member.service;
 
 import com.fantion.backend.common.dto.ResultDTO;
-import com.fantion.backend.member.dto.CheckDto;
+import com.fantion.backend.common.dto.CheckDto;
 import com.fantion.backend.member.dto.MemberDto;
 import com.fantion.backend.member.dto.MyBalanceDto;
 import com.fantion.backend.member.dto.ProfileImageResponseDto;

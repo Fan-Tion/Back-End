@@ -1,16 +1,16 @@
 package com.fantion.backend.community.service.impl;
 
 import com.fantion.backend.common.component.S3Uploader;
+import com.fantion.backend.common.dto.CheckDto;
 import com.fantion.backend.common.dto.ResultDTO;
 import com.fantion.backend.community.dto.*;
 import com.fantion.backend.community.dto.ChannelDto.Response;
 import com.fantion.backend.community.dto.ChannelEditDto.Request;
-import com.fantion.backend.community.dto.PostDto.PostCreateRequest;
-import com.fantion.backend.community.dto.PostDto.PostResponse;
-import com.fantion.backend.community.dto.PostDto.PostUpdateRequest;
 import com.fantion.backend.community.entity.Channel;
+import com.fantion.backend.community.entity.Comment;
 import com.fantion.backend.community.entity.Post;
 import com.fantion.backend.community.repository.ChannelRepository;
+import com.fantion.backend.community.repository.CommentRepository;
 import com.fantion.backend.community.repository.PostRepository;
 import com.fantion.backend.community.service.CommunityService;
 import com.fantion.backend.exception.ErrorCode;
@@ -19,11 +19,10 @@ import com.fantion.backend.member.auth.MemberAuthUtil;
 import com.fantion.backend.member.entity.Member;
 import com.fantion.backend.member.repository.MemberRepository;
 import com.fantion.backend.type.ChannelStatus;
+import com.fantion.backend.type.CommentStatus;
 import com.fantion.backend.type.PostSearchOption;
 import com.fantion.backend.type.PostStatus;
 import java.io.IOException;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -35,7 +34,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
-
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.time.LocalDateTime;
@@ -57,6 +55,7 @@ public class CommunityServiceImpl implements CommunityService {
   private final ChannelRepository channelRepository;
   private final PostRepository postRepository;
   private final MemberRepository memberRepository;
+  private final CommentRepository commentRepository;
   private final S3Uploader s3Uploader;
 
   @Override
@@ -122,8 +121,8 @@ public class CommunityServiceImpl implements CommunityService {
       MultipartHttpServletRequest file) {
 
     // 수정하려는 채널 조회
-    Channel channel = channelRepository.findById(request.getChannelId())
-        .orElseThrow(() -> new CustomException(NOT_FOUND_CHANNEL));
+    Channel channel = channelRepository.findByChannelIdAndStatus(request.getChannelId(),
+        ChannelStatus.APPROVAL).orElseThrow(() -> new CustomException(NOT_FOUND_CHANNEL));
 
     String currentImage = channel.getImage();
 
@@ -153,7 +152,8 @@ public class CommunityServiceImpl implements CommunityService {
       throw new CustomException(IMAGE_IO_ERROR);
     }
 
-    return ResultDTO.of("성공적으로 채널이 수정되었습니다.", ChannelDto.response(channel.editChannel(request, imageUrl)));
+    return ResultDTO.of("성공적으로 채널이 수정되었습니다.",
+        ChannelDto.response(channel.editChannel(request, imageUrl)));
   }
 
   @Transactional
@@ -185,12 +185,8 @@ public class CommunityServiceImpl implements CommunityService {
   @Override
   public ResultDTO<ImageDto> uploadImage(List<MultipartFile> files, Long channelId, Long postId) {
 
-    Channel channel = channelRepository.findById(channelId)
+    Channel channel = channelRepository.findByChannelIdAndStatus(channelId, ChannelStatus.APPROVAL)
         .orElseThrow(() -> new CustomException(NOT_FOUND_CHANNEL));
-
-    if (channel.getStatus().equals(ChannelStatus.CLOSING)) {
-      throw new CustomException(NOT_FOUND_CHANNEL);
-    }
 
     String email = MemberAuthUtil.getLoginUserId();
     Member member = memberRepository.findByEmail(email)
@@ -238,14 +234,14 @@ public class CommunityServiceImpl implements CommunityService {
   }
 
   @Override
-  public ResultDTO<CheckDto> createPost(Long channelId, PostCreateRequest request) {
+  public ResultDTO<PostCheckDto> createPost(Long channelId, PostDto.PostCreateRequest request) {
 
-    Channel channel = channelRepository.findById(channelId)
+    Channel channel = channelRepository.findByChannelIdAndStatus(channelId, ChannelStatus.APPROVAL)
         .orElseThrow(() -> new CustomException(NOT_FOUND_CHANNEL));
 
-    if (channel.getStatus().equals(ChannelStatus.CLOSING)) {
-      throw new CustomException(NOT_FOUND_CHANNEL);
-    }
+    String email = MemberAuthUtil.getLoginUserId();
+    Member member = memberRepository.findByEmail(email)
+        .orElseThrow(() -> new CustomException(NOT_FOUND_MEMBER));
 
     Post post = new Post();
     if (request.getPostId() != null) {
@@ -253,13 +249,10 @@ public class CommunityServiceImpl implements CommunityService {
           .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_POST));
     } else {
       post = postRepository.save(post.toBuilder()
+          .member(member)
           .status(PostStatus.DRAFTS)
           .build());
     }
-
-    String email = MemberAuthUtil.getLoginUserId();
-    Member member = memberRepository.findByEmail(email)
-        .orElseThrow(() -> new CustomException(NOT_FOUND_MEMBER));
 
     if (!post.getMember().equals(member)) {
       throw new CustomException(ErrorCode.INVALID_POST_MEMBER);
@@ -277,7 +270,7 @@ public class CommunityServiceImpl implements CommunityService {
         .build();
     postRepository.save(createdPost);
 
-    CheckDto response = CheckDto.builder()
+    PostCheckDto response = PostCheckDto.builder()
         .success(true)
         .channelId(channelId)
         .postId(createdPost.getPostId())
@@ -287,13 +280,11 @@ public class CommunityServiceImpl implements CommunityService {
   }
 
   @Override
-  public ResultDTO<PostResponse> getPost(Long channelId, Long postId) {
-    Channel channel = channelRepository.findById(channelId)
+  public ResultDTO<PostDto.PostResponse> getPost(Long channelId, Long postId) {
+
+    channelRepository.findByChannelIdAndStatus(channelId, ChannelStatus.APPROVAL)
         .orElseThrow(() -> new CustomException(NOT_FOUND_CHANNEL));
 
-    if (channel.getStatus().equals(ChannelStatus.CLOSING)) {
-      throw new CustomException(NOT_FOUND_CHANNEL);
-    }
     Post post = postRepository.findByPostIdAndStatus(postId, PostStatus.ACTIVE)
         .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_POST));
 
@@ -302,14 +293,14 @@ public class CommunityServiceImpl implements CommunityService {
         .build();
     postRepository.save(updateViewCnt);
 
-    PostResponse response = PostDto.toResponse(updateViewCnt);
+    PostDto.PostResponse response = PostDto.toResponse(updateViewCnt);
 
     return ResultDTO.of("게시글 조회에 성공했습니다.", response);
   }
 
   @Override
-  public ResultDTO<CheckDto> updatePost(Long channelId, Long postId,
-      PostUpdateRequest request) {
+  public ResultDTO<PostCheckDto> updatePost(Long channelId, Long postId,
+      PostDto.PostUpdateRequest request) {
 
     Channel channel = channelRepository.findById(channelId)
         .orElseThrow(() -> new CustomException(NOT_FOUND_CHANNEL));
@@ -335,7 +326,7 @@ public class CommunityServiceImpl implements CommunityService {
         .build();
     postRepository.save(updatePost);
 
-    CheckDto response = CheckDto.builder()
+    PostCheckDto response = PostCheckDto.builder()
         .success(true)
         .channelId(channelId)
         .postId(postId)
@@ -345,13 +336,10 @@ public class CommunityServiceImpl implements CommunityService {
   }
 
   @Override
-  public ResultDTO<CheckDto> deletePost(Long channelId, Long postId) {
-    Channel channel = channelRepository.findById(channelId)
-        .orElseThrow(() -> new CustomException(NOT_FOUND_CHANNEL));
+  public ResultDTO<PostCheckDto> deletePost(Long channelId, Long postId) {
 
-    if (channel.getStatus().equals(ChannelStatus.CLOSING)) {
-      throw new CustomException(NOT_FOUND_CHANNEL);
-    }
+    channelRepository.findByChannelIdAndStatus(channelId, ChannelStatus.APPROVAL)
+        .orElseThrow(() -> new CustomException(NOT_FOUND_CHANNEL));
 
     Post post = postRepository.findByPostIdAndStatus(postId, PostStatus.ACTIVE)
         .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_POST));
@@ -370,7 +358,7 @@ public class CommunityServiceImpl implements CommunityService {
         .build();
     postRepository.save(deletePost);
 
-    CheckDto response = CheckDto.builder()
+    PostCheckDto response = PostCheckDto.builder()
         .success(true)
         .channelId(channelId)
         .postId(postId)
@@ -380,13 +368,10 @@ public class CommunityServiceImpl implements CommunityService {
   }
 
   @Override
-  public ResultDTO<Page<PostResponse>> getPostList(Long communityId, Integer page) {
-    Channel channel = channelRepository.findById(communityId)
-        .orElseThrow(() -> new CustomException(NOT_FOUND_CHANNEL));
+  public ResultDTO<Page<PostDto.PostResponse>> getPostList(Long channelId, Integer page) {
 
-    if (channel.getStatus().equals(ChannelStatus.CLOSING)) {
-      throw new CustomException(NOT_FOUND_CHANNEL);
-    }
+    Channel channel = channelRepository.findByChannelIdAndStatus(channelId, ChannelStatus.APPROVAL)
+        .orElseThrow(() -> new CustomException(NOT_FOUND_CHANNEL));
 
     // 페이지 요청 설정 (한 페이지에 20개, 최신순 정렬)
     Pageable pageable = PageRequest.of(page, 20, Sort.by(Direction.DESC, "createDate"));
@@ -396,21 +381,18 @@ public class CommunityServiceImpl implements CommunityService {
         pageable);
 
     // 조회된 게시글을 PostResponse DTO로 변환
-    Page<PostResponse> response = posts.map(post -> PostDto.toResponse(post));
+    Page<PostDto.PostResponse> response = posts.map(post -> PostDto.toResponse(post));
 
     return ResultDTO.of("게시글 목록을 불러오는데 성공했습니다.", response);
   }
 
   @Override
-  public ResultDTO<Page<PostResponse>> searchPost(Long channelId, PostSearchOption searchOption,
+  public ResultDTO<Page<PostDto.PostResponse>> searchPost(Long channelId, PostSearchOption searchOption,
       String keyword, Integer page) {
 
-    Channel channel = channelRepository.findById(channelId)
+    Channel channel = channelRepository.findByChannelIdAndStatus(channelId, ChannelStatus.APPROVAL)
         .orElseThrow(() -> new CustomException(NOT_FOUND_CHANNEL));
 
-    if (channel.getStatus().equals(ChannelStatus.CLOSING)) {
-      throw new CustomException(NOT_FOUND_CHANNEL);
-    }
     Pageable pageable = PageRequest.of(page, 20, Sort.by(Direction.DESC, "createDate"));
 
     Page<Post> posts = Page.empty(pageable);
@@ -436,8 +418,111 @@ public class CommunityServiceImpl implements CommunityService {
       }
     }
 
-    Page<PostResponse> response = posts.map(post -> PostDto.toResponse(post));
+    Page<PostDto.PostResponse> response = posts.map(post -> PostDto.toResponse(post));
 
     return ResultDTO.of("게시글 검색을 성공했습니다.", response);
+  }
+
+  @Override
+  public ResultDTO<CheckDto> createComment(Long channelId, Long postId,
+      CommentDto.CommentRequest request) {
+
+    String email = MemberAuthUtil.getLoginUserId();
+    Member member = memberRepository.findByEmail(email)
+        .orElseThrow(() -> new CustomException(NOT_FOUND_MEMBER));
+
+    channelRepository.findByChannelIdAndStatus(channelId, ChannelStatus.APPROVAL)
+        .orElseThrow(() -> new CustomException(NOT_FOUND_CHANNEL));
+
+    Post post = postRepository.findByPostIdAndStatus(postId, PostStatus.ACTIVE)
+        .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_POST));
+
+    Comment comment = Comment.builder()
+        .post(post)
+        .member(member)
+        .content(request.getContent())
+        .status(CommentStatus.ACTIVE)
+        .createDate(LocalDateTime.now())
+        .build();
+    commentRepository.save(comment);
+
+    return ResultDTO.of("댓글을 성공적으로 작성했습니다.", CheckDto.builder().success(true).build());
+  }
+
+  @Override
+  public ResultDTO<CheckDto> updateComment(Long channelId, Long postId,
+      Long commentId, CommentDto.CommentRequest request) {
+
+    String email = MemberAuthUtil.getLoginUserId();
+    Member member = memberRepository.findByEmail(email)
+        .orElseThrow(() -> new CustomException(NOT_FOUND_MEMBER));
+
+    channelRepository.findByChannelIdAndStatus(channelId, ChannelStatus.APPROVAL)
+        .orElseThrow(() -> new CustomException(NOT_FOUND_CHANNEL));
+
+    postRepository.findByPostIdAndStatus(postId, PostStatus.ACTIVE)
+        .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_POST));
+
+    Comment comment = commentRepository.findByCommentIdAndStatus(commentId, CommentStatus.ACTIVE)
+        .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_COMMENT));
+
+    if (!member.equals(comment.getMember())) {
+      throw new CustomException(ErrorCode.INVALID_COMMENT_MEMBER);
+    }
+
+    Comment updateComment = comment.toBuilder()
+        .content(request.getContent())
+        .build();
+    commentRepository.save(updateComment);
+
+    return ResultDTO.of("댓글을 성공적으로 수정했습니다.", CheckDto.builder().success(true).build());
+  }
+
+  @Override
+  public ResultDTO<CheckDto> deleteComment(Long channelId, Long postId, Long commentId) {
+
+    String email = MemberAuthUtil.getLoginUserId();
+    Member member = memberRepository.findByEmail(email)
+        .orElseThrow(() -> new CustomException(NOT_FOUND_MEMBER));
+
+    channelRepository.findByChannelIdAndStatus(channelId, ChannelStatus.APPROVAL)
+        .orElseThrow(() -> new CustomException(NOT_FOUND_CHANNEL));
+
+    postRepository.findByPostIdAndStatus(postId, PostStatus.ACTIVE)
+        .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_POST));
+
+    Comment comment = commentRepository.findByCommentIdAndStatus(commentId, CommentStatus.ACTIVE)
+        .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_COMMENT));
+
+    if (!member.equals(comment.getMember())) {
+      throw new CustomException(ErrorCode.INVALID_COMMENT_MEMBER);
+    }
+
+    Comment updateComment = comment.toBuilder()
+        .status(CommentStatus.DELETE)
+        .deleteDate(LocalDateTime.now())
+        .build();
+    commentRepository.save(updateComment);
+
+    return ResultDTO.of("댓글을 성공적으로 삭제했습니다.", CheckDto.builder().success(true).build());
+  }
+
+  @Override
+  public ResultDTO<Page<CommentDto.CommentResponse>> getComment(Long channelId, Long postId,
+      Integer page) {
+
+    channelRepository.findByChannelIdAndStatus(channelId, ChannelStatus.APPROVAL)
+        .orElseThrow(() -> new CustomException(NOT_FOUND_CHANNEL));
+
+    Post post = postRepository.findByPostIdAndStatus(postId, PostStatus.ACTIVE)
+        .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_POST));
+
+    Pageable pageable = PageRequest.of(page, 15, Sort.by(Direction.DESC, "createDate"));
+
+    Page<Comment> comments = commentRepository.findByPostAndStatus(post, CommentStatus.ACTIVE, pageable);
+
+    Page<CommentDto.CommentResponse> response = comments.map(comment -> CommentDto.toResponse(comment));
+
+    return ResultDTO.of("댓글 목록을 불어오는데 성공했습니다.", response);
   }
 }

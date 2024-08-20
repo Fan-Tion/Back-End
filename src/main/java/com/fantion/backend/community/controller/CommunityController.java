@@ -1,10 +1,14 @@
 package com.fantion.backend.community.controller;
 
+import com.fantion.backend.common.dto.CheckDto;
 import com.fantion.backend.common.dto.ResultDTO;
 
 import com.fantion.backend.community.dto.ChannelDto;
 import com.fantion.backend.community.dto.ChannelEditDto;
 import com.fantion.backend.community.dto.ChannelRemoveDto;
+import com.fantion.backend.community.dto.CommentDto;
+import com.fantion.backend.community.dto.PostCheckDto;
+import com.fantion.backend.community.entity.Post;
 import com.fantion.backend.community.service.CommunityService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -12,7 +16,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
-import com.fantion.backend.community.dto.CheckDto;
 import com.fantion.backend.community.dto.ImageDto;
 import com.fantion.backend.community.dto.PostDto;
 import com.fantion.backend.type.PostSearchOption;
@@ -77,15 +80,14 @@ public class CommunityController {
   public ResponseEntity<ResultDTO<ImageDto>> uploadImage(
       @PathVariable Long channelId, @RequestPart("file") List<MultipartFile> files,
       @RequestParam(required = false) Long postId) {
-
     ResultDTO<ImageDto> result = communityService.uploadImage(files, channelId, postId);
     return ResponseEntity.ok(result);
   }
 
   @PostMapping("/{channelId}/post")
-  public ResponseEntity<ResultDTO<CheckDto>> createPost(
+  public ResponseEntity<ResultDTO<PostCheckDto>> createPost(
       @PathVariable Long channelId, @RequestBody @Valid PostDto.PostCreateRequest request) {
-    ResultDTO<CheckDto> result = communityService.createPost(channelId, request);
+    ResultDTO<PostCheckDto> result = communityService.createPost(channelId, request);
     return ResponseEntity.ok(result);
   }
 
@@ -97,16 +99,16 @@ public class CommunityController {
   }
 
   @PutMapping("/{channelId}/post/{postId}")
-  public ResponseEntity<ResultDTO<CheckDto>> updatePost(@PathVariable Long channelId,
+  public ResponseEntity<ResultDTO<PostCheckDto>> updatePost(@PathVariable Long channelId,
       @PathVariable Long postId, @RequestBody @Valid PostDto.PostUpdateRequest request) {
-    ResultDTO<CheckDto> result = communityService.updatePost(channelId, postId, request);
+    ResultDTO<PostCheckDto> result = communityService.updatePost(channelId, postId, request);
     return ResponseEntity.ok(result);
   }
 
   @DeleteMapping("/{channelId}/post/{postId}")
-  public ResponseEntity<ResultDTO<CheckDto>> deletePost(@PathVariable Long channelId,
+  public ResponseEntity<ResultDTO<PostCheckDto>> deletePost(@PathVariable Long channelId,
       @PathVariable Long postId) {
-    ResultDTO<CheckDto> result = communityService.deletePost(channelId, postId);
+    ResultDTO<PostCheckDto> result = communityService.deletePost(channelId, postId);
     return ResponseEntity.ok(result);
   }
 
@@ -127,4 +129,37 @@ public class CommunityController {
     return ResponseEntity.ok(result);
   }
 
+  @PostMapping("/{channelId}/post/{postId}/comment")
+  public ResponseEntity<ResultDTO<CheckDto>> createComment(
+      @PathVariable Long channelId, @PathVariable Long postId,
+      @RequestBody CommentDto.CommentRequest request) {
+    ResultDTO<CheckDto> result = communityService.createComment(channelId, postId,
+        request);
+    return ResponseEntity.ok(result);
+  }
+
+  @PutMapping("/{channelId}/post/{postId}/comment/{commentId}")
+  public ResponseEntity<ResultDTO<CheckDto>> updateComment(
+      @PathVariable Long channelId, @PathVariable Long postId, @PathVariable Long commentId,
+      @RequestBody CommentDto.CommentRequest request) {
+    ResultDTO<CheckDto> result = communityService.updateComment(channelId, postId,
+        commentId, request);
+    return ResponseEntity.ok(result);
+  }
+
+  @DeleteMapping("/{channelId}/post/{postId}/comment/{commentId}")
+  public ResponseEntity<ResultDTO<CheckDto>> deleteComment(
+      @PathVariable Long channelId, @PathVariable Long postId, @PathVariable Long commentId) {
+    ResultDTO<CheckDto> result = communityService.deleteComment(channelId, postId, commentId);
+    return ResponseEntity.ok(result);
+  }
+
+  @GetMapping("/{channelId}/post/{postId}/comment")
+  public ResponseEntity<ResultDTO<Page<CommentDto.CommentResponse>>> getComment(
+      @PathVariable Long channelId,
+      @PathVariable Long postId, @RequestParam(name = "page", defaultValue = "0") Integer page) {
+    ResultDTO<Page<CommentDto.CommentResponse>> result = communityService.getComment(channelId,
+        postId, page);
+    return ResponseEntity.ok(result);
+  }
 }

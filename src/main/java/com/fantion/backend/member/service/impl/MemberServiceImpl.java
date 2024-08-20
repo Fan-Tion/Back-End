@@ -1,7 +1,5 @@
 package com.fantion.backend.member.service.impl;
 
-import static com.fantion.backend.exception.ErrorCode.IMAGE_IO_ERROR;
-
 import com.fantion.backend.auction.entity.Auction;
 import com.fantion.backend.auction.repository.AuctionRepository;
 import com.fantion.backend.common.component.MailComponents;
@@ -15,7 +13,7 @@ import com.fantion.backend.member.auth.MemberAuthUtil;
 import com.fantion.backend.member.configuration.NaverConfiguration;
 import com.fantion.backend.member.configuration.NaverLoginClient;
 import com.fantion.backend.member.configuration.NaverProfileClient;
-import com.fantion.backend.member.dto.CheckDto;
+import com.fantion.backend.common.dto.CheckDto;
 import com.fantion.backend.member.dto.MemberDto;
 import com.fantion.backend.member.dto.MyBalanceDto;
 import com.fantion.backend.member.dto.NaverLinkDto;
@@ -40,11 +38,8 @@ import com.fantion.backend.type.MemberStatus;
 import com.fantion.backend.type.PostStatus;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
-import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
