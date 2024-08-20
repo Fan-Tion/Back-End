@@ -2,6 +2,8 @@ package com.fantion.backend.community.dto;
 
 import com.fantion.backend.community.entity.Comment;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -17,6 +19,8 @@ public class CommentDto {
   @AllArgsConstructor
   @Builder
   public static class CommentRequest{
+    @NotBlank(message = "댓글은 공백일 수 없습니다.")
+    @NotNull(message = "댓글은 null 일 수 없음")
     private String content;
   }
 

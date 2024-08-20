@@ -3,7 +3,6 @@ package com.fantion.backend.community.repository;
 import com.fantion.backend.community.entity.Channel;
 import com.fantion.backend.type.ChannelStatus;
 import java.util.Optional;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import java.util.List;

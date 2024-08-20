@@ -2,6 +2,7 @@ package com.fantion.backend.community.controller;
 
 import com.fantion.backend.common.dto.CheckDto;
 import com.fantion.backend.common.dto.ResultDTO;
+import com.fantion.backend.community.dto.ChannelAllDto;
 import com.fantion.backend.community.dto.ChannelDto;
 import com.fantion.backend.community.dto.ChannelEditDto;
 import com.fantion.backend.community.dto.ChannelRemoveDto;
@@ -14,8 +15,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
-import com.fantion.backend.community.service.CommunityService;
-import com.fantion.backend.community.dto.CheckDto;
 import com.fantion.backend.community.dto.ImageDto;
 import com.fantion.backend.community.dto.PostDto;
 import com.fantion.backend.type.PostSearchOption;
@@ -34,51 +33,53 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartHttpServletRequest;
 
-
 @RestController
 @RequestMapping("/community")
 @RequiredArgsConstructor
 @Tag(name = "Community", description = "Community Service API")
 public class CommunityController {
 
-    private final CommunityService communityService;
+  private final CommunityService communityService;
 
-    @Operation(summary = "채널 전체 조회", description = "전체 채널 조회할 때 사용하는 API")
-    @ApiResponse(responseCode = "200", description = "성공적으로 전체 채널 조회되었습니다.")
-    @GetMapping("/channel/all")
-    private ResultDTO<List<ChannelAllDto.Response>> readChannelAll(){
-        return communityService.readChannelAll();
-    }
+  @Operation(summary = "채널 전체 조회", description = "전체 채널 조회할 때 사용하는 API")
+  @ApiResponse(responseCode = "200", description = "성공적으로 전체 채널 조회되었습니다.")
+  @GetMapping("/channel/all")
+  private ResultDTO<List<ChannelAllDto.Response>> readChannelAll() {
+    return communityService.readChannelAll();
+  }
 
-    @Operation(summary = "채널 랜덤 조회", description = "랜덤으로 채널 조회할 때 사용하는 API")
-    @ApiResponse(responseCode = "200", description = "성공적으로 채널이 랜덤으로 조회되었습니다.")
-    @GetMapping("/channel/random")
-    private ResultDTO<List<ChannelDto.Response>> readChannelRandom(){
-        return communityService.readChannelRandom();
-    }
+  @Operation(summary = "채널 랜덤 조회", description = "랜덤으로 채널 조회할 때 사용하는 API")
+  @ApiResponse(responseCode = "200", description = "성공적으로 채널이 랜덤으로 조회되었습니다.")
+  @GetMapping("/channel/random")
+  private ResultDTO<List<ChannelDto.Response>> readChannelRandom() {
+    return communityService.readChannelRandom();
+  }
 
-    @Operation(summary = "채널 생성", description = "채널을 생성할 때 사용하는 API")
-    @ApiResponse(responseCode = "200", description = "성공적으로 채널이 생성되었습니다.")
-    @PostMapping("/channel")
-    private ResultDTO<ChannelDto.Response> createChannel(@RequestPart(value = "request") ChannelDto.Request request,
-                                                         @RequestPart(value = "file",required = false) MultipartFile file){
-        return communityService.createChannel(request,file);
-    }
+  @Operation(summary = "채널 생성", description = "채널을 생성할 때 사용하는 API")
+  @ApiResponse(responseCode = "200", description = "성공적으로 채널이 생성되었습니다.")
+  @PostMapping("/channel")
+  private ResultDTO<ChannelDto.Response> createChannel(
+      @RequestPart(value = "request") ChannelDto.Request request,
+      @RequestPart(value = "file", required = false) MultipartFile file) {
+    return communityService.createChannel(request, file);
+  }
 
-    @Operation(summary = "채널 수정", description = "채널을 수정할 때 사용하는 API")
-    @ApiResponse(responseCode = "200", description = "성공적으로 채널이 수정되었습니다.")
-    @PutMapping("/channel")
-    private ResultDTO<ChannelDto.Response> editChannel(@RequestPart(value = "request") ChannelEditDto.Request request,
-                                                       MultipartHttpServletRequest file){
-        return communityService.editChannel(request,file);
-    }
+  @Operation(summary = "채널 수정", description = "채널을 수정할 때 사용하는 API")
+  @ApiResponse(responseCode = "200", description = "성공적으로 채널이 수정되었습니다.")
+  @PutMapping("/channel")
+  private ResultDTO<ChannelDto.Response> editChannel(
+      @RequestPart(value = "request") ChannelEditDto.Request request,
+      MultipartHttpServletRequest file) {
+    return communityService.editChannel(request, file);
+  }
 
-    @Operation(summary = "채널 삭제", description = "채널을 삭제할 때 사용하는 API")
-    @ApiResponse(responseCode = "200", description = "성공적으로 채널이 삭제되었습니다.")
-    @DeleteMapping("/channel")
-    private ResultDTO<ChannelDto.Response> deleteChannel(@RequestBody ChannelRemoveDto.Request request){
-        return communityService.removeChannel(request);
-    }
+  @Operation(summary = "채널 삭제", description = "채널을 삭제할 때 사용하는 API")
+  @ApiResponse(responseCode = "200", description = "성공적으로 채널이 삭제되었습니다.")
+  @DeleteMapping("/channel")
+  private ResultDTO<ChannelDto.Response> deleteChannel(
+      @RequestBody ChannelRemoveDto.Request request) {
+    return communityService.removeChannel(request);
+  }
 
   @PostMapping("/{channelId}/image")
   public ResponseEntity<ResultDTO<ImageDto>> uploadImage(
@@ -136,7 +137,7 @@ public class CommunityController {
   @PostMapping("/{channelId}/post/{postId}/comment")
   public ResponseEntity<ResultDTO<CheckDto>> createComment(
       @PathVariable Long channelId, @PathVariable Long postId,
-      @RequestBody CommentDto.CommentRequest request) {
+      @RequestBody @Valid CommentDto.CommentRequest request) {
     ResultDTO<CheckDto> result = communityService.createComment(channelId, postId,
         request);
     return ResponseEntity.ok(result);
@@ -145,7 +146,7 @@ public class CommunityController {
   @PutMapping("/{channelId}/post/{postId}/comment/{commentId}")
   public ResponseEntity<ResultDTO<CheckDto>> updateComment(
       @PathVariable Long channelId, @PathVariable Long postId, @PathVariable Long commentId,
-      @RequestBody CommentDto.CommentRequest request) {
+      @RequestBody @Valid CommentDto.CommentRequest request) {
     ResultDTO<CheckDto> result = communityService.updateComment(channelId, postId,
         commentId, request);
     return ResponseEntity.ok(result);

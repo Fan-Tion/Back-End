@@ -2,6 +2,7 @@ package com.fantion.backend.community.service;
 
 import com.fantion.backend.common.dto.CheckDto;
 import com.fantion.backend.common.dto.ResultDTO;
+import com.fantion.backend.community.dto.ChannelAllDto;
 import com.fantion.backend.community.dto.ChannelDto;
 import com.fantion.backend.community.dto.ChannelEditDto;
 import com.fantion.backend.community.dto.ChannelRemoveDto;
@@ -34,7 +35,8 @@ public interface CommunityService {
 
   ResultDTO<PostDto.PostResponse> getPost(Long channelId, Long postId);
 
-  ResultDTO<PostCheckDto> updatePost(Long channelId, Long postId, PostDto.PostUpdateRequest request);
+  ResultDTO<PostCheckDto> updatePost(Long channelId, Long postId,
+      PostDto.PostUpdateRequest request);
 
   ResultDTO<PostCheckDto> deletePost(Long channelId, Long postId);
 

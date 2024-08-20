@@ -53,26 +53,28 @@ public class CommunityServiceImpl implements CommunityService {
   private final MemberRepository memberRepository;
   private final CommentRepository commentRepository;
   private final S3Uploader s3Uploader;
-  
-    @Override
-    public ResultDTO<List<ChannelDto.Response>> readChannelRandom() {
-      // 채널 랜덤 조회
-      List<Channel> channelRandomList = channelRepository.findChannelRandom();
-      List<ChannelDto.Response> responseList = new ArrayList<>();
 
-      for (int i = 0; i < channelRandomList.size(); i++) {
-        Channel channel = channelRandomList.get(i);
-        // 해당 채널의 최근 게시글 조회
-        List<Post> latestPostList = postRepository.findTop10ByChannelOrderByCreateDateDesc(channelRandomList.get(i));
+  @Override
+  public ResultDTO<List<ChannelDto.Response>> readChannelRandom() {
+    // 채널 랜덤 조회
+    List<Channel> channelRandomList = channelRepository.findChannelRandom();
+    List<ChannelDto.Response> responseList = new ArrayList<>();
 
-        List<PostResponse> latestPostDtoList = latestPostList.stream().map(PostDto::toResponse).toList();
-        ChannelDto.Response response = ChannelDto.response(channel);
-        response.setPostList(latestPostDtoList);
-        responseList.add(response);
-      }
+    for (int i = 0; i < channelRandomList.size(); i++) {
+      Channel channel = channelRandomList.get(i);
+      // 해당 채널의 최근 게시글 조회
+      List<Post> latestPostList = postRepository.findTop10ByChannelOrderByCreateDateDesc(
+          channelRandomList.get(i));
 
-      return ResultDTO.of("성공적으로 채널이 랜덤으로 조회되었습니다.", responseList);
+      List<PostDto.PostResponse> latestPostDtoList = latestPostList.stream()
+          .map(PostDto::toResponse).toList();
+      ChannelDto.Response response = ChannelDto.response(channel);
+      response.setPostList(latestPostDtoList);
+      responseList.add(response);
     }
+
+    return ResultDTO.of("성공적으로 채널이 랜덤으로 조회되었습니다.", responseList);
+  }
 
   @Transactional
   @Override
@@ -251,10 +253,6 @@ public class CommunityServiceImpl implements CommunityService {
     Member member = memberRepository.findByEmail(email)
         .orElseThrow(() -> new CustomException(NOT_FOUND_MEMBER));
 
-    String email = MemberAuthUtil.getLoginUserId();
-    Member member = memberRepository.findByEmail(email)
-        .orElseThrow(() -> new CustomException(NOT_FOUND_MEMBER));
-
     Post post = new Post();
     if (request.getPostId() != null) {
       post = postRepository.findByPostIdAndStatus(request.getPostId(), PostStatus.DRAFTS)
@@ -399,7 +397,8 @@ public class CommunityServiceImpl implements CommunityService {
   }
 
   @Override
-  public ResultDTO<Page<PostDto.PostResponse>> searchPost(Long channelId, PostSearchOption searchOption,
+  public ResultDTO<Page<PostDto.PostResponse>> searchPost(Long channelId,
+      PostSearchOption searchOption,
       String keyword, Integer page) {
 
     Channel channel = channelRepository.findByChannelIdAndStatus(channelId, ChannelStatus.APPROVAL)
@@ -531,21 +530,23 @@ public class CommunityServiceImpl implements CommunityService {
 
     Pageable pageable = PageRequest.of(page, 15, Sort.by(Direction.DESC, "createDate"));
 
-    Page<Comment> comments = commentRepository.findByPostAndStatus(post, CommentStatus.ACTIVE, pageable);
+    Page<Comment> comments = commentRepository.findByPostAndStatus(post, CommentStatus.ACTIVE,
+        pageable);
 
-    Page<CommentDto.CommentResponse> response = comments.map(comment -> CommentDto.toResponse(comment));
+    Page<CommentDto.CommentResponse> response = comments.map(
+        comment -> CommentDto.toResponse(comment));
 
     return ResultDTO.of("댓글 목록을 불어오는데 성공했습니다.", response);
   }
-  
+
   public ResultDTO<List<ChannelAllDto.Response>> readChannelAll() {
     Map<Character, List<Channel>> groupedData = getGroupedData();
     List<ChannelAllDto.Response> response = groupedData.entrySet().stream()
-            .map(entry -> new ChannelAllDto.Response(entry.getKey(),
-                    entry.getValue().stream().sorted(Comparator.comparing(Channel::getTitle))
-                            .map(ChannelDto::response)
-                            .collect(Collectors.toList())))
-            .collect(Collectors.toList());
+        .map(entry -> new ChannelAllDto.Response(entry.getKey(),
+            entry.getValue().stream().sorted(Comparator.comparing(Channel::getTitle))
+                .map(ChannelDto::response)
+                .collect(Collectors.toList())))
+        .collect(Collectors.toList());
 
     return ResultDTO.of("성공적으로 전체 채널 조회되었습니다.", response);
   }
