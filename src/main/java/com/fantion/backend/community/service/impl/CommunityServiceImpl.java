@@ -34,18 +34,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.multipart.MultipartHttpServletRequest;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-import org.springframework.web.multipart.MultipartHttpServletRequest;
+import java.util.*;
+import java.util.stream.Collectors;
 
-import static com.fantion.backend.exception.ErrorCode.IMAGE_IO_ERROR;
-import static com.fantion.backend.exception.ErrorCode.NOT_FOUND_CHANNEL;
-import static com.fantion.backend.exception.ErrorCode.NOT_FOUND_MEMBER;
+import static com.fantion.backend.exception.ErrorCode.*;
 
 
 @Service
@@ -57,14 +53,26 @@ public class CommunityServiceImpl implements CommunityService {
   private final MemberRepository memberRepository;
   private final CommentRepository commentRepository;
   private final S3Uploader s3Uploader;
+  
+    @Override
+    public ResultDTO<List<ChannelDto.Response>> readChannelRandom() {
+      // 채널 랜덤 조회
+      List<Channel> channelRandomList = channelRepository.findChannelRandom();
+      List<ChannelDto.Response> responseList = new ArrayList<>();
 
-  @Override
-  public ResultDTO<List<Response>> readChannelRandom() {
-    List<Channel> channelRandomList = channelRepository.findChannelRandom();
-    List<Response> responseList = channelRandomList.stream().map(ChannelDto::response)
-        .toList();
-    return ResultDTO.of("성공적으로 채널이 랜덤으로 조회되었습니다.", responseList);
-  }
+      for (int i = 0; i < channelRandomList.size(); i++) {
+        Channel channel = channelRandomList.get(i);
+        // 해당 채널의 최근 게시글 조회
+        List<Post> latestPostList = postRepository.findTop10ByChannelOrderByCreateDateDesc(channelRandomList.get(i));
+
+        List<PostResponse> latestPostDtoList = latestPostList.stream().map(PostDto::toResponse).toList();
+        ChannelDto.Response response = ChannelDto.response(channel);
+        response.setPostList(latestPostDtoList);
+        responseList.add(response);
+      }
+
+      return ResultDTO.of("성공적으로 채널이 랜덤으로 조회되었습니다.", responseList);
+    }
 
   @Transactional
   @Override
@@ -238,6 +246,10 @@ public class CommunityServiceImpl implements CommunityService {
 
     Channel channel = channelRepository.findByChannelIdAndStatus(channelId, ChannelStatus.APPROVAL)
         .orElseThrow(() -> new CustomException(NOT_FOUND_CHANNEL));
+
+    String email = MemberAuthUtil.getLoginUserId();
+    Member member = memberRepository.findByEmail(email)
+        .orElseThrow(() -> new CustomException(NOT_FOUND_MEMBER));
 
     String email = MemberAuthUtil.getLoginUserId();
     Member member = memberRepository.findByEmail(email)
@@ -524,5 +536,38 @@ public class CommunityServiceImpl implements CommunityService {
     Page<CommentDto.CommentResponse> response = comments.map(comment -> CommentDto.toResponse(comment));
 
     return ResultDTO.of("댓글 목록을 불어오는데 성공했습니다.", response);
+  }
+  
+  public ResultDTO<List<ChannelAllDto.Response>> readChannelAll() {
+    Map<Character, List<Channel>> groupedData = getGroupedData();
+    List<ChannelAllDto.Response> response = groupedData.entrySet().stream()
+            .map(entry -> new ChannelAllDto.Response(entry.getKey(),
+                    entry.getValue().stream().sorted(Comparator.comparing(Channel::getTitle))
+                            .map(ChannelDto::response)
+                            .collect(Collectors.toList())))
+            .collect(Collectors.toList());
+
+    return ResultDTO.of("성공적으로 전체 채널 조회되었습니다.", response);
+  }
+
+  private Map<Character, List<Channel>> getGroupedData() {
+    List<Channel> channelList = channelRepository.findAll();
+    return channelList.stream().collect(Collectors.groupingBy(this::getFirstConsonant));
+  }
+
+  // 초성을 가져오는 메소드
+  private Character getFirstConsonant(Channel channel) {
+    char firstChar = channel.getTitle().charAt(0); // 예: 엔티티에서 이름 필드의 첫 글자 사용
+    return getKoreanInitialSound(firstChar);
+  }
+
+  // 한글 초성 추출 로직
+  private char getKoreanInitialSound(char c) {
+    if (c >= '가' && c <= '힣') {
+      int unicodeValue = c - 0xAC00;
+      int initialSoundIndex = unicodeValue / (21 * 28);
+      return (char) (initialSoundIndex + 0x1100); // 초성 유니코드
+    }
+    return c;
   }
 }

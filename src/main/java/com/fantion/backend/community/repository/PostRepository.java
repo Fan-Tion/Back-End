@@ -30,6 +30,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
       String keyword, String keyword1,
       PostStatus postStatus, Pageable pageable);
 
-  Page<Post> findByChannelAndMemberAndStatus(Channel channel, Member member, PostStatus postStatus,
-      Pageable pageable);
+  Page<Post> findByChannelAndMemberAndStatus(Channel channel, Member member, PostStatus postStatus, Pageable pageable);
+
+  List<Post> findTop10ByChannelOrderByCreateDateDesc(Channel channel);
 }
