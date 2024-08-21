@@ -2,12 +2,7 @@ package com.fantion.backend.community.controller;
 
 import com.fantion.backend.common.dto.CheckDto;
 import com.fantion.backend.common.dto.ResultDTO;
-import com.fantion.backend.community.dto.ChannelAllDto;
-import com.fantion.backend.community.dto.ChannelDto;
-import com.fantion.backend.community.dto.ChannelEditDto;
-import com.fantion.backend.community.dto.ChannelRemoveDto;
-import com.fantion.backend.community.dto.CommentDto;
-import com.fantion.backend.community.dto.PostCheckDto;
+import com.fantion.backend.community.dto.*;
 import com.fantion.backend.community.service.CommunityService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -15,8 +10,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
-import com.fantion.backend.community.dto.ImageDto;
-import com.fantion.backend.community.dto.PostDto;
+
 import com.fantion.backend.type.PostSearchOption;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
@@ -80,6 +74,29 @@ public class CommunityController {
       @RequestBody ChannelRemoveDto.Request request) {
     return communityService.removeChannel(request);
   }
+
+    @Operation(summary = "채널 정보 조회", description = "채널 정보 조회할 때 사용하는 API")
+    @ApiResponse(responseCode = "200", description = "성공적으로 채널 정보 조회되었습니다.")
+    @GetMapping("/channel/{channelId}")
+    public ResultDTO<ChannelDto.Response> readChannel(@PathVariable(value = "channelId") Long channelId) {
+        return communityService.readChannel(channelId);
+    }
+
+    @Operation(summary = "게시글 추천 확인", description = "게시글 추천 확인할 때 사용하는 API")
+    @ApiResponse(responseCode = "200", description = "성공적으로 추천 여부가 조회되었습니다.")
+    @GetMapping("/{channelId}/postLike/{postId}")
+    public ResultDTO<PostLikeDto.Response> postLikeChk(@PathVariable(value = "channelId") Long channelId,
+                                                       @PathVariable(value = "postId") Long postId) {
+        return communityService.postLikeChk(channelId, postId);
+    }
+
+    @Operation(summary = "게시글 추천", description = "게시글 추천할 때 사용하는 API")
+    @ApiResponse(responseCode = "200", description = "성공적으로 게시글 추천 & 추천 취소되었습니다.")
+    @PostMapping("/{channelId}/postLike/{postId}")
+    public ResultDTO<PostLikeDto.Response> postLike(@PathVariable(value = "channelId") Long channelId,
+                                                    @PathVariable(value = "postId") Long postId) {
+        return communityService.postLike(channelId, postId);
+    }
 
   @PostMapping("/{channelId}/image")
   public ResponseEntity<ResultDTO<ImageDto>> uploadImage(
