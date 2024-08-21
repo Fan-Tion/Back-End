@@ -76,6 +76,29 @@ public class CommunityController {
         return communityService.removeChannel(request);
     }
 
+    @Operation(summary = "채널 정보 조회", description = "채널 정보 조회할 때 사용하는 API")
+    @ApiResponse(responseCode = "200", description = "성공적으로 채널 정보 조회되었습니다.")
+    @GetMapping("/channel/{channelId}")
+    public ResultDTO<ChannelDto.Response> readChannel(@PathVariable(value = "channelId") Long channelId) {
+        return communityService.readChannel(channelId);
+    }
+
+    @Operation(summary = "게시글 추천 확인", description = "게시글 추천 확인할 때 사용하는 API")
+    @ApiResponse(responseCode = "200", description = "성공적으로 추천 여부가 조회되었습니다.")
+    @GetMapping("/{channelId}/postLike/{postId}")
+    public ResultDTO<PostLikeDto.Response> postLikeChk(@PathVariable(value = "channelId") Long channelId,
+                                                       @PathVariable(value = "postId") Long postId) {
+        return communityService.postLikeChk(channelId, postId);
+    }
+
+    @Operation(summary = "게시글 추천", description = "게시글 추천할 때 사용하는 API")
+    @ApiResponse(responseCode = "200", description = "성공적으로 게시글 추천 & 추천 취소되었습니다.")
+    @PostMapping("/{channelId}/postLike/{postId}")
+    public ResultDTO<PostLikeDto.Response> postLike(@PathVariable(value = "channelId") Long channelId,
+                                                    @PathVariable(value = "postId") Long postId) {
+        return communityService.postLike(channelId, postId);
+    }
+
   @PostMapping("/{channelId}/image")
   public ResponseEntity<ResultDTO<ImageDto>> uploadImage(
       @PathVariable Long channelId, @RequestPart("file") List<MultipartFile> files,
