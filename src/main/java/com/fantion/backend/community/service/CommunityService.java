@@ -47,7 +47,7 @@ public interface CommunityService {
   ResultDTO<Page<PostDto.PostResponse>> searchPost(Long channelId, PostSearchOption searchOption,
       String keyword, Integer page);
 
-  ResultDTO<CheckDto> createComment(Long channelId, Long postId,
+  ResultDTO<CommentDto.CommentResponse>  createComment(Long channelId, Long postId,
       CommentDto.CommentRequest request);
 
   ResultDTO<CheckDto> updateComment(Long channelId, Long postId, Long commentId,

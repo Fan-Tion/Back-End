@@ -435,7 +435,7 @@ public class CommunityServiceImpl implements CommunityService {
   }
 
   @Override
-  public ResultDTO<CheckDto> createComment(Long channelId, Long postId,
+  public ResultDTO<CommentDto.CommentResponse> createComment(Long channelId, Long postId,
       CommentDto.CommentRequest request) {
 
     String email = MemberAuthUtil.getLoginUserId();
@@ -457,7 +457,9 @@ public class CommunityServiceImpl implements CommunityService {
         .build();
     commentRepository.save(comment);
 
-    return ResultDTO.of("댓글을 성공적으로 작성했습니다.", CheckDto.builder().success(true).build());
+    CommentDto.CommentResponse response = CommentDto.toResponse(comment);
+
+    return ResultDTO.of("댓글을 성공적으로 작성했습니다.", response);
   }
 
   @Override

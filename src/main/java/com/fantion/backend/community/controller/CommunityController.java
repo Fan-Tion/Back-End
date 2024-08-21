@@ -135,10 +135,10 @@ public class CommunityController {
   }
 
   @PostMapping("/{channelId}/post/{postId}/comment")
-  public ResponseEntity<ResultDTO<CheckDto>> createComment(
+  public ResponseEntity<ResultDTO<CommentDto.CommentResponse>> createComment(
       @PathVariable Long channelId, @PathVariable Long postId,
       @RequestBody @Valid CommentDto.CommentRequest request) {
-    ResultDTO<CheckDto> result = communityService.createComment(channelId, postId,
+    ResultDTO<CommentDto.CommentResponse>  result = communityService.createComment(channelId, postId,
         request);
     return ResponseEntity.ok(result);
   }
