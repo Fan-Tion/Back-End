@@ -1,5 +1,6 @@
 package com.fantion.backend.community.service.impl;
 
+import com.fantion.backend.auction.dto.AuctionFavoriteDto;
 import com.fantion.backend.common.component.S3Uploader;
 import com.fantion.backend.common.dto.ResultDTO;
 import com.fantion.backend.community.dto.*;
@@ -10,7 +11,9 @@ import com.fantion.backend.community.dto.PostDto.PostResponse;
 import com.fantion.backend.community.dto.PostDto.PostUpdateRequest;
 import com.fantion.backend.community.entity.Channel;
 import com.fantion.backend.community.entity.Post;
+import com.fantion.backend.community.entity.PostLike;
 import com.fantion.backend.community.repository.ChannelRepository;
+import com.fantion.backend.community.repository.PostLikeRepository;
 import com.fantion.backend.community.repository.PostRepository;
 import com.fantion.backend.community.service.CommunityService;
 import com.fantion.backend.exception.ErrorCode;
@@ -49,6 +52,7 @@ public class CommunityServiceImpl implements CommunityService {
 
   private final ChannelRepository channelRepository;
   private final PostRepository postRepository;
+  private final PostLikeRepository postLikeRepository;
   private final MemberRepository memberRepository;
   private final S3Uploader s3Uploader;
   
@@ -445,6 +449,72 @@ public class CommunityServiceImpl implements CommunityService {
     Page<PostResponse> response = posts.map(post -> PostDto.toResponse(post));
 
     return ResultDTO.of("게시글 검색을 성공했습니다.", response);
+  }
+
+  @Override
+  public ResultDTO<PostLikeDto.Response> postLikeChk(Long channelId, Long postId) {
+      // 추천 여부 확인할 게시글 조회
+      Post post = postRepository.findById(postId)
+              .orElseThrow(()-> new CustomException(NOT_FOUND_POST));
+
+      // 로그인한 사용자 가져오기
+      String loginEmail = MemberAuthUtil.getLoginUserId();
+
+      // 사용자 조회
+      Member member = memberRepository.findByEmail(loginEmail)
+              .orElseThrow(() -> new CustomException(NOT_FOUND_MEMBER));
+
+      // 추천 조회
+      Optional<PostLike> postLike = postLikeRepository.findByPostIdAndMemberId(post, member);
+
+      PostLikeDto.Response response = PostLikeDto.Response.builder()
+              .postLikeChk(true)
+              .title(post.getTitle())
+              .build();
+
+      // 추천이 되어있지 않는 경우
+      if (postLike.isEmpty()) {
+        response.setPostLikeChk(false);
+      }
+
+      return ResultDTO.of("성공적으로 추천 여부가 조회되었습니다.", response);
+  }
+
+  @Override
+  public ResultDTO<PostLikeDto.Response> postLike(Long channelId, Long postId) {
+    // 추천하거나 취소할 게시글 조회
+    Post post = postRepository.findById(postId)
+            .orElseThrow(()-> new CustomException(NOT_FOUND_POST));
+
+    // 로그인한 사용자 가져오기
+    String loginEmail = MemberAuthUtil.getLoginUserId();
+
+    // 사용자 조회
+    Member member = memberRepository.findByEmail(loginEmail)
+            .orElseThrow(() -> new CustomException(NOT_FOUND_MEMBER));
+
+    // 추천 조회
+    Optional<PostLike> postLike = postLikeRepository.findByPostIdAndMemberId(post, member);
+
+    PostLikeDto.Response response = PostLikeDto.Response.builder()
+            .postLikeChk(true)
+            .title(post.getTitle())
+            .build();
+
+    // 추천이 되어있지 않는 경우
+    if (postLike.isEmpty()) {
+      PostLike like = PostLike.builder()
+              .postId(post)
+              .memberId(member)
+              .build();
+      postLikeRepository.save(like);
+    } else {
+      // 추천이 되어있는 경우 취소
+      postLikeRepository.delete(postLike.get());
+      response.setPostLikeChk(false);
+    }
+
+    return ResultDTO.of("성공적으로 추천 또는 추천 취소가 되었습니다.", response);
   }
 
   @Override

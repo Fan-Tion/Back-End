@@ -37,4 +37,8 @@ public interface CommunityService {
 
   ResultDTO<Page<PostDto.PostResponse>> searchPost(Long channelId, PostSearchOption searchOption,
       String keyword, Integer page);
+
+  ResultDTO<PostLikeDto.Response> postLikeChk(Long channelId, Long postId);
+
+  ResultDTO<PostLikeDto.Response> postLike(Long channelId, Long postId);
 }
