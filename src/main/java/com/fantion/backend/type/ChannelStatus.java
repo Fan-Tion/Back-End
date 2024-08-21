@@ -4,5 +4,4 @@ public enum ChannelStatus {
   APPROVAL_WAIT,
   APPROVAL,
   CLOSING
-
 }
