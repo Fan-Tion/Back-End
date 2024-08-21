@@ -518,6 +518,16 @@ public class CommunityServiceImpl implements CommunityService {
   }
 
   @Override
+  public ResultDTO<ChannelDto.Response> readChannel(Long channelId) {
+      // 채널 조회
+      Channel channel = channelRepository.findById(channelId)
+              .orElseThrow(()-> new CustomException(NOT_FOUND_CHANNEL));
+
+      ChannelDto.Response response = ChannelDto.response(channel);
+      return ResultDTO.of("성공적으로 채널 정보 조회되었습니다.", response);
+  }
+
+  @Override
   public ResultDTO<List<ChannelAllDto.Response>> readChannelAll() {
     Map<Character, List<Channel>> groupedData = getGroupedData();
     List<ChannelAllDto.Response> response = groupedData.entrySet().stream()
