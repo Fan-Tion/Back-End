@@ -49,9 +49,6 @@ public class PostDto {
   public static class PostResponse {
 
     private Long postId;
-    private String channelName;
-    private String channelImage;
-    private String channelDescription;
     private String nickname;
     private String title;
     private String content;
@@ -67,9 +64,6 @@ public class PostDto {
   public static PostDto.PostResponse toResponse(Post post) {
     return PostDto.PostResponse.builder()
         .postId(post.getPostId())
-        .channelName(post.getChannel().getTitle())
-        .channelImage(post.getChannel().getImage())
-        .channelDescription(post.getChannel().getDescription())
         .nickname(post.getMember().getNickname())
         .title(post.getTitle())
         .content(post.getContent())

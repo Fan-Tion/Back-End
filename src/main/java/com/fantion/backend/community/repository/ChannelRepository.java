@@ -11,7 +11,7 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface ChannelRepository extends JpaRepository<Channel, Long> {
 
-  @Query(nativeQuery = true, value = "SELECT *  FROM channel ORDER BY RAND() LIMIT 2")
+  @Query(nativeQuery = true, value = "SELECT *  FROM channel ORDER BY RAND() LIMIT 9")
   List<Channel> findChannelRandom();
 
   Optional<Channel> findByChannelIdAndStatus(Long channelId, ChannelStatus channelStatus);
