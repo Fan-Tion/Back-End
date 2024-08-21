@@ -11,6 +11,7 @@ import com.fantion.backend.community.dto.PostDto.PostUpdateRequest;
 import com.fantion.backend.community.entity.Channel;
 import com.fantion.backend.community.entity.Post;
 import com.fantion.backend.community.repository.ChannelRepository;
+import com.fantion.backend.community.repository.CommentRepository;
 import com.fantion.backend.community.repository.PostLikeRepository;
 import com.fantion.backend.community.repository.PostRepository;
 import com.fantion.backend.community.service.CommunityService;
@@ -203,7 +204,7 @@ public class CommunityServiceImpl implements CommunityService {
   @Override
   public ResultDTO<ImageDto> uploadImage(List<MultipartFile> files, Long channelId, Long postId) {
 
-    Channel channel = channelRepository.findByChannelIdAndStatus(channelId)
+    Channel channel = channelRepository.findByChannelIdAndStatus(channelId,ChannelStatus.APPROVAL)
         .orElseThrow(() -> new CustomException(NOT_FOUND_CHANNEL));
 
     String email = MemberAuthUtil.getLoginUserId();
@@ -254,7 +255,7 @@ public class CommunityServiceImpl implements CommunityService {
   @Override
   public ResultDTO<PostCheckDto> createPost(Long channelId, PostCreateRequest request) {
 
-    Channel channel = channelRepository.findByChannelIdAndStatus(channelId)
+    Channel channel = channelRepository.findByChannelIdAndStatus(channelId,ChannelStatus.APPROVAL)
         .orElseThrow(() -> new CustomException(NOT_FOUND_CHANNEL));
 
     String email = MemberAuthUtil.getLoginUserId();
@@ -300,7 +301,7 @@ public class CommunityServiceImpl implements CommunityService {
   @Override
   public ResultDTO<PostResponse> getPost(Long channelId, Long postId) {
 
-        channelRepository.findByChannelIdAndStatus(channelId)
+        channelRepository.findByChannelIdAndStatus(channelId,ChannelStatus.APPROVAL)
         .orElseThrow(() -> new CustomException(NOT_FOUND_CHANNEL));
 
     Post post = postRepository.findByPostIdAndStatus(postId, PostStatus.ACTIVE)
@@ -355,7 +356,7 @@ public class CommunityServiceImpl implements CommunityService {
 
   @Override
   public ResultDTO<PostCheckDto> deletePost(Long channelId, Long postId) {
-    channelRepository.findByChannelIdAndStatus(channelId)
+    channelRepository.findByChannelIdAndStatus(channelId,ChannelStatus.APPROVAL)
         .orElseThrow(() -> new CustomException(NOT_FOUND_CHANNEL));
 
     Post post = postRepository.findByPostIdAndStatus(postId, PostStatus.ACTIVE)
@@ -386,7 +387,7 @@ public class CommunityServiceImpl implements CommunityService {
 
   @Override
   public ResultDTO<Page<PostDto.PostResponse>> getPostList(Long communityId, Integer page) {
-    Channel channel = channelRepository.findByChannelIdAndStatus(communityId)
+    Channel channel = channelRepository.findByChannelIdAndStatus(communityId,ChannelStatus.APPROVAL)
         .orElseThrow(() -> new CustomException(NOT_FOUND_CHANNEL));
 
     // 페이지 요청 설정 (한 페이지에 20개, 최신순 정렬)
@@ -406,7 +407,7 @@ public class CommunityServiceImpl implements CommunityService {
   public ResultDTO<Page<PostDto.PostResponse>> searchPost(Long channelId, PostSearchOption searchOption,
       String keyword, Integer page) {
 
-    Channel channel = channelRepository.findByChannelIdAndStatus(channelId)
+    Channel channel = channelRepository.findByChannelIdAndStatus(channelId,ChannelStatus.APPROVAL)
         .orElseThrow(() -> new CustomException(NOT_FOUND_CHANNEL));
 
     Pageable pageable = PageRequest.of(page, 20, Sort.by(Direction.DESC, "createDate"));
