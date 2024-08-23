@@ -98,6 +98,13 @@ public class CommunityController {
         return communityService.postLike(channelId, postId);
     }
 
+    @Operation(summary = "게시글 신고", description = "게시글 신고할 때 사용하는 API")
+    @ApiResponse(responseCode = "200", description = "성공적으로 게시글 신고되었습니다.")
+    @PostMapping("/postReport")
+    public ResultDTO<PostReportDto.Response> postReport(@RequestBody PostReportDto.Request request) {
+      return communityService.postReport(request);
+    }
+
   @PostMapping("/{channelId}/image")
   public ResponseEntity<ResultDTO<ImageDto>> uploadImage(
       @PathVariable Long channelId, @RequestPart("file") List<MultipartFile> files,

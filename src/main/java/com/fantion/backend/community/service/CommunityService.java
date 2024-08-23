@@ -56,4 +56,6 @@ public interface CommunityService {
     ResultDTO<PostLikeDto.Response> postLike(Long channelId, Long postId);
 
     ResultDTO<ChannelDto.Response> readChannel(Long channelId);
+
+    ResultDTO<PostReportDto.Response> postReport(PostReportDto.Request request);
 }
