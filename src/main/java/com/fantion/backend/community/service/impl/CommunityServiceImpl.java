@@ -8,12 +8,8 @@ import com.fantion.backend.community.dto.ChannelEditDto.Request;
 import com.fantion.backend.community.dto.PostDto.PostCreateRequest;
 import com.fantion.backend.community.dto.PostDto.PostResponse;
 import com.fantion.backend.community.dto.PostDto.PostUpdateRequest;
-import com.fantion.backend.community.entity.Channel;
-import com.fantion.backend.community.entity.Post;
-import com.fantion.backend.community.repository.ChannelRepository;
-import com.fantion.backend.community.repository.CommentRepository;
-import com.fantion.backend.community.repository.PostLikeRepository;
-import com.fantion.backend.community.repository.PostRepository;
+import com.fantion.backend.community.entity.*;
+import com.fantion.backend.community.repository.*;
 import com.fantion.backend.community.service.CommunityService;
 import com.fantion.backend.exception.ErrorCode;
 import com.fantion.backend.exception.impl.CustomException;
@@ -22,9 +18,7 @@ import com.fantion.backend.member.entity.Member;
 import com.fantion.backend.member.repository.MemberRepository;
 import com.fantion.backend.type.ChannelStatus;
 import com.fantion.backend.common.dto.CheckDto;
-import com.fantion.backend.community.entity.Comment;
 import com.fantion.backend.auction.dto.AuctionFavoriteDto;
-import com.fantion.backend.community.entity.PostLike;
 import com.fantion.backend.type.CommentStatus;
 import com.fantion.backend.type.PostSearchOption;
 import com.fantion.backend.type.PostStatus;
@@ -61,6 +55,7 @@ public class CommunityServiceImpl implements CommunityService {
   private final PostLikeRepository postLikeRepository;
   private final MemberRepository memberRepository;
   private final CommentRepository commentRepository;
+  private final PostReportRepository postReportRepository;
   private final S3Uploader s3Uploader;
 
     @Override
@@ -622,7 +617,39 @@ public class CommunityServiceImpl implements CommunityService {
         return ResultDTO.of("성공적으로 채널 정보 조회되었습니다.", response);
     }
 
-  @Override
+    @Override
+    public ResultDTO<PostReportDto.Response> postReport(PostReportDto.Request request) {
+        // 로그인한 사용자 가져오기
+        String loginEmail = MemberAuthUtil.getLoginUserId();
+
+        // 사용자 조회
+        Member member = memberRepository.findByEmail(loginEmail)
+                .orElseThrow(() -> new CustomException(NOT_FOUND_MEMBER));
+
+        // 신고할 게시글 조회
+        Post post = postRepository.findById(request.getPostId())
+                .orElseThrow(()-> new CustomException(NOT_FOUND_POST));
+
+        // 이미 신고한 게시글인 경우
+        postReportRepository.findByPostIdAndMemberId(post,member).ifPresent(report -> {
+            throw new CustomException(ALREADY_REPORT_POST);
+        });
+
+        PostReport postReport = PostReport.builder()
+                .postId(post)
+                .memberId(member)
+                .description(request.getDescription())
+                .build();
+        postReportRepository.save(postReport);
+
+        PostReportDto.Response response = PostReportDto.Response.builder()
+                .title(post.getTitle())
+                .build();
+
+        return ResultDTO.of("성공적으로 게시글 신고되었습니다.", response);
+    }
+
+    @Override
   public ResultDTO<List<ChannelAllDto.Response>> readChannelAll() {
     Map<Character, List<Channel>> groupedData = getGroupedData();
     List<ChannelAllDto.Response> response = groupedData.entrySet().stream()

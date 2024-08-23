@@ -1,6 +1,7 @@
 package com.fantion.backend.auction.dto;
 
 import com.fantion.backend.auction.entity.Bid;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.NotBlank;
 import java.time.LocalDateTime;
 import lombok.*;
@@ -31,6 +32,8 @@ public class BidDto {
     private Long auctionId;          // 경매 식별자
     private Long bidPrice;              // 입찰가
     private String bidder;              // 입찰자
+
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Seoul")
     private LocalDateTime createDate;   // 입찰한 시간
   }
 

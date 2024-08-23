@@ -55,6 +55,7 @@ public enum ErrorCode {
     NOT_FOUND_CHANNEL("존재하지 않은 채널 입니다.", HttpStatus.NOT_FOUND),
     NOT_FOUND_COMMENT("존재하지 않은 댓글 입니다.", HttpStatus.NOT_FOUND),
     INVALID_COMMENT_MEMBER("게시글의 작성자가 아닙니다.", HttpStatus.BAD_REQUEST),
+    ALREADY_REPORT_POST("이미 신고한 게시글 입니다.", HttpStatus.BAD_REQUEST),
 
     // Common
     PARSING_ERROR("파싱 오류가 발생했습니다.", HttpStatus.BAD_REQUEST),
