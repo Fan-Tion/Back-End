@@ -201,7 +201,7 @@ public class BidServiceImpl implements BidService {
         SseEmitter sseEmitter = sseEmitterService.createEmitter(String.valueOf(member.getMemberId()));
 
         // 더미데이터 전송
-        sseEmitterService.send("ReceivedData", channel, sseEmitter);
+        sseEmitterService.send("ReceivedData", String.valueOf(member.getMemberId()), sseEmitter);
 
         // 특정 경매 물품 별로 사용자 구독 관리
         sseEmitterService.subscribeToAuction("auctionChannel : "+auctionId,String.valueOf(member.getMemberId()));
