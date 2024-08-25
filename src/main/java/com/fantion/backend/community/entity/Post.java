@@ -50,4 +50,13 @@ public class Post {
 
   @Enumerated(EnumType.STRING)
   private PostStatus status;
+
+  public void like(){
+    likeCnt++;
+  }
+
+  public void unLike(){
+    likeCnt--;
+  }
+
 }

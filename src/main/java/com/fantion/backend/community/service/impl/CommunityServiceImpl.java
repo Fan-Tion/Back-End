@@ -598,10 +598,12 @@ public class CommunityServiceImpl implements CommunityService {
                     .memberId(member)
                     .build();
             postLikeRepository.save(like);
+            post.like();
         } else {
             // 추천이 되어있는 경우 취소
             postLikeRepository.delete(postLike.get());
             response.setPostLikeChk(false);
+            post.unLike();
         }
 
         return ResultDTO.of("성공적으로 추천 또는 추천 취소가 되었습니다.", response);
