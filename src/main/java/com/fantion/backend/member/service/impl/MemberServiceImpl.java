@@ -366,20 +366,13 @@ public class MemberServiceImpl implements MemberService {
     return ResultDTO.of("네이버 로그인에 성공했습니다.", tokens);
   }
 
-
   @Override
-  public ResultDTO<CheckDto> naverLink(String linkEmail) {
+  public ResultDTO<CheckDto> naverLinkEmail(String linkEmail) {
 
     // 네이버 계정인지 확인
-    String string = linkEmail.split("@")[1];
-    if (!string.equals("naver.com")) {
+    if (!linkEmail.split("@")[1].equals("naver.com")) {
       throw new CustomException(ErrorCode.EMAIL_INVALID);
     }
-
-    // 현재 토큰에 저장된 email 가져오기
-    String currentEmail = MemberAuthUtil.getLoginUserId();
-    Member member = memberRepository.findByEmail(currentEmail)
-        .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
 
     // 소셜 계정이 이미 가입한 email인지 확인
     memberRepository.findByEmail(linkEmail).ifPresent(snsMember -> {
@@ -395,6 +388,10 @@ public class MemberServiceImpl implements MemberService {
       }
     });
 
+    String email = MemberAuthUtil.getLoginUserId();
+    Member member = memberRepository.findByEmail(email)
+        .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
+
     // 카카오나 이미 연동한 회원일 경우 exception
     if (member.getIsKakao()) {
       throw new CustomException(ErrorCode.OTHER_SNS_LINKED_ERROR);
@@ -403,6 +400,32 @@ public class MemberServiceImpl implements MemberService {
     if (member.getIsNaver()) {
       throw new CustomException(ErrorCode.DUPLICATE_LINKED_ERROR);
     }
+
+    String baseUrl = "https://fan-tion.vercel.app";
+    String title = "Fan-Tion 네이버 연동 이메일";
+    String uuid = UUID.randomUUID().toString();
+    String message = "<h3>Fan-Tion 네이버 연동 링크입니다. 아래의 링크를 클릭하셔서 네이버 연동을 완료해주세요.</h3>" +
+        "<div><a href='" + baseUrl + "/naver-link?uuid=" + uuid
+        + "'> 네이버 연동 링크 </a></div>";
+    mailComponents.sendMail(linkEmail, title, message);
+
+    // redis에 uuid를 임시 저장
+    redisTemplate.opsForValue()
+        .set("naverLink: " + uuid, email, MAIL_EXPIRES_IN, TimeUnit.MILLISECONDS);
+
+    return ResultDTO.of("네이버 연동 이메일 발송에 성공했습니다.", CheckDto.builder().success(true).build());
+  }
+
+  @Override
+  public ResultDTO<CheckDto> naverLink(String linkEmail, String uuid) {
+
+    String email = redisTemplate.opsForValue().get("naverLink: " + uuid);
+    if (email == null || email.isEmpty()) {
+      throw new CustomException(ErrorCode.SNS_LINK_TIMEOUT);
+    }
+
+    Member member = memberRepository.findByEmail(email)
+        .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
 
     Member updateMember = member.toBuilder()
         .auth(true)
@@ -798,14 +821,8 @@ public class MemberServiceImpl implements MemberService {
     LocalDateTime thirtyDaysAgo = LocalDateTime.now().minusDays(30);
     List<Member> withdrawalMembers = memberRepository.findAllByWithdrawalDateBefore(thirtyDaysAgo);
 
-    try {
       if (withdrawalMembers != null && !withdrawalMembers.isEmpty()) {
         memberRepository.deleteAll(withdrawalMembers);
-      } else {
-        // 나중에 로그 처리
       }
-    } catch (Exception e) {
-      // 나중에 로그 처리
-    }
   }
 }

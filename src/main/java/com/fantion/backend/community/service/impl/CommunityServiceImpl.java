@@ -30,6 +30,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Direction;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -371,6 +372,18 @@ public class CommunityServiceImpl implements CommunityService {
         .build();
     postRepository.save(deletePost);
 
+    // 댓글 삭제
+    List<Comment> comments = commentRepository.findAllByPost(post);
+    if (!comments.isEmpty()) {
+      for (Comment comment : comments) {
+        comment.toBuilder()
+            .status(CommentStatus.DELETE)
+            .deleteDate(LocalDateTime.now())
+            .build();
+        commentRepository.save(comment);
+      }
+    }
+
     PostCheckDto response = PostCheckDto.builder()
         .success(true)
         .channelId(channelId)
@@ -521,26 +534,27 @@ public class CommunityServiceImpl implements CommunityService {
         return ResultDTO.of("댓글을 성공적으로 삭제했습니다.", CheckDto.builder().success(true).build());
     }
 
-    @Override
-    public ResultDTO<Page<CommentDto.CommentResponse>> getComment(Long channelId, Long postId,
-                                                                  Integer page) {
+  @Override
+  public ResultDTO<Page<CommentDto.CommentResponse>> getComment(Long channelId, Long postId,
+      Integer page) {
 
-        channelRepository.findByChannelIdAndStatus(channelId, ChannelStatus.APPROVAL)
-                .orElseThrow(() -> new CustomException(NOT_FOUND_CHANNEL));
+    channelRepository.findByChannelIdAndStatus(channelId, ChannelStatus.APPROVAL)
+        .orElseThrow(() -> new CustomException(NOT_FOUND_CHANNEL));
 
-        Post post = postRepository.findByPostIdAndStatus(postId, PostStatus.ACTIVE)
-                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_POST));
+    Post post = postRepository.findByPostIdAndStatus(postId, PostStatus.ACTIVE)
+        .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_POST));
 
-        Pageable pageable = PageRequest.of(page, 15, Sort.by(Direction.DESC, "createDate"));
+    Pageable pageable = PageRequest.of(page, 15, Sort.by(Direction.ASC, "createDate"));
 
-        Page<Comment> comments = commentRepository.findByPostAndStatus(post, CommentStatus.ACTIVE,
-                pageable);
+    Page<Comment> comments = commentRepository.findByPostAndStatus(post, CommentStatus.ACTIVE,
+        pageable);
 
-        Page<CommentDto.CommentResponse> response = comments.map(
-                comment -> CommentDto.toResponse(comment));
+    Page<CommentDto.CommentResponse> response = comments.map(
+        comment -> CommentDto.toResponse(comment));
 
-        return ResultDTO.of("댓글 목록을 불어오는데 성공했습니다.", response);
-    }
+    return ResultDTO.of("댓글 목록을 불어오는데 성공했습니다.", response);
+  }
+  
     @Override
     public ResultDTO<PostLikeDto.Response> postLikeChk(Long channelId, Long postId) {
         // 추천 여부 확인할 게시글 조회
@@ -685,4 +699,23 @@ public class CommunityServiceImpl implements CommunityService {
     return c;
   }
 
+  @Scheduled(cron = "0 0 0 * * ?")
+  public void deletePost() {
+    LocalDateTime thirtyDaysAgo = LocalDateTime.now().minusDays(30);
+    List<Post> deletePost = postRepository.findAllByDeleteDateBefore(thirtyDaysAgo);
+
+    if (deletePost != null && !deletePost.isEmpty()) {
+      postRepository.deleteAll(deletePost);
+    }
+  }
+
+  @Scheduled(cron = "0 0 0 * * ?")
+  public void deleteComment() {
+    LocalDateTime thirtyDaysAgo = LocalDateTime.now().minusDays(30);
+    List<Comment> deleteComment = commentRepository.findAllByDeleteDateBefore(thirtyDaysAgo);
+
+    if (deleteComment != null && !deleteComment.isEmpty()) {
+      commentRepository.deleteAll(deleteComment);
+    }
+  }
 }

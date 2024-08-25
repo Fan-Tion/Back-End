@@ -4,6 +4,7 @@ import com.fantion.backend.community.entity.Channel;
 import com.fantion.backend.community.entity.Post;
 import com.fantion.backend.member.entity.Member;
 import com.fantion.backend.type.PostStatus;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
@@ -33,4 +34,6 @@ public interface PostRepository extends JpaRepository<Post, Long> {
   Page<Post> findByChannelAndMemberAndStatus(Channel channel, Member member, PostStatus postStatus, Pageable pageable);
 
   List<Post> findTop10ByChannelOrderByCreateDateDesc(Channel channel);
+
+  List<Post> findAllByDeleteDateBefore(LocalDateTime thirtyDaysAgo);
 }

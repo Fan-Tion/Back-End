@@ -130,12 +130,26 @@ public class MemberController {
     return ResponseEntity.ok(result);
   }
 
-  @Operation(summary = "네이버 연동", description = "네이버 연동 할 때 사용하는 API")
+  @Operation(summary = "네이버 연동 메일 요청", description = "네이버 연동 메일 요청 할 때 사용하는 API")
   @ApiResponses(value = {
-      @ApiResponse(responseCode = "200", description = "네이버 연동에 성공했습니다."),
+      @ApiResponse(responseCode = "200", description = "네이버 연동 이메일 발송에 성공했습니다."),
       @ApiResponse(responseCode = "400", description =
           "이미 가입한 이메일 입니다.<br>다른 이메일과 소셜계정 연동한 이메일 입니다.<br>유효하지 않는 이메일 입니다."
               + "이미 다른 소셜계정으로 연동 하셨습니다.<br>이미 해당 소셜계정과 연동하셨습니다.",
+          content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErrorResponse.class))),
+      @ApiResponse(responseCode = "404", description = "존재하지 않는 회원입니다.",
+          content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErrorResponse.class)))
+  })
+  @PostMapping("/naver/link")
+  public ResponseEntity<ResultDTO<CheckDto>> naverLinkRequest(@RequestParam String linkEmail) {
+    ResultDTO<CheckDto> result = memberService.naverLinkEmail(linkEmail);
+    return ResponseEntity.ok(result);
+  }
+
+  @Operation(summary = "네이버 연동", description = "네이버 연동 할 때 사용하는 API")
+  @ApiResponses(value = {
+      @ApiResponse(responseCode = "200", description = "네이버 연동에 성공했습니다."),
+      @ApiResponse(responseCode = "400", description = "SNS 계정 연동 시간이 만료되었습니다.",
           content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(responseCode = "404", description = "존재하지 않는 회원입니다.",
           content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErrorResponse.class)))
@@ -144,8 +158,10 @@ public class MemberController {
   @PutMapping("/naver/link")
   public ResponseEntity<ResultDTO<CheckDto>> naverLink(
       @RequestParam(value = "linkEmail") @Email(message = "이메일 형식이 올바르지 않습니다.") @NotBlank(message = "이메일은 공백일 수 없습니다.")
-      @NotNull(message = "이메일은 null 값일 수 없습니다.") String linkEmail) {
-    ResultDTO<CheckDto> result = memberService.naverLink(linkEmail);
+      @NotNull(message = "이메일은 null 값일 수 없습니다.") String linkEmail,
+      @RequestParam(value = "uuid") @NotBlank(message = "UUID는 공백일 수 없습니다.")
+      @NotNull(message = "UUID는 null 값일 수 없습니다.") String uuid) {
+    ResultDTO<CheckDto> result = memberService.naverLink(linkEmail, uuid);
     return ResponseEntity.ok(result);
   }
 
@@ -270,7 +286,7 @@ public class MemberController {
       @ApiResponse(responseCode = "404", description = "존재하지 않는 회원입니다.",
           content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErrorResponse.class)))
   })
-  @PostMapping("/rating")
+  @PutMapping("/rating")
   public ResponseEntity<ResultDTO<CheckDto>> rating(@RequestBody RatingRequestDto request) {
     ResultDTO<CheckDto> result = memberService.rating(request);
     return ResponseEntity.ok(result);
@@ -285,7 +301,8 @@ public class MemberController {
           content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErrorResponse.class)))
   })
   @GetMapping("/my-balance/{searchOption}")
-  public ResponseEntity<ResultDTO<Page<MyBalanceDto>>> myBalance(@PathVariable(value = "searchOption") String searchOption,
+  public ResponseEntity<ResultDTO<Page<MyBalanceDto>>> myBalance(
+      @PathVariable(value = "searchOption") String searchOption,
       @RequestParam(value = "page", defaultValue = "0") Integer pageNumber) {
     ResultDTO<Page<MyBalanceDto>> result = memberService.myBalance(searchOption, pageNumber);
     return ResponseEntity.ok(result);

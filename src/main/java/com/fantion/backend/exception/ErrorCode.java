@@ -20,6 +20,8 @@ public enum ErrorCode {
     PASSWORD_DUPLICATE("기존과 동일한 비밀번호로 변경할 수 없습니다.", HttpStatus.BAD_REQUEST),
     ALREADY_RATED("이미 해당 경매건에 평점을 매겼습니다.", HttpStatus.BAD_REQUEST),
     PASSWORD_RESET_TIMEOUT("비밀번호 변경 기간이 만료되었습니다.", HttpStatus.BAD_REQUEST),
+    UN_VERIFIED_MEMBER("본인인증을 하지 않은 회원 입니다.", HttpStatus.BAD_REQUEST),
+    SNS_LINK_TIMEOUT("SNS 계정 연동 시간이 만료되었습니다.", HttpStatus.BAD_REQUEST),
 
     // Payment
     NOT_FOUND_MONEY("예치금이 존재하지 않습니다.", HttpStatus.NOT_FOUND),

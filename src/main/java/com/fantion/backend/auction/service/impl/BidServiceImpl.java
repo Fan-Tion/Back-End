@@ -76,6 +76,10 @@ public class BidServiceImpl implements BidService {
         Member member = memberRepository.findByEmail(loginEmail)
                 .orElseThrow(()-> new CustomException(NOT_FOUND_MEMBER));
 
+        if (!member.getAuth()) {
+            throw new CustomException(UN_VERIFIED_MEMBER);
+        }
+
         // 사용 가능한 예치금
         Long canUseBalance = balanceCheck(member).getCanUseBalance();
 
@@ -291,6 +295,10 @@ public class BidServiceImpl implements BidService {
         Member buyer = memberRepository.findByEmail(loginEmail)
                 .orElseThrow(()-> new CustomException(NOT_FOUND_MEMBER));
 
+        if (!buyer.getAuth()) {
+            throw new CustomException(UN_VERIFIED_MEMBER);
+        }
+
         // 사용자가 보유한 예치금 조회
         Money buyerMoney = moneyRepository.findByMemberId(buyer.getMemberId())
                 .orElseThrow(()-> new CustomException(NOT_FOUND_MONEY));
@@ -409,11 +417,11 @@ public class BidServiceImpl implements BidService {
         // 경매가 마감되어있으면서 인수 확인이 되어있지 않고 취소된 경매가 아닌 물품 조회
         // 구매중인 경매물품 조회
         List<Auction> buyList = auctionRepository.findByStatusAndReceiveChkAndCurrentBidderAndCancelChk(
-                false, false,member.getNickname(),false);
+                false, false, member.getNickname(),false);
 
         // 판매중인 경매물품 조회
         List<Auction> sellList = auctionRepository
-                .findByStatusAndReceiveChkAndMember(false, false,member);
+                .findByStatusAndReceiveChkAndMember(false, false, member);
 
         BidSuccessListDto.Response response = BidSuccessListDto.Response.builder()
                 .buyList(buyList)
