@@ -31,7 +31,9 @@ public interface MemberService {
 
   ResultDTO<TokenDto.Local> neverSignin(String code);
 
-  ResultDTO<CheckDto> naverLink(String linkEmail);
+  ResultDTO<CheckDto> naverLinkEmail(String linkEmail);
+
+  ResultDTO<CheckDto> naverLink(String linkEmail, String uuid);
 
   ResultDTO<CheckDto> naverUnlink();
 

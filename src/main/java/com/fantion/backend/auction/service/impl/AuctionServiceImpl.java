@@ -95,12 +95,17 @@ public class AuctionServiceImpl implements AuctionService {
 
     auctionRepository.save(toAuction(request, null));
 
+    Member member = memberRepository.findById(getLoginUserId())
+        .orElseThrow(() -> new CustomException(NOT_FOUND_MEMBER));
+
+    if (!member.getAuth()) {
+      throw new CustomException(UN_VERIFIED_MEMBER);
+    }
+
     /*
      * 저장한 auciton을 가져와서 변경
      * */
-    Auction auction = auctionRepository.findTopByMemberOrderByAuctionIdDesc(
-            memberRepository.findById(getLoginUserId())
-                .orElseThrow(() -> new CustomException(NOT_FOUND_MEMBER)))
+    Auction auction = auctionRepository.findTopByMemberOrderByAuctionIdDesc(member)
         .orElseThrow(() -> new CustomException(NOT_FOUND_AUCTION));
 
     auction.setAuctionImage(setImageUrl(saveImages(auction.getAuctionId(), auctionImage)));
@@ -142,8 +147,15 @@ public class AuctionServiceImpl implements AuctionService {
   @Override
   @Transactional
   public ResultDTO<Boolean> deleteAuction(Long auctionId) {
-    auctionRepository.findById(auctionId).orElseThrow(
+    Auction auction = auctionRepository.findById(auctionId).orElseThrow(
         () -> new CustomException(NOT_FOUND_AUCTION));
+
+    Member member = memberRepository.findById(getLoginUserId())
+        .orElseThrow(() -> new CustomException(NOT_FOUND_MEMBER));
+
+    if (!auction.getMember().equals(member)) {
+      throw new CustomException(NOT_AUCTION_SELLER);
+    }
 
     auctionRepository.deleteById(auctionId);
     s3Uploader.deleteFolder(auctionId);
@@ -443,9 +455,11 @@ public class AuctionServiceImpl implements AuctionService {
   @Override
   public ResultDTO<AuctionReportResponse> reportAuction(Long auctionId,
       AuctionReportRequest request) {
+
     String email = MemberAuthUtil.getLoginUserId();
     Member member = memberRepository.findByEmail(email)
         .orElseThrow(() -> new CustomException(NOT_FOUND_MEMBER));
+
     Auction auction = auctionRepository.findById(auctionId)
         .orElseThrow(() -> new CustomException(NOT_FOUND_AUCTION));
 

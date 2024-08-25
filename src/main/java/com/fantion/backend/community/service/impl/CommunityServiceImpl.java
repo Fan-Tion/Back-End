@@ -30,6 +30,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Direction;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -368,6 +369,18 @@ public class CommunityServiceImpl implements CommunityService {
         .build();
     postRepository.save(deletePost);
 
+    // 댓글 삭제
+    List<Comment> comments = commentRepository.findAllByPost(post);
+    if (!comments.isEmpty()) {
+      for (Comment comment : comments) {
+        comment.toBuilder()
+            .status(CommentStatus.DELETE)
+            .deleteDate(LocalDateTime.now())
+            .build();
+        commentRepository.save(comment);
+      }
+    }
+
     PostCheckDto response = PostCheckDto.builder()
         .success(true)
         .channelId(channelId)
@@ -530,7 +543,7 @@ public class CommunityServiceImpl implements CommunityService {
     Post post = postRepository.findByPostIdAndStatus(postId, PostStatus.ACTIVE)
         .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_POST));
 
-    Pageable pageable = PageRequest.of(page, 15, Sort.by(Direction.DESC, "createDate"));
+    Pageable pageable = PageRequest.of(page, 15, Sort.by(Direction.ASC, "createDate"));
 
     Page<Comment> comments = commentRepository.findByPostAndStatus(post, CommentStatus.ACTIVE,
         pageable);
@@ -572,5 +585,25 @@ public class CommunityServiceImpl implements CommunityService {
       return (char) (initialSoundIndex + 0x1100); // 초성 유니코드
     }
     return c;
+  }
+
+  @Scheduled(cron = "0 0 0 * * ?")
+  public void deletePost() {
+    LocalDateTime thirtyDaysAgo = LocalDateTime.now().minusDays(30);
+    List<Post> deletePost = postRepository.findAllByDeleteDateBefore(thirtyDaysAgo);
+
+    if (deletePost != null && !deletePost.isEmpty()) {
+      postRepository.deleteAll(deletePost);
+    }
+  }
+
+  @Scheduled(cron = "0 0 0 * * ?")
+  public void deleteComment() {
+    LocalDateTime thirtyDaysAgo = LocalDateTime.now().minusDays(30);
+    List<Comment> deleteComment = commentRepository.findAllByDeleteDateBefore(thirtyDaysAgo);
+
+    if (deleteComment != null && !deleteComment.isEmpty()) {
+      commentRepository.deleteAll(deleteComment);
+    }
   }
 }
