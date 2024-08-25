@@ -19,6 +19,8 @@ import com.fantion.backend.member.repository.MemberRepository;
 import com.fantion.backend.member.repository.MoneyRepository;
 import com.fantion.backend.type.BalanceType;
 import java.time.LocalDate;
+
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -186,7 +188,7 @@ public class BidServiceImpl implements BidService {
     // 입찰내역 구독
     @Transactional
     @Override
-    public SseEmitter subscribeBid(Long auctionId) {
+    public SseEmitter subscribeBid(Long auctionId, HttpServletResponse httpServletResponse) {
         // 로그인한 사용자 가져오기
         String loginEmail = MemberAuthUtil.getLoginUserId();
 
@@ -199,6 +201,9 @@ public class BidServiceImpl implements BidService {
 
         // SSE 통신 객체 생성
         SseEmitter sseEmitter = sseEmitterService.createEmitter(String.valueOf(member.getMemberId()));
+
+        // nginx 불필요한 버퍼링 방지
+        httpServletResponse.setHeader("X-Accel-Buffering","no");
 
         // 더미데이터 전송
         sseEmitterService.send("ReceivedData", String.valueOf(member.getMemberId()), sseEmitter);

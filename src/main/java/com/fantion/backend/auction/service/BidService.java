@@ -2,6 +2,7 @@ package com.fantion.backend.auction.service;
 
 import com.fantion.backend.auction.dto.*;
 import com.fantion.backend.common.dto.ResultDTO;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 public interface BidService {
@@ -10,7 +11,7 @@ public interface BidService {
     ResultDTO<BidDto.Response> createBid(BidDto.Request request);
 
     // 입찰내역 구독
-    SseEmitter subscribeBid(Long auctionId);
+    SseEmitter subscribeBid(Long auctionId, HttpServletResponse httpServletResponse);
 
     // 입찰내역 발행
     void publishBid(BidDto.Response bid);
