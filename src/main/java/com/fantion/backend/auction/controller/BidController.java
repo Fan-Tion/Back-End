@@ -6,6 +6,7 @@ import com.fantion.backend.common.dto.ResultDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
@@ -23,8 +24,8 @@ public class BidController {
     @Operation(summary = "입찰내역 구독", description = "입찰내역을 구독할 때 사용하는 API")
     @ApiResponse(responseCode = "200", description = "성공적으로 입찰내역을 구독했습니다.")
     @GetMapping(value = "/{auctionId}", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    private SseEmitter subscribeBid(@PathVariable("auctionId") Long auctionId){
-        return bidService.subscribeBid(auctionId);
+    private SseEmitter subscribeBid(@PathVariable("auctionId") Long auctionId, HttpServletResponse httpServletResponse){
+        return bidService.subscribeBid(auctionId,httpServletResponse);
     }
 
     @Operation(summary = "입찰", description = "공개 또는 비공개 입찰할 때 사용하는 API")
