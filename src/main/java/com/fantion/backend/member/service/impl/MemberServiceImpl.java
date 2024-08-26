@@ -405,7 +405,7 @@ public class MemberServiceImpl implements MemberService {
     String title = "Fan-Tion 네이버 연동 이메일";
     String uuid = UUID.randomUUID().toString();
     String message = "<h3>Fan-Tion 네이버 연동 링크입니다. 아래의 링크를 클릭하셔서 네이버 연동을 완료해주세요.</h3>" +
-        "<div><a href='" + baseUrl + "/naverLink?uuid=" + uuid
+        "<div><a href='" + baseUrl + "/naverLink?linkEmail=`" + linkEmail + "&uuid=" + uuid
         + "'> 네이버 연동 링크 </a></div>";
     mailComponents.sendMail(linkEmail, title, message);
 

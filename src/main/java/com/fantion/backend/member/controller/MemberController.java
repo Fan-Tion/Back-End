@@ -141,7 +141,9 @@ public class MemberController {
           content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErrorResponse.class)))
   })
   @PostMapping("/naver/link")
-  public ResponseEntity<ResultDTO<CheckDto>> naverLinkRequest(@RequestParam String linkEmail) {
+  public ResponseEntity<ResultDTO<CheckDto>> naverLinkRequest(
+      @RequestParam(value = "linkEmail") @Email(message = "이메일 형식이 올바르지 않습니다.") @NotBlank(message = "이메일은 공백일 수 없습니다.")
+      @NotNull(message = "이메일은 null 값일 수 없습니다.") String linkEmail) {
     ResultDTO<CheckDto> result = memberService.naverLinkEmail(linkEmail);
     return ResponseEntity.ok(result);
   }
