@@ -38,6 +38,7 @@ public class SecurityConfiguration {
                     "/members/naver/signin", "/members/reset-password-request", "/members/reset-password",
                     "/auction/**", "/community/**", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/bid/**").permitAll()
+                .requestMatchers(HttpMethod.PUT, "/members/naver/link").permitAll()
                 .requestMatchers("/payments/**", "/members/naver/link", "/members/naver/unlink",
                     "/members/signout", "/members/withdrawal", "/members/my-info",
                     "/members/profile-image", "/members/rating",  "/members/my-balance/**").hasRole("USER")
